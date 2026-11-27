@@ -2,6 +2,24 @@
   "version": 1,
   "entries": [
     {
+      "id": "lts-note-60127",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H2",
+      "label": "Erdős 338 triangular H2 (Mortenson)",
+      "problem_url": "https://lefttosolve.com/p/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H2",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 60127,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T23:21:52Z",
+      "files": [
+        "notes/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H2.md"
+      ],
+      "notes": "H2 implies Gauss's Eureka theorem given H1 (checked in Lean); equivalent class-number-type counting form recorded. Lease released too_hard.",
+      "ai_assistance": true
+    },
+    {
       "id": "lts-note-59714",
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
