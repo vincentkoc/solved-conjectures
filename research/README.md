@@ -19,6 +19,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 | [Lucas–Fibonacci sums](arxiv/2211.10788/NOTES.md) | In every positive-step arithmetic progression of indices, the composite terms have infinitely many distinct prime divisors between them. | The upstream question asks whether infinitely many terms are themselves prime. |
 | [Lucas–Fibonacci excluded primes](arxiv/2211.10788/ExcludedPrimeDivisors.md) | Every prime congruent to 13, 17, 21, 29 or 41 modulo 44 divides no term. Each class contains infinitely many primes. | Infinitude of prime values remains open. |
 | [Neighboring Lucas–Fibonacci prime pairs](arxiv/2211.10788/NeighboringPrimePairs.md) | After index 6, both neighbors are prime iff the index is 0, 6 or 18 modulo 24 and `11Fₙ² − 1` is semiprime. | Existence of another pair remains open. |
+| [Conic for neighboring primes](arxiv/2211.10788/NeighboringPrimeConic.md) | For primes `p < q`, the two neighbors equal `(p,q)` at a common index iff `11(p+q)² = 49(pq+1)`. Every positive ordered integer point comes from an even index. | Existence of a third prime pair remains open. |
 | [Pell criterion for Lucas–Fibonacci values](arxiv/2211.10788/PellCriterion.md) | An integer `y ≥ 0` occurs on the upper diagonal iff some natural `x` satisfies `x² − 5y² = ±44` and `x ≡ 7y (mod 22)`. | Infinitude of primes satisfying this criterion remains open. |
 
 ## Replay
