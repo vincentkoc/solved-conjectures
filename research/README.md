@@ -19,9 +19,10 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 
 ## Replay
 
-Use Python 3.9 or newer and a Formal Conjectures checkout at `f606af160664c5a10952e9a957b100a1cd45bbeb` with its pinned Lean 4.33.1 dependencies. From this repository’s root, set `FC` to the path of that checkout and run:
+Use Python 3.9 or newer and a Formal Conjectures checkout at `f606af160664c5a10952e9a957b100a1cd45bbeb` with its pinned Lean 4.33.1 dependencies. Set `FC` to the path of that checkout. Run the following from this repository’s root. The individual proof notes also use `$notebook` to locate their Lean files from `$FC`.
 
 ```bash
+export notebook="$PWD/research"
 runner="$PWD/scripts/replay-research"
 (cd "${FC:?set FC to the Formal Conjectures checkout}" && lake env python3 "$runner")
 ```
