@@ -6,7 +6,8 @@ A catalogue of [Vincent Koc](https://github.com/vincentkoc)'s formal Lean contri
 
 This is a personal contribution log, kept up to date as proofs, reductions, and notes land.
 It is inspired by [1337isnot1337/solved-conjectures](https://github.com/1337isnot1337/solved-conjectures),
-but it records work submitted to those host projects rather than a standalone research collection.
+and the table below records submissions to those host projects.
+The [DeepMind proof notebook](research/README.md) holds local proofs and reductions.
 
 ## AI assistance
 
