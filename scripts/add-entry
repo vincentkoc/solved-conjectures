@@ -1,0 +1,411 @@
+#!/usr/bin/env python3
+"""Upsert a catalogue entry and regenerate README.md from index.json."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+INDEX_PATH = ROOT / "index.json"
+README_PATH = ROOT / "README.md"
+
+STATUSES = ("merged", "open", "superseded", "closed", "dead-end-note")
+KINDS = ("proof", "reduction", "note", "statement")
+
+ENTRY_KEYS = (
+    "id",
+    "project",
+    "project_url",
+    "problem",
+    "problem_url",
+    "kind",
+    "status",
+    "reason",
+    "pr",
+    "pr_number",
+    "note_id",
+    "date",
+    "date_utc",
+    "files",
+    "notes",
+    "ai_assistance",
+    "superseded_by",
+)
+
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+STATUS_LABEL = {
+    "merged": "merged",
+    "open": "open",
+    "superseded": "superseded",
+    "closed": "closed",
+    "dead-end-note": "dead-end note",
+}
+
+
+def load_index() -> dict:
+    if not INDEX_PATH.exists():
+        return {"version": 1, "timezone": "Asia/Singapore", "entries": []}
+    data = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or "entries" not in data:
+        raise SystemExit(f"invalid index: {INDEX_PATH}")
+    return data
+
+
+def canonical_entry(raw: dict) -> dict:
+    entry = {}
+    for key in ENTRY_KEYS:
+        if key in raw and raw[key] is not None:
+            entry[key] = raw[key]
+    return entry
+
+
+def dump_index(data: dict) -> None:
+    entries = [canonical_entry(e) for e in data.get("entries", [])]
+    entries.sort(key=lambda e: (e.get("date_utc") or e.get("date") or "", e["id"]), reverse=True)
+    payload = {
+        "version": int(data.get("version", 1)),
+        "timezone": data.get("timezone") or "Asia/Singapore",
+        "entries": entries,
+    }
+    INDEX_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def validate_entry(entry: dict, *, require_files_exist: bool = True) -> list[str]:
+    errors: list[str] = []
+    eid = entry.get("id")
+    if not eid or not isinstance(eid, str):
+        errors.append("entry missing id")
+        return errors
+    prefix = f"{eid}: "
+    for field in ("project", "problem", "kind", "status", "date", "date_utc"):
+        if not entry.get(field):
+            errors.append(prefix + f"missing {field}")
+    if entry.get("status") and entry["status"] not in STATUSES:
+        errors.append(prefix + f"invalid status {entry['status']!r}")
+    if entry.get("kind") and entry["kind"] not in KINDS:
+        errors.append(prefix + f"invalid kind {entry['kind']!r}")
+    if entry.get("date") and not DATE_RE.match(str(entry["date"])):
+        errors.append(prefix + "date must be YYYY-MM-DD (Asia/Singapore)")
+    if entry.get("date_utc") and not UTC_RE.match(str(entry["date_utc"])):
+        errors.append(prefix + "date_utc must be YYYY-MM-DDTHH:MM:SSZ")
+    files = entry.get("files", [])
+    if not isinstance(files, list):
+        errors.append(prefix + "files must be a list")
+        files = []
+    if require_files_exist:
+        for rel in files:
+            path = ROOT / rel
+            if not path.is_file():
+                errors.append(prefix + f"missing file {rel}")
+    if entry.get("status") in {"merged", "open", "superseded", "closed"} and not entry.get("pr"):
+        errors.append(prefix + "PR statuses require pr")
+    if entry.get("status") == "dead-end-note" and not entry.get("note_id"):
+        errors.append(prefix + "dead-end-note requires note_id")
+    if "ai_assistance" in entry and not isinstance(entry["ai_assistance"], bool):
+        errors.append(prefix + "ai_assistance must be a boolean")
+    return errors
+
+
+def validate_index(data: dict, *, require_files_exist: bool = True) -> list[str]:
+    errors: list[str] = []
+    entries = data.get("entries")
+    if not isinstance(entries, list):
+        return ["index.entries must be a list"]
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append("non-object entry")
+            continue
+        errors.extend(validate_entry(entry, require_files_exist=require_files_exist))
+        eid = entry.get("id")
+        if eid in seen:
+            errors.append(f"duplicate id {eid}")
+        elif eid:
+            seen.add(eid)
+    return errors
+
+
+def md_link(label: str, url: str | None) -> str:
+    if not url:
+        return label
+    return f"[{label}]({url})"
+
+
+def file_links(files: list[str]) -> str:
+    if not files:
+        return "—"
+    return ", ".join(f"[`{Path(f).name}`]({f})" for f in files)
+
+
+def status_cell(entry: dict) -> str:
+    label = STATUS_LABEL.get(entry["status"], entry["status"])
+    if entry.get("reason"):
+        return f"{label} ({entry['reason']})"
+    return label
+
+
+def link_cell(entry: dict) -> str:
+    if entry.get("pr"):
+        number = entry.get("pr_number")
+        label = f"#{number}" if number else "PR"
+        cell = md_link(label, entry["pr"])
+        if entry.get("superseded_by"):
+            cell += f", superseded by {md_link('#' + _pr_number_from_url(entry['superseded_by']), entry['superseded_by'])}"
+        return cell
+    if entry.get("note_id"):
+        label = f"note {entry['note_id']}"
+        return md_link(label, entry.get("problem_url"))
+    return "—"
+
+
+def _pr_number_from_url(url: str) -> str:
+    return url.rstrip("/").rsplit("/", 1)[-1]
+
+
+def project_cell(entry: dict) -> str:
+    return md_link(entry["project"], entry.get("project_url"))
+
+
+def problem_cell(entry: dict) -> str:
+    return md_link(f"`{entry['problem']}`", entry.get("problem_url"))
+
+
+def render_readme(data: dict) -> str:
+    entries = list(data.get("entries", []))
+    entries.sort(key=lambda e: (e.get("date_utc") or e.get("date") or "", e["id"]), reverse=True)
+
+    counts: dict[str, int] = {s: 0 for s in STATUSES}
+    for e in entries:
+        counts[e["status"]] = counts.get(e["status"], 0) + 1
+
+    lines = [
+        "# Solved conjectures",
+        "",
+        "A catalogue of [Vincent Koc](https://github.com/vincentkoc)'s formal Lean contributions to",
+        "[Left to Solve](https://lefttosolve.com) / [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents),",
+        "[formal-conjectures](https://github.com/google-deepmind/formal-conjectures), and related projects.",
+        "",
+        "This is a personal contribution log, kept up to date as proofs, reductions, and notes land.",
+        "It is inspired by [1337isnot1337/solved-conjectures](https://github.com/1337isnot1337/solved-conjectures),",
+        "but it records work submitted to those host projects rather than a standalone research collection.",
+        "",
+        "## AI assistance",
+        "",
+        "Entries here were written with an AI coding agent (Grok Bot / Solver) and, for proofs and",
+        "reductions, kernel-checked before they were submitted. Dead-end notes are computational",
+        "evidence, not proofs. Each host pull request carries its own disclosure.",
+        "",
+        "## Status",
+        "",
+        f"- **merged** — accepted into the host project ({counts['merged']})",
+        f"- **open** — pull request still under review ({counts['open']})",
+        f"- **superseded** — closed because a later or competing solution landed ({counts['superseded']})",
+        f"- **closed** — closed without merge, for example a duplicate ({counts['closed']})",
+        f"- **dead-end note** — public Left to Solve note on a failed or likely-false step ({counts['dead-end-note']})",
+        "",
+        "Dates are calendar dates in Asia/Singapore for the status event (merge, close, open, or note).",
+        "The machine-readable source of truth is [`index.json`](index.json).",
+        "Lean files under [`proofs/`](proofs/) are exact copies of our submissions; they are not a Lake package.",
+        "See [`scripts/README.md`](scripts/README.md) for how later sessions should append entries.",
+        "",
+        "## Contributions",
+        "",
+        "| Project | Problem / step | Status | Link | Date (SGT) | Files |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for entry in entries:
+        lines.append(
+            "| {project} | {problem} | {status} | {link} | {date} | {files} |".format(
+                project=project_cell(entry),
+                problem=problem_cell(entry),
+                status=status_cell(entry),
+                link=link_cell(entry),
+                date=entry["date"],
+                files=file_links(entry.get("files") or []),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## License",
+            "",
+            "The catalogue, scripts, and notes are [MIT](LICENSE).",
+            "Archived Lean files remain contributions to their host projects; see the linked pull requests.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_readme(data: dict) -> None:
+    README_PATH.write_text(render_readme(data), encoding="utf-8")
+
+
+def copy_into(src: Path, dest_rel: str) -> str:
+    dest = ROOT / dest_rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
+    return dest_rel
+
+
+def upsert(args: argparse.Namespace) -> int:
+    data = load_index()
+    entries: list[dict] = list(data.get("entries", []))
+    existing = next((e for e in entries if e.get("id") == args.id), None)
+    entry = dict(existing or {})
+    entry["id"] = args.id
+    entry["project"] = args.project or entry.get("project")
+    entry["project_url"] = args.project_url or entry.get("project_url")
+    entry["problem"] = args.problem or entry.get("problem")
+    if args.problem_url:
+        entry["problem_url"] = args.problem_url
+    entry["kind"] = args.kind or entry.get("kind")
+    entry["status"] = args.status or entry.get("status")
+    if args.reason:
+        entry["reason"] = args.reason
+    if args.pr:
+        entry["pr"] = args.pr
+    if args.pr_number is not None:
+        entry["pr_number"] = args.pr_number
+    if args.note_id is not None:
+        entry["note_id"] = args.note_id
+    entry["date"] = args.date or entry.get("date")
+    entry["date_utc"] = args.date_utc or entry.get("date_utc")
+    if args.notes:
+        entry["notes"] = args.notes
+    if args.superseded_by:
+        entry["superseded_by"] = args.superseded_by
+    if args.ai_assistance:
+        entry["ai_assistance"] = True
+    elif args.no_ai_assistance:
+        entry["ai_assistance"] = False
+    else:
+        entry.setdefault("ai_assistance", True)
+
+    files = list(entry.get("files") or [])
+    if args.lean:
+        src = Path(args.lean).expanduser().resolve()
+        if not src.is_file():
+            raise SystemExit(f"Lean file not found: {src}")
+        slug = "open-math-agents" if "open-math" in (entry.get("project") or "") else _slug(entry.get("project") or "misc")
+        rel = args.dest or f"proofs/{slug}/{src.name}"
+        copy_into(src, rel)
+        if rel not in files:
+            files.append(rel)
+    if args.notes_file:
+        src = Path(args.notes_file).expanduser().resolve()
+        if not src.is_file():
+            raise SystemExit(f"notes file not found: {src}")
+        rel = args.dest or f"notes/{(entry.get('problem') or src.stem)}.md"
+        copy_into(src, rel)
+        if rel not in files:
+            files.append(rel)
+    entry["files"] = files
+
+    errors = validate_entry(entry)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+
+    if existing is None:
+        entries.append(entry)
+    else:
+        entries = [entry if e.get("id") == args.id else e for e in entries]
+    data["entries"] = entries
+    dump_index(data)
+    # Reload canonical form, then render
+    data = load_index()
+    write_readme(data)
+    action = "Updated" if existing else "Added"
+    print(f"{action} {args.id} ({entry['status']})")
+    return 0
+
+
+def _slug(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug or "misc"
+
+
+def check() -> int:
+    data = load_index()
+    errors = validate_index(data)
+    expected = render_readme(data)
+    actual = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else ""
+    if actual != expected:
+        errors.append("README.md is out of date; run scripts/add-entry --render")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    print(f"ok: {len(data['entries'])} entries, README matches index.json")
+    return 0
+
+
+def render() -> int:
+    data = load_index()
+    errors = validate_index(data)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    write_readme(data)
+    print(f"Rendered README.md from {len(data['entries'])} entries")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--check", action="store_true", help="validate index.json and that README.md matches it")
+    p.add_argument("--render", action="store_true", help="regenerate README.md from index.json")
+    p.add_argument("--id", help="stable entry id, for example oma-5203")
+    p.add_argument("--project")
+    p.add_argument("--project-url")
+    p.add_argument("--problem")
+    p.add_argument("--problem-url")
+    p.add_argument("--kind", choices=KINDS)
+    p.add_argument("--status", choices=STATUSES)
+    p.add_argument("--reason", help="short qualifier, for example 'duplicate'")
+    p.add_argument("--pr")
+    p.add_argument("--pr-number", type=int)
+    p.add_argument("--note-id", type=int)
+    p.add_argument("--date", help="YYYY-MM-DD in Asia/Singapore")
+    p.add_argument("--date-utc", help="YYYY-MM-DDTHH:MM:SSZ")
+    p.add_argument("--lean", help="path to a Lean file to copy into proofs/")
+    p.add_argument("--notes-file", help="path to a posted dead-end note to copy into notes/")
+    p.add_argument("--dest", help="repo-relative destination for --lean or --notes-file")
+    p.add_argument("--notes", help="short description stored in the index")
+    p.add_argument("--superseded-by", help="URL of the PR that superseded this one")
+    p.add_argument("--ai-assistance", action="store_true")
+    p.add_argument("--no-ai-assistance", action="store_true")
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    if args.check:
+        return check()
+    if args.render:
+        return render()
+    required = ("id", "project", "problem", "kind", "status", "date", "date_utc")
+    missing = [name for name in required if not getattr(args, name.replace("-", "_"))]
+    # Allow updates that only pass --id plus changed fields when the entry exists
+    if missing and args.id:
+        data = load_index()
+        if any(e.get("id") == args.id for e in data.get("entries", [])):
+            missing = []
+    if missing:
+        print("missing required arguments: " + ", ".join(f"--{m}" for m in missing), file=sys.stderr)
+        return 2
+    if not args.id:
+        print("--id is required unless using --check or --render", file=sys.stderr)
+        return 2
+    return upsert(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
