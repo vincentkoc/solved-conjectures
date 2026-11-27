@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Replay the notebook inside the pinned Formal Conjectures Lake environment."""
+
+import json
+import os
+import re
+import subprocess
+import tempfile
+from graphlib import TopologicalSorter
+from pathlib import Path
+
+
+RESEARCH = Path(__file__).resolve().parents[1] / "research"
+ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
+
+
+def compile_proof(source, out, env):
+    result = subprocess.run(
+        ["lean", "--json", "-o", out / (source.stem + ".olean"), source.name],
+        cwd=source.parent, env=env, text=True, stdout=subprocess.PIPE,
+    )
+    reports = 0
+    for line in result.stdout.splitlines():
+        message = json.loads(line)
+        data = message["data"]
+        print(data, flush=True)
+        if message["kind"] == "hasSorry":
+            raise SystemExit(f"{source.name}: proof contains sorry")
+        if message["severity"] == "information":
+            match = re.fullmatch(r"'[^']+' depends on axioms:\s*\[(.*?)\]", data, re.S)
+            if match:
+                extra = {name.strip() for name in match[1].split(",")} - ALLOWED_AXIOMS
+                if extra:
+                    raise SystemExit(f"{source.name}: unexpected axioms {sorted(extra)}")
+                reports += 1
+            elif re.fullmatch(r"'[^']+' does not depend on any axioms", data):
+                reports += 1
+    result.check_returncode()
+    if not reports:
+        raise SystemExit(f"{source.name}: missing #print axioms report")
+
+
+def main():
+    upstream = Path.cwd().resolve()
+    if not (upstream / "FormalConjectures").is_dir() or not os.environ.get("LEAN_PATH"):
+        raise SystemExit("Run from the Formal Conjectures checkout with lake env python3.")
+    files = sorted(RESEARCH.rglob("*.lean"))
+    if not files:
+        raise SystemExit("No notebook modules found.")
+    if len({f.stem for f in files}) != len(files):
+        raise SystemExit("Notebook module names must be unique for bare Lean imports.")
+    roots = sorted({str(f.parent) for f in files})
+    env = os.environ.copy()
+    env["LEAN_SRC_PATH"] = os.pathsep.join([*roots, env["LEAN_SRC_PATH"]])
+    graph = TopologicalSorter()
+    targets = set()
+    sources = set(files)
+    for source in files:
+        deps = subprocess.check_output(["lean", "--src-deps", source], env=env, text=True)
+        paths = {Path(line).resolve() for line in deps.splitlines()}
+        graph.add(source, *(paths & sources))
+        for path in paths:
+            if path.is_relative_to(upstream) and not path.is_relative_to(upstream / ".lake"):
+                targets.add(str(path.relative_to(upstream)) + ":olean")
+    if targets:
+        subprocess.run(["lake", "build", *sorted(targets)], check=True)
+
+    with tempfile.TemporaryDirectory(prefix="conjecture-replay-") as directory:
+        out = Path(directory)
+        env["LEAN_PATH"] = os.pathsep.join([directory, env["LEAN_PATH"]])
+        order = list(graph.static_order())
+        for source in order:
+            print(f"Checking {source.relative_to(RESEARCH)}", flush=True)
+            compile_proof(source, out, env)
+        subprocess.run(["leanchecker", "-v", *(f.stem for f in order)], env=env, check=True)
+    print(f"Replayed {len(files)} notebook modules.")
+
+
+if __name__ == "__main__":
+    main()

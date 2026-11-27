@@ -16,33 +16,13 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 
 ## Replay
 
-Use Lean 4.33.1 and a Formal Conjectures checkout at `f606af160664c5a10952e9a957b100a1cd45bbeb` with its pinned dependencies. From the root of this notebook’s repository, set `FC` to the path of that checkout and run this in Bash.
+Use Python 3.9 or newer and a Formal Conjectures checkout at `f606af160664c5a10952e9a957b100a1cd45bbeb` with its pinned Lean 4.33.1 dependencies. From this repository’s root, set `FC` to the path of that checkout and run:
 
 ```bash
-set -e
-notebook="$PWD/research"
-cd "${FC:?set FC to the Formal Conjectures checkout}"
-lake build 'FormalConjectures.Arxiv.«1104.1579».CunninghamChain' FormalConjectures.Paper.PrimeTuples \
-  'FormalConjectures.Arxiv.«2501.03234».ArithmeticSumS' \
-  'FormalConjectures.Arxiv.«2211.10788».LucasFibonacciSumPrimes'
-for proof in \
-  "$notebook/green/Green33Multiplicity.lean" \
-  "$notebook/green/Green33FourierStability.lean" \
-  "$notebook/arxiv/CunninghamChainDickson.lean" \
-  "$notebook/arxiv/1104.1579/CunninghamSecondKindDickson.lean" \
-  "$notebook/erdos/Erdos722BinaryQuadruples.lean" \
-  "$notebook/erdos/Erdos722HarmonicQuadruples.lean" \
-  "$notebook/erdos/478/Erdos478FactorialCollisions.lean" \
-  "$notebook/erdos/478/Erdos478MixedGaps.lean" \
-  "$notebook/arxiv/theta-sum/ArithmeticSumModFour.lean" \
-  "$notebook/arxiv/theta-sum/ThetaDiagonalModEight.lean" \
-  "$notebook/arxiv/2211.10788/LucasFibonacciExcludedPrimes.lean" \
-  "$notebook/arxiv/2211.10788/LucasFibonacciPrimeDivisors.lean"
-do
-  lake env lean "$proof"
-done
+runner="$PWD/scripts/replay-research"
+(cd "${FC:?set FC to the Formal Conjectures checkout}" && lake env python3 "$runner")
 ```
 
-Each axiom report lists only `propext`, `Classical.choice` and `Quot.sound`.
+The runner discovers every `.lean` file under `research/`, resolves its imports with Lean, and compiles notebook dependencies first. Use a unique module filename for each proof. Each file must print its theorem’s axioms. The runner checks the reports against `propext`, `Classical.choice` and `Quot.sound`, then replays all compiled notebook modules with `leanchecker`. Compiled notebook files are temporary.
 
 The [theta Fourier replay](arxiv/theta-sum/FOURIER.md#replay) first compiles its diagonal-module dependency.
