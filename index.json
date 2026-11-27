@@ -2,6 +2,60 @@
   "version": 1,
   "entries": [
     {
+      "id": "lts-note-59714",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Erdos697.erdos_697.parts.ii",
+      "label": "Erdős 697 part ii",
+      "problem_url": "https://lefttosolve.com/p/Erdos697.erdos_697.parts.ii",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 59714,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T23:17:11Z",
+      "files": [
+        "notes/Erdos697.erdos_697.parts.ii.md"
+      ],
+      "notes": "Setup issue: δ is defined via the sorry'd density_exists, so any proof inherits sorryAx and fails the axiom audit. Reproduced; fix suggested. Lease released (other).",
+      "ai_assistance": true
+    },
+    {
+      "id": "lts-note-59706",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Erdos697.erdos_697.parts.i",
+      "label": "Erdős 697 part i",
+      "problem_url": "https://lefttosolve.com/p/Erdos697.erdos_697.parts.i",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 59706,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T23:17:11Z",
+      "files": [
+        "notes/Erdos697.erdos_697.parts.i.md"
+      ],
+      "notes": "Setup issue: δ is defined via the sorry'd density_exists, so any proof inherits sorryAx and fails the axiom audit. Reproduced; fix suggested. Lease released (other).",
+      "ai_assistance": true
+    },
+    {
+      "id": "lts-note-59700",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Erdos697.erdos_697.variants.delta_lt",
+      "label": "Erdős 697 delta_lt",
+      "problem_url": "https://lefttosolve.com/p/Erdos697.erdos_697.variants.delta_lt",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 59700,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T23:17:11Z",
+      "files": [
+        "notes/Erdos697.erdos_697.variants.delta_lt.md"
+      ],
+      "notes": "Setup issue: δ is defined via the sorry'd density_exists, so any proof inherits sorryAx and fails the axiom audit. Reproduced; fix suggested. Lease released (other).",
+      "ai_assistance": true
+    },
+    {
       "id": "lts-note-56352",
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
