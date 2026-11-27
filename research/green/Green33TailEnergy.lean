@@ -121,7 +121,8 @@ theorem tail_energy_bound (A : Finset G) (hA : A + A = univ) (M : ℕ) :
   simpa only [sum_add_distrib, ← mul_sum, sum_sub_distrib, ht, hr, hd, sum_const,
     card_univ, nsmul_eq_mul, mul_comm (Fintype.card G : ℝ) 2] using hs
 
-private lemma card_limits {ι : Type*} {l : Filter ι} (q : ι → ℕ+) (k : ι → ℕ)
+/-- Linear and quadratic normalizations of a family of sizes at Green's constant. -/
+theorem card_limits {ι : Type*} {l : Filter ι} (q : ι → ℕ+) (k : ι → ℕ)
     (hq : Tendsto (fun i => (q i : ℕ)) l atTop)
     (hk : Tendsto (fun i => (k i : ℝ) / Real.sqrt (q i)) l (𝓝 (Real.sqrt 2))) :
     Tendsto (fun i => (k i : ℝ) / (q i : ℝ)) l (𝓝 0) ∧
@@ -169,6 +170,7 @@ theorem eventually_lt_tail_energy {ι : Type*} {l : Filter ι} (q : ι → ℕ+)
   simpa only [add_div, add_zero, sub_self, mul_zero] using
     (((hk₂.add hk).sub (tendsto_const_nhds (x := (2 : ℝ)))).const_mul (M : ℝ))
 
+#print axioms card_limits
 #print axioms centered_energy_eq
 #print axioms variance_floor
 #print axioms tail_energy_bound
