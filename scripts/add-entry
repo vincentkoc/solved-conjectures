@@ -22,6 +22,7 @@ ENTRY_KEYS = (
     "project",
     "project_url",
     "problem",
+    "label",
     "problem_url",
     "kind",
     "status",
@@ -45,13 +46,26 @@ STATUS_LABEL = {
     "open": "open",
     "superseded": "superseded",
     "closed": "closed",
-    "dead-end-note": "dead-end note",
+    "dead-end-note": "note",
+}
+
+PROJECT_SHORT = {
+    "open-math-agents": "OMA",
+    "formal-conjectures": "formal-conjectures",
+}
+
+STATUS_BADGE = {
+    "merged": "https://img.shields.io/badge/merged-238636",
+    "open": "https://img.shields.io/badge/open-1f6feb",
+    "superseded": "https://img.shields.io/badge/superseded-9a6700",
+    "closed": "https://img.shields.io/badge/closed-6e7781",
+    "dead-end-note": "https://img.shields.io/badge/note-8250df",
 }
 
 
 def load_index() -> dict:
     if not INDEX_PATH.exists():
-        return {"version": 1, "timezone": "Asia/Singapore", "entries": []}
+        return {"version": 1, "entries": []}
     data = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or "entries" not in data:
         raise SystemExit(f"invalid index: {INDEX_PATH}")
@@ -71,7 +85,6 @@ def dump_index(data: dict) -> None:
     entries.sort(key=lambda e: (e.get("date_utc") or e.get("date") or "", e["id"]), reverse=True)
     payload = {
         "version": int(data.get("version", 1)),
-        "timezone": data.get("timezone") or "Asia/Singapore",
         "entries": entries,
     }
     INDEX_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -92,7 +105,7 @@ def validate_entry(entry: dict, *, require_files_exist: bool = True) -> list[str
     if entry.get("kind") and entry["kind"] not in KINDS:
         errors.append(prefix + f"invalid kind {entry['kind']!r}")
     if entry.get("date") and not DATE_RE.match(str(entry["date"])):
-        errors.append(prefix + "date must be YYYY-MM-DD (Asia/Singapore)")
+        errors.append(prefix + "date must be YYYY-MM-DD")
     if entry.get("date_utc") and not UTC_RE.match(str(entry["date_utc"])):
         errors.append(prefix + "date_utc must be YYYY-MM-DDTHH:MM:SSZ")
     files = entry.get("files", [])
@@ -145,23 +158,26 @@ def file_links(files: list[str]) -> str:
 
 
 def status_cell(entry: dict) -> str:
-    label = STATUS_LABEL.get(entry["status"], entry["status"])
-    if entry.get("reason"):
-        return f"{label} ({entry['reason']})"
-    return label
+    status = entry["status"]
+    label = STATUS_LABEL.get(status, status)
+    if status == "closed" and entry.get("reason"):
+        label = entry["reason"]
+        badge = f"https://img.shields.io/badge/{_badge_text(label)}-6e7781"
+    else:
+        badge = STATUS_BADGE.get(status, f"https://img.shields.io/badge/{_badge_text(label)}-6e7781")
+    return f'<img alt="{label}" src="{badge}">'
+
+
+def _badge_text(label: str) -> str:
+    return label.replace("-", "--").replace(" ", "_")
 
 
 def link_cell(entry: dict) -> str:
     if entry.get("pr"):
         number = entry.get("pr_number")
-        label = f"#{number}" if number else "PR"
-        cell = md_link(label, entry["pr"])
-        if entry.get("superseded_by"):
-            cell += f", superseded by {md_link('#' + _pr_number_from_url(entry['superseded_by']), entry['superseded_by'])}"
-        return cell
+        return md_link(f"#{number}" if number else "PR", entry["pr"])
     if entry.get("note_id"):
-        label = f"note {entry['note_id']}"
-        return md_link(label, entry.get("problem_url"))
+        return md_link(f"#{entry['note_id']}", entry.get("problem_url"))
     return "—"
 
 
@@ -170,74 +186,45 @@ def _pr_number_from_url(url: str) -> str:
 
 
 def project_cell(entry: dict) -> str:
-    return md_link(entry["project"], entry.get("project_url"))
+    short = PROJECT_SHORT.get(entry["project"], entry["project"])
+    return md_link(short, entry.get("project_url"))
 
 
 def problem_cell(entry: dict) -> str:
-    return md_link(f"`{entry['problem']}`", entry.get("problem_url"))
+    label = entry.get("label") or entry["problem"]
+    files = entry.get("files") or []
+    href = files[0] if files else entry.get("problem_url")
+    return md_link(f"`{label}`", href)
 
 
 def render_readme(data: dict) -> str:
     entries = list(data.get("entries", []))
     entries.sort(key=lambda e: (e.get("date_utc") or e.get("date") or "", e["id"]), reverse=True)
 
-    counts: dict[str, int] = {s: 0 for s in STATUSES}
-    for e in entries:
-        counts[e["status"]] = counts.get(e["status"], 0) + 1
-
     lines = [
         "# Solved conjectures",
         "",
-        "A catalogue of [Vincent Koc](https://github.com/vincentkoc)'s formal Lean contributions to",
-        "[Left to Solve](https://lefttosolve.com) / [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents),",
-        "[formal-conjectures](https://github.com/google-deepmind/formal-conjectures), and related projects.",
+        "Lean contributions by [vincentkoc](https://github.com/vincentkoc) to",
+        "[Left to Solve](https://lefttosolve.com) / [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents)",
+        "and [formal-conjectures](https://github.com/google-deepmind/formal-conjectures).",
+        "AI-assisted; proofs are kernel-checked. Notes are computational evidence, not proofs.",
         "",
-        "This is a personal contribution log, kept up to date as proofs, reductions, and notes land.",
-        "It is inspired by [1337isnot1337/solved-conjectures](https://github.com/1337isnot1337/solved-conjectures),",
-        "but it records work submitted to those host projects rather than a standalone research collection.",
-        "",
-        "## AI assistance",
-        "",
-        "Entries here were written with an AI coding agent (Grok Bot / Solver) and, for proofs and",
-        "reductions, kernel-checked before they were submitted. Dead-end notes are computational",
-        "evidence, not proofs. Each host pull request carries its own disclosure.",
-        "",
-        "## Status",
-        "",
-        f"- **merged** — accepted into the host project ({counts['merged']})",
-        f"- **open** — pull request still under review ({counts['open']})",
-        f"- **superseded** — closed because a later or competing solution landed ({counts['superseded']})",
-        f"- **closed** — closed without merge, for example a duplicate ({counts['closed']})",
-        f"- **dead-end note** — public Left to Solve note on a failed or likely-false step ({counts['dead-end-note']})",
-        "",
-        "Dates are calendar dates in Asia/Singapore for the status event (merge, close, open, or note).",
-        "The machine-readable source of truth is [`index.json`](index.json).",
-        "Lean files under [`proofs/`](proofs/) are exact copies of our submissions; they are not a Lake package.",
-        "See [`scripts/README.md`](scripts/README.md) for how later sessions should append entries.",
-        "",
-        "## Contributions",
-        "",
-        "| Project | Problem / step | Status | Link | Date (SGT) | Files |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Project | Problem/step | Status | PR |",
+        "| --- | --- | --- | --- |",
     ]
     for entry in entries:
         lines.append(
-            "| {project} | {problem} | {status} | {link} | {date} | {files} |".format(
+            "| {project} | {problem} | {status} | {link} |".format(
                 project=project_cell(entry),
                 problem=problem_cell(entry),
                 status=status_cell(entry),
                 link=link_cell(entry),
-                date=entry["date"],
-                files=file_links(entry.get("files") or []),
             )
         )
     lines.extend(
         [
             "",
-            "## License",
-            "",
-            "The catalogue, scripts, and notes are [MIT](LICENSE).",
-            "Archived Lean files remain contributions to their host projects; see the linked pull requests.",
+            "[index.json](index.json) · [proofs](proofs/) · [update](scripts/README.md) · [MIT](LICENSE)",
             "",
         ]
     )
@@ -266,6 +253,8 @@ def upsert(args: argparse.Namespace) -> int:
     entry["problem"] = args.problem or entry.get("problem")
     if args.problem_url:
         entry["problem_url"] = args.problem_url
+    if args.label:
+        entry["label"] = args.label
     entry["kind"] = args.kind or entry.get("kind")
     entry["status"] = args.status or entry.get("status")
     if args.reason:
@@ -373,7 +362,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--pr")
     p.add_argument("--pr-number", type=int)
     p.add_argument("--note-id", type=int)
-    p.add_argument("--date", help="YYYY-MM-DD in Asia/Singapore")
+    p.add_argument("--label", help="short problem label for the README table")
+    p.add_argument("--date", help="YYYY-MM-DD")
     p.add_argument("--date-utc", help="YYYY-MM-DDTHH:MM:SSZ")
     p.add_argument("--lean", help="path to a Lean file to copy into proofs/")
     p.add_argument("--notes-file", help="path to a posted dead-end note to copy into notes/")

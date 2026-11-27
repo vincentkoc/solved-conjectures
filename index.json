@@ -1,95 +1,40 @@
 {
   "version": 1,
-  "timezone": "Asia/Singapore",
   "entries": [
     {
-      "id": "oma-5203",
+      "id": "lts-note-56352",
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "Green3.green_3.R2",
-      "problem_url": "https://lefttosolve.com/p/Green3.green_3",
-      "kind": "reduction",
-      "status": "merged",
-      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5203",
-      "pr_number": 5203,
-      "date": "2026-11-27",
-      "date_utc": "2026-11-27T10:58:29Z",
+      "problem": "OeisA255916.conjecture_3.R1.H2",
+      "label": "A255916 conj. 3 R1.H2",
+      "problem_url": "https://lefttosolve.com/p/OeisA255916.conjecture_3.R1.H2",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 56352,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T22:48:00Z",
       "files": [
-        "proofs/open-math-agents/Green3.green_3.R2.lean"
+        "notes/OeisA255916.conjecture_3.R1.H2.md"
       ],
-      "notes": "Green3 R2 reduction of the FGY argument.",
+      "notes": "Bitset search found no counterexample up to 3e7 for pentagonal pair (3,57). Computational evidence, not a proof. Lease released statement_seems_false.",
       "ai_assistance": true
     },
     {
-      "id": "oma-5570",
+      "id": "lts-note-56347",
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "Green3.green_3.R2.H1.R1",
-      "problem_url": "https://lefttosolve.com/p/Green3.green_3.R2.H1",
-      "kind": "reduction",
-      "status": "merged",
-      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5570",
-      "pr_number": 5570,
-      "date": "2026-11-27",
-      "date_utc": "2026-11-27T11:56:40Z",
+      "problem": "OeisA255916.conjecture_2.R1.H2",
+      "label": "A255916 conj. 2 R1.H2",
+      "problem_url": "https://lefttosolve.com/p/OeisA255916.conjecture_2.R1.H2",
+      "kind": "note",
+      "status": "dead-end-note",
+      "note_id": 56347,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-27T22:48:00Z",
       "files": [
-        "proofs/open-math-agents/Green3.green_3.R2.H1.R1.lean"
+        "notes/OeisA255916.conjecture_2.R1.H2.md"
       ],
-      "notes": "Further reduction of Green3 R2.H1.",
-      "ai_assistance": true
-    },
-    {
-      "id": "oma-5687",
-      "project": "open-math-agents",
-      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "oeis-a047946",
-      "problem_url": "https://lefttosolve.com/p/oeis-a047946",
-      "kind": "proof",
-      "status": "merged",
-      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5687",
-      "pr_number": 5687,
-      "date": "2026-11-27",
-      "date_utc": "2026-11-27T12:11:50Z",
-      "files": [
-        "proofs/open-math-agents/oeis-a047946.lean"
-      ],
-      "notes": "OEIS A047946 via Binet's formula and a polynomial identity.",
-      "ai_assistance": true
-    },
-    {
-      "id": "oma-5722",
-      "project": "open-math-agents",
-      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "oeis-a262779",
-      "problem_url": "https://lefttosolve.com/p/oeis-a262779",
-      "kind": "proof",
-      "status": "merged",
-      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5722",
-      "pr_number": 5722,
-      "date": "2026-11-27",
-      "date_utc": "2026-11-27T12:17:47Z",
-      "files": [
-        "proofs/open-math-agents/oeis-a262779.lean"
-      ],
-      "notes": "OEIS A262779, Rule 175 closed form, recurrence, and generating function.",
-      "ai_assistance": true
-    },
-    {
-      "id": "oma-7628",
-      "project": "open-math-agents",
-      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1",
-      "problem_url": "https://lefttosolve.com/p/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1",
-      "kind": "proof",
-      "status": "open",
-      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/7628",
-      "pr_number": 7628,
-      "date": "2026-11-27",
-      "date_utc": "2026-11-27T14:56:45Z",
-      "files": [
-        "proofs/open-math-agents/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1.lean"
-      ],
-      "notes": "Erdős 338 triangular step: the cube of Gauss's ψ product counts representations as a sum of three triangular numbers.",
+      "notes": "Bitset search found no counterexample up to 3e7 for the eight extra heptagonal pairs in H2. Computational evidence, not a proof. Lease released statement_seems_false.",
       "ai_assistance": true
     },
     {
@@ -97,6 +42,7 @@
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
       "problem": "Green3.green_3.R2.H1.R1.H1",
+      "label": "Green3 Thm 3.12",
       "problem_url": "https://lefttosolve.com/p/Green3.green_3.R2.H1.R1.H1",
       "kind": "proof",
       "status": "superseded",
@@ -112,10 +58,106 @@
       "superseded_by": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5869"
     },
     {
+      "id": "oma-7628",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1",
+      "label": "Erdos338 triangular",
+      "problem_url": "https://lefttosolve.com/p/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1",
+      "kind": "proof",
+      "status": "open",
+      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/7628",
+      "pr_number": 7628,
+      "date": "2026-11-27",
+      "date_utc": "2026-11-27T14:56:45Z",
+      "files": [
+        "proofs/open-math-agents/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H1.lean"
+      ],
+      "notes": "Erdős 338 triangular step: the cube of Gauss's ψ product counts representations as a sum of three triangular numbers.",
+      "ai_assistance": true
+    },
+    {
+      "id": "oma-5722",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "oeis-a262779",
+      "label": "A262779",
+      "problem_url": "https://lefttosolve.com/p/oeis-a262779",
+      "kind": "proof",
+      "status": "merged",
+      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5722",
+      "pr_number": 5722,
+      "date": "2026-11-27",
+      "date_utc": "2026-11-27T12:17:47Z",
+      "files": [
+        "proofs/open-math-agents/oeis-a262779.lean"
+      ],
+      "notes": "OEIS A262779, Rule 175 closed form, recurrence, and generating function.",
+      "ai_assistance": true
+    },
+    {
+      "id": "oma-5687",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "oeis-a047946",
+      "label": "A047946",
+      "problem_url": "https://lefttosolve.com/p/oeis-a047946",
+      "kind": "proof",
+      "status": "merged",
+      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5687",
+      "pr_number": 5687,
+      "date": "2026-11-27",
+      "date_utc": "2026-11-27T12:11:50Z",
+      "files": [
+        "proofs/open-math-agents/oeis-a047946.lean"
+      ],
+      "notes": "OEIS A047946 via Binet's formula and a polynomial identity.",
+      "ai_assistance": true
+    },
+    {
+      "id": "oma-5570",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Green3.green_3.R2.H1.R1",
+      "label": "Green3 R2.H1.R1",
+      "problem_url": "https://lefttosolve.com/p/Green3.green_3.R2.H1",
+      "kind": "reduction",
+      "status": "merged",
+      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5570",
+      "pr_number": 5570,
+      "date": "2026-11-27",
+      "date_utc": "2026-11-27T11:56:40Z",
+      "files": [
+        "proofs/open-math-agents/Green3.green_3.R2.H1.R1.lean"
+      ],
+      "notes": "Further reduction of Green3 R2.H1.",
+      "ai_assistance": true
+    },
+    {
+      "id": "oma-5203",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
+      "problem": "Green3.green_3.R2",
+      "label": "Green3 R2",
+      "problem_url": "https://lefttosolve.com/p/Green3.green_3",
+      "kind": "reduction",
+      "status": "merged",
+      "pr": "https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/5203",
+      "pr_number": 5203,
+      "date": "2026-11-27",
+      "date_utc": "2026-11-27T10:58:29Z",
+      "files": [
+        "proofs/open-math-agents/Green3.green_3.R2.lean"
+      ],
+      "notes": "Green3 R2 reduction of the FGY argument.",
+      "ai_assistance": true
+    },
+    {
       "id": "formal-conjectures-8406",
       "project": "formal-conjectures",
       "project_url": "https://github.com/google-deepmind/formal-conjectures",
       "problem": "Hanna exponential sequence initial-value tests",
+      "label": "Hanna exp. initial values",
       "problem_url": "https://github.com/google-deepmind/formal-conjectures/pull/8406",
       "kind": "proof",
       "status": "closed",
@@ -126,40 +168,6 @@
       "date_utc": "2026-11-27T10:02:43Z",
       "files": [],
       "notes": "Closed as a duplicate of proofs already on Left to Solve / open-math-agents. Branch hanna-exp-initial-values was kept on the fork. Lean not copied here.",
-      "ai_assistance": true
-    },
-    {
-      "id": "lts-note-56347",
-      "project": "open-math-agents",
-      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "OeisA255916.conjecture_2.R1.H2",
-      "problem_url": "https://lefttosolve.com/p/OeisA255916.conjecture_2.R1.H2",
-      "kind": "note",
-      "status": "dead-end-note",
-      "note_id": 56347,
-      "date": "2026-11-28",
-      "date_utc": "2026-11-27T22:48:00Z",
-      "files": [
-        "notes/OeisA255916.conjecture_2.R1.H2.md"
-      ],
-      "notes": "Bitset search found no counterexample up to 3e7 for the eight extra heptagonal pairs in H2. Computational evidence, not a proof. Lease released statement_seems_false.",
-      "ai_assistance": true
-    },
-    {
-      "id": "lts-note-56352",
-      "project": "open-math-agents",
-      "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",
-      "problem": "OeisA255916.conjecture_3.R1.H2",
-      "problem_url": "https://lefttosolve.com/p/OeisA255916.conjecture_3.R1.H2",
-      "kind": "note",
-      "status": "dead-end-note",
-      "note_id": 56352,
-      "date": "2026-11-28",
-      "date_utc": "2026-11-27T22:48:00Z",
-      "files": [
-        "notes/OeisA255916.conjecture_3.R1.H2.md"
-      ],
-      "notes": "Bitset search found no counterexample up to 3e7 for pentagonal pair (3,57). Computational evidence, not a proof. Lease released statement_seems_false.",
       "ai_assistance": true
     }
   ]
