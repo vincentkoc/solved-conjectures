@@ -37,8 +37,10 @@ private lemma exists_nonzero_moment {ι K : Type*} [Field K] (A : Finset ι) (v 
   rw [sum_eq_zero hzero] at hs
   exact (mul_ne_zero hk hconst) hs.symm
 
-private lemma first_moment_binomial {ι K : Type*} [Field K] (A : Finset ι) (v : ι → K)
-    (r : ℕ) (hr : 0 < r) (h : ∀ j, 0 < j → j < r → ∑ a ∈ A, v a ^ j = 0) :
+/-- The endpoint terms determine the pair moment when all interior products vanish. -/
+theorem pair_moment_endpoints {ι K : Type*} [Field K] (A : Finset ι) (v : ι → K)
+    (r : ℕ) (hr : 0 < r) (h : ∀ j, 0 < j → j < r →
+      (∑ a ∈ A, v a ^ j) * (∑ a ∈ A, v a ^ (r - j)) = 0) :
     ∑ a ∈ A, ∑ b ∈ A, (v a + v b) ^ r = 2 * (A.card : K) * ∑ a ∈ A, v a ^ r := by
   let P (j : ℕ) := ∑ a ∈ A, v a ^ j
   have expand : ∑ a ∈ A, ∑ b ∈ A, (v a + v b) ^ r =
@@ -55,7 +57,7 @@ private lemma first_moment_binomial {ι K : Type*} [Field K] (A : Finset ι) (v 
   rw [expand, sum_range_succ, sum_eq_single 0]
   · simp [P]; ring
   · intro j hj hj0
-    simp [P, h j (Nat.pos_of_ne_zero hj0) (mem_range.mp hj)]
+    rw [show P j * P (r - j) = 0 from h j (Nat.pos_of_ne_zero hj0) (mem_range.mp hj), zero_mul]
   · exact fun hh => (hh (mem_range.mpr hr)).elim
 
 private lemma weight_fibers {ι K : Type*} [Fintype K] [Field K] (B : Finset ι)
@@ -66,7 +68,8 @@ private lemma weight_fibers {ι K : Type*} [Fintype K] [Field K] (B : Finset ι)
   rw [sum_comm]
   simp
 
-private lemma extremal_moment {p : ℕ} [Fact p.Prime] (A : Finset (ZMod p))
+/-- A centered moment identity obtained by weighting the extremal representation profile. -/
+theorem extremal_moment {p : ℕ} [Fact p.Prime] (A : Finset (ZMod p))
     (s : ZMod p) (hoff : ∀ t ≠ s, reps A t + diagonalReps A t = 2)
     (r : ℕ) (hr : 0 < r) (hlt : r < p - 1) :
     (∑ a ∈ A, ∑ b ∈ A, ((2 * a - s) + (2 * b - s)) ^ r) +
@@ -129,7 +132,8 @@ theorem power_of_four_necessary (p m : ℕ) [Fact p.Prime] (hm : 1 < m)
   have hcoeff : (2 : ZMod p) * A.card + 2 ^ r = 0 := by
     have hw := extremal_moment A s hoff r hr (hrk.trans_lt hlt)
     rw [show (∑ a ∈ A, ∑ b ∈ A, (2 * a - s + (2 * b - s)) ^ r) = 2 * A.card * P r from
-      first_moment_binomial A v r hr hsmall] at hw
+      pair_moment_endpoints A v r hr (fun j hj hjr => by
+        change P j * P (r - j) = 0; rw [hsmall j hj hjr, zero_mul])] at hw
     exact (mul_eq_zero.mp (show (2 * (A.card : ZMod p) + 2 ^ r) * P r = 0 by
       rwa [add_mul])).resolve_right hP
   have heven : Even r := by
@@ -192,6 +196,8 @@ theorem nineteen_le_card_mod_163 (A : Finset (ZMod 163)) (hA : A + A = univ) :
   have : Fact (Nat.Prime 163) := ⟨by norm_num⟩
   exact strict_card_of_one_mod_four 163 9 (by decide) (by decide) (by decide) A hA
 
+#print axioms pair_moment_endpoints
+#print axioms extremal_moment
 #print axioms power_of_four_necessary
 #print axioms strict_card_of_one_mod_four
 #print axioms nineteen_le_card_mod_163
