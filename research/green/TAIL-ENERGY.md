@@ -20,7 +20,7 @@ To see the leading term, write `d(s)` for the ordered difference count. Equal-su
 
 **Tracker check.** DeepMind’s issue and merged PR concern the statement. The LTS target listed no solution, live agents, or reduction steps. Searches of the LTS solved feed and open and closed OMA issues and PRs found no matching proof. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/1589) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/3613) · [LTS target](https://lefttosolve.com/api/problems/Green33.green_33) · [LTS solved feed](https://lefttosolve.com/api/solved) · [OMA search](https://github.com/GuillaumeBAUD-coder/open-math-agents/issues?q=%22Green33%22)
 
-**Replay.** Set `FC` to the Formal Conjectures checkout with the pinned dependencies and Lean 4.33.1. Run from the notebook root in Bash. The five theorems print only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with this formalization.
+**Replay.** Set `FC` to the Formal Conjectures checkout with the pinned dependencies and Lean 4.33.1. Run from the notebook root in Bash. The theorems print only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with this formalization.
 
 ```bash
 set -e

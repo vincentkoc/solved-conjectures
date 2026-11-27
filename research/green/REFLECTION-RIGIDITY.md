@@ -22,7 +22,7 @@ The polynomial `P(x) = (x − 1)(x − 2)` is nonnegative on integers. The sum o
 
 **Tracker check.** The DeepMind issue and merged PR concern the statement. The LTS target listed no solution or steps, and the solved feed had no Green 33 entry. Open and closed OMA issues and PRs showed no matching formalization. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/1589) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/3613) · [LTS target](https://lefttosolve.com/api/problems/Green33.green_33) · [LTS solved feed](https://lefttosolve.com/api/solved) · [OMA search](https://github.com/GuillaumeBAUD-coder/open-math-agents/issues?q=%22Green33%22)
 
-**Replay.** Set `FC` to the Formal Conjectures checkout with the pinned dependencies and Lean 4.33.1. Run from the notebook root in Bash. Each of the eight public theorems prints only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the formalization.
+**Replay.** Set `FC` to the Formal Conjectures checkout with the pinned dependencies and Lean 4.33.1. Run from the notebook root in Bash. Each public theorem prints only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the formalization.
 
 ```bash
 set -e

@@ -39,7 +39,9 @@ private lemma P_nonneg (n : ℕ) : 0 ≤ P n := by
   · interval_cases n <;> norm_num [P]
 
 /-- Consecutive integer roots isolate the contribution of the zero difference. -/
-private lemma polynomial_floor (A : Finset G) : P A.card ≤ ∑ s, P (reps A s) := by
+theorem polynomial_floor (A : Finset G) :
+    ((A.card : ℝ) - 1) * (A.card - 2 : ℝ) ≤ ∑ s, ((reps A s : ℝ) - 1) * (reps A s - 2 : ℝ) := by
+  change P A.card ≤ ∑ s, P (reps A s)
   have rewriteP (x : ℝ) : P x = (x - 3/2)^2 - 1/4 := by unfold P; ring
   have he : ∑ s, P (reps A s) = ∑ s, P (diffReps A s) := by
     simp only [rewriteP, sum_sub_distrib, centered_energy_eq]
@@ -57,7 +59,8 @@ private lemma sum_reps (A : Finset G) : ∑ t, reps A t = A.card ^ 2 := by
 private lemma sum_diagonalReps (A : Finset G) : ∑ t, diagonalReps A t = A.card := by
   simpa [diagonalReps] using sum_card_fiberwise_eq_card_filter A univ (fun a => a + a)
 
-private lemma two_le (A : Finset G) (hA : A + A = univ) (s : G) :
+/-- At least two ordered or diagonal contributions occur in every covered fiber. -/
+theorem cover_counts_le (A : Finset G) (hA : A + A = univ) (s : G) :
     0 < reps A s ∧ 2 ≤ reps A s + diagonalReps A s := by
   obtain ⟨a, ha, b, hb, hab⟩ := mem_add.mp (show s ∈ A + A from hA ▸ mem_univ _)
   have hp : (a,b) ∈ (A ×ˢ A).filter (fun p => p.1 + p.2 = s) := by simp [ha, hb, hab]
@@ -79,7 +82,7 @@ theorem cap_surplus (A : Finset G) (hA : A + A = univ) (R : ℕ)
       (R - 1 : ℝ) * ((A.card : ℝ) ^ 2 + A.card - 2 * Fintype.card G) := by
   have point (s : G) : P (reps A s) ≤
       ((R : ℝ) - 1) * ((reps A s : ℝ) + diagonalReps A s - 2) := by
-    obtain ⟨hr, hd⟩ := two_le A hA s
+    obtain ⟨hr, hd⟩ := cover_counts_le A hA s
     have hpos : (1 : ℝ) ≤ (reps A s : ℝ) := by exact_mod_cast hr
     have hle : (reps A s : ℝ) ≤ R := by exact_mod_cast hR s
     have hd' : (2 : ℝ) ≤ (reps A s : ℝ) + diagonalReps A s := by exact_mod_cast hd
@@ -132,7 +135,7 @@ theorem exists_reflection (A : Finset G) (hA : A + A = univ) :
   let k := A.card
   let q := Fintype.card G
   let u := k ^ 2 - 2 * q
-  have hR : (1 : ℝ) ≤ R := by exact_mod_cast (two_le A hA s).1
+  have hR : (1 : ℝ) ≤ R := by exact_mod_cast (cover_counts_le A hA s).1
   have hk : (R : ℝ) ≤ k := by exact_mod_cast reps_le_card A s
   have hu : (k : ℝ) ^ 2 ≤ u + 2 * (q : ℝ) := by
     exact_mod_cast (show k ^ 2 ≤ u + 2 * q by dsimp [u]; omega)
@@ -195,7 +198,7 @@ theorem extremal_profile (A : Finset G) (hA : A + A = univ)
   have hs : reps A s = A.card := by rw [← card_reflectedPart, hsym]
   let e (t : G) := reps A t + diagonalReps A t - 2
   have hlocal (t : G) : e t + 2 = reps A t + diagonalReps A t :=
-    Nat.sub_add_cancel (two_le A hA t).2
+    Nat.sub_add_cancel (cover_counts_le A hA t).2
   have htotal := sum_congr (s₁ := univ) rfl fun t _ => hlocal t
   simp only [sum_add_distrib, sum_const, card_univ, nsmul_eq_mul, Nat.cast_id, sum_reps, sum_diagonalReps,
     mul_comm (Fintype.card G) 2] at htotal
@@ -214,6 +217,8 @@ theorem sharp_mod_nine :
   exact ⟨{0, 1, 3, 4}, by decide⟩
 
 #print axioms card_reflectedPart
+#print axioms polynomial_floor
+#print axioms cover_counts_le
 #print axioms cap_surplus
 #print axioms order_bound
 #print axioms reflect_mem_iff
