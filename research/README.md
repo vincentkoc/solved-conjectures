@@ -4,7 +4,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 
 | Problem | Kernel-checked result | What remains |
 | --- | --- | --- |
-| [Green 33](green/NOTES.md) | If every residue has at most `m + 4` ordered representations as a sum from a cyclic two-basis of size `k`, then `(2m + 2)q + 6 ≤ m k² + (m + 8)k`. | Along a family approaching the proposed density, the maximum representation count must tend to infinity. Existence of such a family remains open. |
+| [Green 33](green/NOTES.md) | A pointwise cap of `m + 4` implies `(2m + 2)q + 6 ≤ m k² + (m + 8)k`. Along every family with `q → ∞` and `k/√q → √2`, the [maximum ordered count tends to infinity](green/DIVERGENCE.md). | Existence of a family attaining this density remains open. |
 | [Cunningham chains](arxiv/NOTES.md) | Dickson’s prime-tuples conjecture implies infinitely many first-kind chains of every positive **exact** length. The proof forces the next term to be composite. | Dickson’s conjecture is an explicit hypothesis. The unconditional first-kind statement remains open. |
 | [Erdős 722](erdos/NOTES.md) | Every triple of distinct binary vectors extends uniquely to a zero-sum four-set. This gives a Steiner quadruple system on `2^d` points for every `d ≥ 2`. | The general existence theorem is known. This formalization covers the binary construction. |
 | [Erdős 478](erdos/478/NOTES.md) | For primes `p > 5` with 5 a square modulo `p`, the factorials from `1!` to `(p−1)!` occupy at most `p−4` residue classes. | The conjecture asks for a limiting proportion along all primes. |
