@@ -4,7 +4,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 
 | Problem | Kernel-checked result | What remains |
 | --- | --- | --- |
-| [Green 33](green/NOTES.md) | A pointwise cap of `m + 4` implies `(2m + 2)q + 6 ≤ m k² + (m + 8)k`. Along every family with `q → ∞` and `k/√q → √2`, the [maximum ordered count tends to infinity](green/DIVERGENCE.md). | Existence of a family attaining this density remains open. |
+| [Green 33](green/NOTES.md) | A pointwise cap of `m + 4` implies `(2m + 2)q + 6 ≤ m k² + (m + 8)k`. Along every family with `q → ∞` and `k/√q → √2`, the [maximum ordered count tends to infinity](green/DIVERGENCE.md). All [nontrivial character sums](green/FOURIER-STABILITY.md) are then `o(√q)`. | Existence of a family attaining this density remains open. |
 | [Cunningham chains](arxiv/NOTES.md) | Dickson’s prime-tuples conjecture implies infinitely many first-kind chains of every positive **exact** length. The proof forces the next term to be composite. | Dickson’s conjecture is an explicit hypothesis. The unconditional first-kind statement remains open. |
 | [Second-kind Cunningham chains](arxiv/1104.1579/CunninghamSecondKindDickson.md) | Under Dickson, infinitely many seeds have each positive exact length for the recurrence `p ↦ 2p − 1`. | Unconditional infinitude remains open. |
 | [Erdős 722](erdos/NOTES.md) | Every triple of distinct binary vectors extends uniquely to a zero-sum four-set. This gives a Steiner quadruple system on `2^d` points for every `d ≥ 2`. | The general existence theorem is known. This formalization covers the binary construction. |
@@ -25,6 +25,7 @@ lake build 'FormalConjectures.Arxiv.«1104.1579».CunninghamChain' FormalConject
   'FormalConjectures.Arxiv.«2211.10788».LucasFibonacciSumPrimes'
 for proof in \
   "$notebook/green/Green33Multiplicity.lean" \
+  "$notebook/green/Green33FourierStability.lean" \
   "$notebook/arxiv/CunninghamChainDickson.lean" \
   "$notebook/arxiv/1104.1579/CunninghamSecondKindDickson.lean" \
   "$notebook/erdos/Erdos722BinaryQuadruples.lean" \
