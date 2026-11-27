@@ -8,6 +8,9 @@ See the [DeepMind proof notebook](research/README.md) for local results and repl
 
 | Project | Problem/step | Status | PR |
 | --- | --- | --- | --- |
+| [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 697 part ii`](notes/Erdos697.erdos_697.parts.ii.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#59714](https://lefttosolve.com/p/Erdos697.erdos_697.parts.ii) |
+| [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 697 part i`](notes/Erdos697.erdos_697.parts.i.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#59706](https://lefttosolve.com/p/Erdos697.erdos_697.parts.i) |
+| [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 697 delta_lt`](notes/Erdos697.erdos_697.variants.delta_lt.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#59700](https://lefttosolve.com/p/Erdos697.erdos_697.variants.delta_lt) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`A255916 conj. 3 R1.H2`](notes/OeisA255916.conjecture_3.R1.H2.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#56352](https://lefttosolve.com/p/OeisA255916.conjecture_3.R1.H2) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`A255916 conj. 2 R1.H2`](notes/OeisA255916.conjecture_2.R1.H2.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#56347](https://lefttosolve.com/p/OeisA255916.conjecture_2.R1.H2) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Green3 Thm 3.12`](proofs/open-math-agents/Green3.green_3.R2.H1.R1.H1.lean) | <img alt="superseded" src="https://img.shields.io/badge/superseded-9a6700"> | [#7150](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/7150) |
