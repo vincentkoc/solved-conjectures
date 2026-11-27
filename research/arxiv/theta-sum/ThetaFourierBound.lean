@@ -1,6 +1,7 @@
 import ThetaDiagonalModEight
 import Mathlib.Analysis.Fourier.ZMod
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 import Mathlib.NumberTheory.Harmonic.Bounds
 
 /-! An absolute bound for the canonical theta sum by additive Fourier inversion. -/
@@ -350,8 +351,41 @@ theorem S_isBigO_prime_log_sq :
   apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg p)
   nlinarith [sq_nonneg (Real.log p - 1)]
 
+open Asymptotics Filter in
+/-- Along the primes, S(p) is little-o of every power p^(1+ε) with ε > 0. -/
+theorem S_isLittleO_prime_rpow {ε : ℝ} (hε : 0 < ε) :
+    (fun p : ℕ => (S p : ℝ)) =o[atTop ⊓ principal {p : ℕ | p.Prime}]
+      (fun p : ℕ => (p : ℝ) ^ (1 + ε)) := by
+  let l := (atTop : Filter ℕ) ⊓ principal {p : ℕ | p.Prime}
+  have hlog : (fun p : ℕ => (Real.log p)^2) =o[l] (fun p : ℕ => (p : ℝ)^ε) := by
+    simpa [Real.rpow_two] using
+      ((isLittleO_log_rpow_rpow_atTop 2 hε).natCast_atTop.mono
+        (show l ≤ atTop from inf_le_left))
+  apply S_isBigO_prime_log_sq.trans_isLittleO
+  have h := (isBigO_refl (fun p : ℕ => (p : ℝ)) l).mul_isLittleO hlog
+  refine h.congr_right (fun p => ?_)
+  change (p : ℝ) * (p : ℝ)^ε = (p : ℝ)^(1+ε)
+  by_cases hp : p = 0
+  · subst p; simp [Real.zero_rpow (show 1 + ε ≠ 0 by linarith)]
+  · rw [Real.rpow_add (Nat.cast_pos.mpr (Nat.pos_of_ne_zero hp)), Real.rpow_one]
+
+open Filter in
+/-- The upper inequality of Berndt et al., v3 Conjecture 3.3, for every positive constant. -/
+theorem conjecture_3_3_upper {C ε : ℝ} (hC : 0 < C) (hε : 0 < ε) :
+    ∀ᶠ p : ℕ in atTop, p.Prime → (S p : ℝ) < C * (p : ℝ)^(1 + ε) := by
+  have h := (S_isLittleO_prime_rpow hε).bound (show 0 < C/2 by positivity)
+  rw [eventually_inf_principal] at h
+  filter_upwards [h] with p hp
+  intro hprime
+  specialize hp hprime
+  have hpos : 0 < (p : ℝ)^(1 + ε) := Real.rpow_pos_of_pos (by exact_mod_cast hprime.pos) _
+  simp only [Real.norm_eq_abs, abs_of_pos hpos] at hp
+  exact (le_abs_self _).trans_lt (hp.trans_lt (by nlinarith [mul_pos hC hpos]))
+
 end Arxiv.«2501.03234».ThetaFourier
 
 #print axioms Arxiv.«2501.03234».ThetaFourier.S_centered_harmonic_bound
 #print axioms Arxiv.«2501.03234».ThetaFourier.abs_S_le_log_sq
 #print axioms Arxiv.«2501.03234».ThetaFourier.S_isBigO_prime_log_sq
+#print axioms Arxiv.«2501.03234».ThetaFourier.S_isLittleO_prime_rpow
+#print axioms Arxiv.«2501.03234».ThetaFourier.conjecture_3_3_upper

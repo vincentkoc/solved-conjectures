@@ -6,7 +6,7 @@ At every odd prime `p`, with `m = (p−1)/2` and `H_m = 1 + 1/2 + ⋯ + 1/m`, th
 |p S(p) + 2m²| ≤ 4p² H_m².
 ```
 
-In particular, `|S(p)| ≤ p [1 + 4(1 + log p)²]`. The Lean theorem `S_isBigO_prime_log_sq` also states `S(p) = O(p log² p)` on the filter of primes tending to infinity. These estimates bound the size of a possible negative value. The positivity and growth conjectures remain open. [Proof](ThetaFourierBound.lean) · [Pinned upstream declarations](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2501.03234/ArithmeticSumS.lean#L41-L95)
+In particular, `|S(p)| ≤ p [1 + 4(1 + log p)²]`. The Lean theorem `S_isBigO_prime_log_sq` also states `S(p) = O(p log² p)` on the filter of primes tending to infinity. For every `ε > 0`, the sum is therefore `o(p^(1+ε))` along the primes. In particular, for every `C > 0` and `ε > 0`, all sufficiently large primes satisfy `S(p) < C p^(1+ε)`. This proves the upper inequality of the paper’s revised Conjecture 3.3. Its lower inequality requires `C₁p < S(p)` for every positive `C₁`; the pinned DeepMind declaration `conjecture_4_4` formulates this lower growth condition using natural multipliers. Positivity and the lower inequality remain open. [Conjecture 3.3, v3, p. 4](https://arxiv.org/pdf/2501.03234v3#page=4) [Proof](ThetaFourierBound.lean) · [Pinned upstream declarations](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2501.03234/ArithmeticSumS.lean#L41-L95)
 
 ## Proof
 
@@ -45,4 +45,4 @@ PY
 )
 ```
 
-The Fourier file prints the axioms for all three public theorems. Each uses only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the derivation and formalization.
+The Fourier file prints the axioms for all five public theorems. Each uses only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the derivation and formalization.
