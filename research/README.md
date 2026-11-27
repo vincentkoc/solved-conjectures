@@ -13,6 +13,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 | [Theta sum](arxiv/theta-sum/NOTES.md) | The [diagonal](arxiv/theta-sum/DIAGONAL.md) and [half-factorial formula](arxiv/theta-sum/GAUSS-FACTORIAL.md) determine `S(p) mod 8` for every odd prime. A zero requires `p ≡ 1 (mod 8)`. The [Fourier bound](arxiv/theta-sum/FOURIER.md) gives `S(p) = O(p log² p)` along the primes. | Positivity for all odd primes remains open. |
 | [Lucas–Fibonacci sums](arxiv/2211.10788/NOTES.md) | In every positive-step arithmetic progression of indices, the composite terms have infinitely many distinct prime divisors between them. | The upstream question asks whether infinitely many terms are themselves prime. |
 | [Lucas–Fibonacci excluded primes](arxiv/2211.10788/ExcludedPrimeDivisors.md) | Every prime congruent to 13, 17, 21, 29 or 41 modulo 44 divides no term. Each class contains infinitely many primes. | Infinitude of prime values remains open. |
+| [Neighboring Lucas–Fibonacci prime pairs](arxiv/2211.10788/NeighboringPrimePairs.md) | After index 6, both neighbors are prime iff the index is 0, 6 or 18 modulo 24 and `11Fₙ² − 1` is semiprime. | Existence of another pair remains open. |
 
 ## Replay
 
