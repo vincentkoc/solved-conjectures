@@ -49,19 +49,20 @@ private theorem root_repeats {p k : ℕ} [Fact p.Prime] (hk : 2 ≤ k)
     simpa [he] using eqfac
   · exact ⟨x.val - k, mem_Ico.mpr ⟨by omega, by omega⟩, by omega, eqfac⟩
 
-/-- Every distinct root of the falling-factorial polynomial counts separately,
-even if witnesses from different roots have the same factorial value. -/
-theorem card_add_gap_roots {p : ℕ} [Fact p.Prime] (k : ℕ) (hk : 2 ≤ k) :
+/-- A set of distinct gap endpoints can be deleted simultaneously, even when
+its members witness different gap lengths or repeat the same factorial value. -/
+theorem card_add_gap_endpoints {p : ℕ} [Fact p.Prime] (roots : Finset (ZMod p))
+    (hroots : ∀ x ∈ roots, ∃ k, 2 ≤ k ∧ (gap (ZMod p) k).IsRoot x) :
     ((Ico 1 p).image (fun n ↦ n.factorial % p)).card +
-      (gap (ZMod p) k).roots.toFinset.card ≤ p - 1 := by
+      roots.card ≤ p - 1 := by
   classical
-  let roots := (gap (ZMod p) k).roots.toFinset
   let ends := roots.image ZMod.val
   let f := fun n : ℕ ↦ n.factorial % p
   have spec {i : ℕ} (hi : i ∈ ends) :
       i ∈ Ico 1 p ∧ ∃ j ∈ Ico 1 p, j < i ∧ f j = f i := by
     obtain ⟨x, hx, rfl⟩ := mem_image.mp hi
-    exact root_repeats hk (isRoot_of_mem_roots (Multiset.mem_toFinset.mp hx))
+    obtain ⟨k, hk, hr⟩ := hroots x hx
+    exact root_repeats hk hr
   have cover : (Ico 1 p).image f ⊆ ((Ico 1 p) \ ends).image f := by
     intro y hy
     have h : ∃ i, i ∈ Ico 1 p ∧ f i = y := mem_image.mp hy
@@ -77,6 +78,14 @@ theorem card_add_gap_roots {p : ℕ} [Fact p.Prime] (k : ℕ) (hk : 2 ≤ k) :
   rw [Nat.card_Ico] at hr
   change ((Ico 1 p).image f).card + roots.card ≤ p - 1
   omega
+
+/-- Every distinct root of the falling-factorial polynomial counts separately,
+even if witnesses from different roots have the same factorial value. -/
+theorem card_add_gap_roots {p : ℕ} [Fact p.Prime] (k : ℕ) (hk : 2 ≤ k) :
+    ((Ico 1 p).image (fun n ↦ n.factorial % p)).card +
+      (gap (ZMod p) k).roots.toFinset.card ≤ p - 1 :=
+  card_add_gap_endpoints _ fun _ hx ↦
+    ⟨k, hk, isRoot_of_mem_roots (Multiset.mem_toFinset.mp hx)⟩
 
 /-- At a prime of separable complete splitting, a gap of length `k` forces
 at least `k + 1` missing residues. -/
@@ -350,6 +359,7 @@ theorem exists_prime_subsequence :
 #print axioms arbitrarily_large_deficit
 #print axioms arbitrarily_large_splitting_prime
 #print axioms card_add_gap_roots
+#print axioms card_add_gap_endpoints
 #print axioms card_add_of_splits
 
 end Erdos478.FallingGap
