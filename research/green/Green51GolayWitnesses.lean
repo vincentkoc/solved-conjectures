@@ -1,4 +1,5 @@
 import Green51ElevenRelations
+import Green51SystematicChecks
 
 /-! # Golay witnesses for the affine and linear thresholds in dimension eleven -/
 
@@ -8,63 +9,13 @@ namespace Green51GolayWitnesses
 local notation "F" => ZMod 2
 local notation "V" => Cube 11
 
-private def point (a : ℕ) : V := fun i => if a.testBit i.val then 1 else 0
+private abbrev point := Green51SystematicChecks.point 11
 
 /-- Decode a list of eleven-bit labels. -/
-def rows : List ℕ → Finset V
-  | [] => ∅
-  | r::rs => insert (point r) (rows rs)
+def rows (rs : List ℕ) : Finset V := Green51SystematicChecks.rows 11 rs
 
-private theorem point_xor (v r : ℕ) : point (v ^^^ r)=point v+point r := by
-  funext i
-  cases h:v.testBit i.val <;> cases j:r.testBit i.val <;>
-    simp [point,Nat.testBit_xor,h,j,show (1:F)+1=0 by decide]
-
-private def bitCount (v : ℕ) : ℕ → ℕ
-  | 0 => 0
-  | n+1 => bitCount v n + if v.testBit n then 1 else 0
-
-private theorem bitCount_sum (v n : ℕ) :
-    (∑ i:Fin n, if v.testBit i.val then 1 else 0)=bitCount v n := by
-  induction n with
-  | zero => simp [bitCount]
-  | succ n ih => simp only [Fin.sum_univ_castSucc,Fin.val_castSucc,Fin.val_last,bitCount,ih]
-
-private theorem point_weight (v : ℕ) : (supp (point v)).card=bitCount v 11 := by
-  rw [←bitCount_sum,supp,card_filter]
-  apply sum_congr rfl
-  intro i _
-  cases h : v.testBit i.val <;> simp [point,h]
-
-/-- Exclude low-weight cancellations of the extra columns with unit labels. -/
-def test (v k : ℕ) : List ℕ → Bool
-  | [] => decide (k=0 ∨ 6<k+bitCount v 11)
-  | r::rs => test v k rs && test (v ^^^ r) (k+1) rs
-
-private theorem test_sound (rs : List ℕ) (v k : ℕ) (ok : test v k rs=true)
-    (U : Finset V) (sub : U⊆rows rs) :
-    k+U.card=0 ∨ 6<k+U.card+(supp (point v+∑ u∈U,u)).card := by
-  induction rs generalizing v k U with
-  | nil =>
-    have e : U=∅ := subset_empty.mp sub
-    subst U
-    simpa [test,point_weight] using ok
-  | cons r rs ih =>
-    have both : test v k rs=true ∧ test (v ^^^ r) (k+1) rs=true := by simpa [test] using ok
-    obtain ⟨left,right⟩ := both
-    by_cases h : point r∈U
-    · have rest : U.erase (point r)⊆rows rs := by
-        intro u hu
-        exact (mem_insert.mp (sub (mem_erase.mp hu).2)).resolve_left (mem_erase.mp hu).1
-      have bound := ih (v ^^^ r) (k+1) right (U.erase (point r)) rest
-      have count : k+1+(U.erase (point r)).card=k+U.card := by
-        have := card_erase_add_one h; omega
-      have sum : point r+(∑ u∈U.erase (point r),u)=∑ u∈U,u := U.add_sum_erase id h
-      rw [count,point_xor,add_assoc (point v),sum] at bound
-      exact bound
-    · apply ih v k left U
-      intro u hu
-      exact (mem_insert.mp (sub hu)).resolve_left (fun e => h (e ▸ hu))
+/-- Exclude low-weight cancellations of extra columns with unit labels. -/
+def test (v k : ℕ) (rs : List ℕ) : Bool := Green51SystematicChecks.test 11 v k rs
 
 /-- Zero and the eleven coordinate unit vectors. -/
 def units : List ℕ := [0,1,2,4,8,16,32,64,128,256,512,1024]
@@ -89,10 +40,13 @@ theorem avoids_of_certificate (rs : List ℕ) (oc : test 0 0 rs = true)
     (large : 5 ≤ (rows units ∪ rows rs).card) : ¬FlatAt (rows units ∪ rows rs) 0 := by
   have dist (U : Finset V) (sub : U ⊆ rows rs) (inh : U.Nonempty) :
       6 < U.card+(supp (∑ u∈U,u)).card := by
-    have b := test_sound rs 0 0 oc U sub
-    have z : point 0 = 0 := by funext i; simp [point]
+    have b := Green51SystematicChecks.test_sound 11 rs 0 0 oc U sub
+    have z : point 0 = 0 := by funext i; simp [point, Green51SystematicChecks.point]
     simpa only [Nat.zero_add,z,zero_add,show U.card≠0 from ne_of_gt (card_pos.mpr inh),false_or] using b
-  have base : ∀ u ∈ rows units, (supp u).card ≤ 1 := by decide +kernel
+  have checks : units.all (fun v => decide ((supp (point v)).card ≤ 1)) = true := by decide +kernel
+  have base (x) (hx : x ∈ rows units) : (supp x).card ≤ 1 := by
+    obtain ⟨v,hv,rfl⟩ := (Green51SystematicChecks.mem_rows units).mp hx
+    simpa using List.all_eq_true.mp checks v hv
   have inside : rows units ∪ rows rs ⊆ ball 11 1 ∪ rows rs := union_subset_union
     (fun u hu => mem_filter.mpr ⟨mem_univ _,base u hu⟩) Subset.rfl
   intro flat
@@ -114,7 +68,19 @@ theorem no_affine : ¬∃p, FlatAt shortened p := by
   have hx : x∈shortened := sdiff_subset (eq ▸ mem_insert_self x {y})
   have hy : y∈shortened := sdiff_subset (eq ▸ mem_insert_of_mem (mem_singleton_self y))
   have total : (∑ t∈shortened,t)=point 934 := by decide +kernel
-  have missing : ∀x∈shortened,∀y∈shortened,x+y≠point 934 := by decide +kernel
+  let input := units ++ shortExtra
+  have represents (a : V) (ha : a∈shortened) : ∃ x∈input, point x=a := by
+    rcases mem_union.mp ha with hu|hs
+    · obtain ⟨x,mem,eq⟩ := (Green51SystematicChecks.mem_rows units).mp hu
+      exact ⟨x,List.mem_append_left _ mem,eq⟩
+    · obtain ⟨x,mem,eq⟩ := (Green51SystematicChecks.mem_rows shortExtra).mp hs
+      exact ⟨x,List.mem_append_right _ mem,eq⟩
+  have direct : input.all (fun x => input.all (fun y => decide (point x + point y ≠ point 934))) = true := by
+    decide +kernel
+  have missing (a) (ha : a∈shortened) (b) (hb : b∈shortened) : a+b≠point 934 := by
+    obtain ⟨x,hx,rfl⟩ := represents a ha
+    obtain ⟨y,hy,rfl⟩ := represents b hb
+    simpa using List.all_eq_true.mp (List.all_eq_true.mp direct x hx) y hy
   have summed := sum_sdiff hB (f:=id)
   rw [eq,sum_pair ne] at summed
   exact missing x hx y hy (by simpa only [id_eq,sum,add_zero,total] using summed)
@@ -123,5 +89,4 @@ end Green51GolayWitnesses
 #print axioms Green51GolayWitnesses.sizes
 #print axioms Green51GolayWitnesses.no_linear
 #print axioms Green51GolayWitnesses.no_affine
-
 #print axioms Green51GolayWitnesses.avoids_of_certificate
