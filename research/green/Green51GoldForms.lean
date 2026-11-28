@@ -6,24 +6,39 @@ namespace Green51GoldForms
 local notation "F" => ZMod 2
 variable {K : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
 
+/-- The absolute trace tests membership in the Artin–Schreier image. -/
+theorem absolute_trace_test :
+    (∀ z : K, Algebra.trace F K (z^2) = Algebra.trace F K z) ∧
+      ∀ z : K, Algebra.trace F K z=0 ↔ ∃ y : K, y^2+y=z := by
+  have sq (z : K) : Algebra.trace F K (z^2) = Algebra.trace F K z := by
+    simpa only [FiniteField.coe_frobeniusAlgEquivOfAlgebraic,ZMod.card] using
+      Algebra.trace_eq_of_algEquiv (FiniteField.frobeniusAlgEquivOfAlgebraic F K) z
+  refine ⟨sq, ?_⟩
+  let A := artinSchreier (K := K)
+  let T := Algebra.trace F K
+  have sub : A.range ≤ T.ker := by
+    rintro _ ⟨y,rfl⟩
+    change Algebra.trace F K (y^2+y)=0
+    rw [map_add,sq,CharTwo.add_self_eq_zero]
+  have full : T.range=⊤ := LinearMap.range_eq_top.mpr (Algebra.trace_surjective F K)
+  have first := A.finrank_range_add_finrank_ker
+  have second := T.finrank_range_add_finrank_ker
+  rw [show A.ker=Submodule.span F {(1:K)} from artinSchreier_ker,
+    finrank_span_singleton one_ne_zero] at first
+  rw [full,finrank_top,Module.finrank_self] at second
+  have same := Submodule.eq_of_le_of_finrank_le sub (by omega)
+  intro z
+  change z∈T.ker ↔ z∈A.range
+  rw [same]
+
 /-- The absolute trace functional is invariant under squaring and tests the Artin–Schreier image. -/
 theorem trace_functional : ∃ Q : K →ₗ[F] F, Q≠0 ∧
-    (∀ x, Q (x^2)=Q x) ∧ (∀ x, Q x=0 ↔ ∃ y:K, y^2+y=x) := by
-  obtain ⟨Q,test⟩ := trace_test (K:=K)
-  have nq : Q≠0 := by
-    intro z
-    have full : (artinSchreier (K:=K)).range=⊤ := by
-      apply top_unique
-      intro v _
-      exact (test v).mp (by rw [z];rfl)
-    have rank := (artinSchreier (K:=K)).finrank_range_add_finrank_ker
-    rw [full,finrank_top,artinSchreier_ker,finrank_span_singleton one_ne_zero] at rank
-    omega
-  have sq (x:K) : Q (x^2)=Q x := by
-    have h := (test (x^2+x)).mpr ⟨x,rfl⟩
-    rw [map_add] at h
-    exact CharTwo.add_eq_zero.mp h
-  exact ⟨Q,nq,sq,test⟩
+    (∀ x, Q (x^2)=Q x) ∧ (∀ x, Q x=0 ↔ ∃ y:K, y^2+y=x) :=
+  ⟨Algebra.trace F K, Algebra.trace_ne_zero F K, absolute_trace_test⟩
+
+/-- Two trace coordinates of a single field element. -/
+def twoTraces (Q : K →ₗ[F] F) (a b : K) : K →ₗ[F] F×F :=
+  (Q.comp (LinearMap.mulLeft F a)).prod (Q.comp (LinearMap.mulLeft F b))
 
 omit [CharP K 2] [Fintype K] in
 private theorem detect (Q : K →ₗ[F] F) (nq : Q≠0) (z : K)
@@ -157,7 +172,16 @@ theorem half_bound {H : Type*} [AddCommGroup H] [Module F H] (L : K →ₗ[F] H)
     rw [kill x hx y hy,map_zero])
 
 
+/-- A nonzero vector lies in the radical exactly when it satisfies this cubic equation. -/
+theorem radical_cube_iff (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
+    {b r : K} (nb : b≠0) (nr : r≠0) : r∈(bracketForm Q b).ker ↔ b*r^3=1 := by
+  rw [radical Q nq sq]
+  rw [show b^2*r^4+b*r=(b*r)*(b*r^3+1) from by ring,mul_eq_zero]
+  simp only [mul_ne_zero nb nr,false_or,CharTwo.add_eq_zero]
+
 end Green51GoldForms
+#print axioms Green51GoldForms.absolute_trace_test
+#print axioms Green51GoldForms.radical_cube_iff
 #print axioms Green51GoldForms.trace_functional
 #print axioms Green51GoldForms.represent
 #print axioms Green51GoldForms.bracketForm_apply_squared
