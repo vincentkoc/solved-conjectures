@@ -91,10 +91,10 @@ theorem neighboring_product_ne_cube (row : Mordell1331RowComplete) (m y : ℕ) :
     rw [hev] at hh
     exact (by decide : ∀ t : ZMod 7, ¬(t^3=3 ∨ t^3=5)) _ hh
 
-/-- At every physical index at least two the product of the neighboring
-entries is free of proper powers, from the stated published classifications. -/
-theorem neighboring_product_ne_power (fermat : BennettSkinnerEleven) (row : Mordell1331RowComplete)
-    (m y k : ℕ) (hk : 2 ≤ k) :
+/-- The coefficient-eleven Fermat input leaves only the cubic case after square exclusion. -/
+theorem neighboring_product_ne_power_of_cube_exclusion (fermat : BennettSkinnerEleven)
+    (m y k : ℕ) (hk : 2 ≤ k)
+    (cube : lucasFibonacciSum (m+2)*lowerNeighborAtAddTwo m ≠ y^3) :
     lucasFibonacciSum (m+2)*lowerNeighborAtAddTwo m ≠ y^k := by
   intro he
   rcases Nat.even_or_odd k with heven | hodd
@@ -102,7 +102,7 @@ theorem neighboring_product_ne_power (fermat : BennettSkinnerEleven) (row : Mord
     exact neighboring_product_ne_square m (y^r) (by rwa [← pow_mul, show r*2=k by omega])
   by_cases h3 : k=3
   · subst k
-    exact neighboring_product_ne_cube row m y he
+    exact cube he
   have hk4 : 4 ≤ k := by obtain ⟨r,hr⟩ := hodd; omega
   have hbig := neighbor_product_gt_one m
   rw [he] at hbig
@@ -131,6 +131,14 @@ theorem neighboring_product_ne_power (fermat : BennettSkinnerEleven) (row : Mord
       isCoprime_one_right.neg_right hcp isCoprime_one_left.neg_left (by rw [hodd.neg_one_pow]; omega)
     omega
 
+/-- At every physical index at least two the product of the neighboring
+entries is free of proper powers, from the stated published classifications. -/
+theorem neighboring_product_ne_power (fermat : BennettSkinnerEleven) (row : Mordell1331RowComplete)
+    (m y k : ℕ) (hk : 2 ≤ k) :
+    lucasFibonacciSum (m+2)*lowerNeighborAtAddTwo m ≠ y^k :=
+  neighboring_product_ne_power_of_cube_exclusion fermat m y k hk (neighboring_product_ne_cube row m y)
+
+#print axioms neighboring_product_ne_power_of_cube_exclusion
 #print axioms neighboring_product_ne_cube
 #print axioms neighboring_product_ne_power
 
