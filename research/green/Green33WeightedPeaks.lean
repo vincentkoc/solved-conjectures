@@ -185,6 +185,15 @@ private theorem rect_lower (p q : PMF ι) (f : ι → ι → G) (U V : Finset ι
        _ ≤ _ := sum_le_sum_of_subset_of_nonneg (subset_univ _) (fun i _ _ => sum_nonneg (fun j _ => hn i j))
 
 omit [Fintype G] in
+/-- An event indexed by two subsets has at most the product of their sizes
+in possible outcomes. -/
+theorem rectangle_budget (p q : PMF ι) (f : ι → ι → G) {m δ : ℝ} (hm : 0 < m)
+    (h : Diffuse p q f m δ) (U V : Finset ι) :
+    mass p U*mass q V≤(U.card:ℝ)*V.card/m+δ := by
+  have c : ((image₂ f U V).card:ℝ)≤(U.card:ℝ)*V.card := by exact_mod_cast card_image₂_le f U V
+  exact (rect_lower p q f U V).trans ((h _).trans (by gcongr))
+
+omit [Fintype G] in
 /-- Dividing labels between their heavier input laws leaves at most a quarter of the
 square budget for mixed sums. The missing mass must be supplied by their overlap. -/
 theorem overlap_lower (p q : PMF ι) (f : ι → ι → G) {m δ : ℝ} (hm : 0 < m)
@@ -228,6 +237,19 @@ private theorem overlap_energy [AddCommGroup G] (p q : PMF ι) (label : ι → G
   have bound := Real.le_sqrt_of_sq_le (atom_le_error p q label 0)
   have diagonal := diagonal_le p q label
   exact (overlap_sq p q).trans (mul_le_mul_of_nonneg_left (by linarith) (Nat.cast_nonneg _))
+
+/-- Splitting labels according to the larger mass bounds the sum of the two
+wrong-side probabilities in terms of the output's mean-square error. -/
+theorem exists_partition_of_error [DecidableEq ι] [AddCommGroup G] (p q : PMF ι) (label : ι → G) :
+    ∃ U : Finset ι, ((1-mass p U)+(1-mass q Uᶜ))^2 ≤
+      (Fintype.card ι:ℝ)*((Fintype.card G:ℝ)⁻¹+Real.sqrt (squaredError (law p q (fun i j => label i+label j)))) := by
+  let U := heavy p q
+  have totalQ : mass q U+mass q Uᶜ=1 := (sum_add_sum_compl U _).trans (total q)
+  have eq := overlap_split p q
+  change overlap p q=1-mass p U+mass q U at eq
+  refine ⟨U,?_⟩
+  rw [show (1-mass p U)+(1-mass q Uᶜ)=overlap p q by linarith]
+  exact overlap_energy p q label
 
 /-- Finite peak trade-off. In a near-uniform group sum, a large common mass of the
 input distributions forces a large point mass in the sum law. -/
@@ -633,6 +655,8 @@ theorem every_order (M : ℕ+) :
 
 #print axioms sum_difference_energy
 #print axioms difference_atom_bound
+#print axioms rectangle_budget
+#print axioms exists_partition_of_error
 #print axioms overlap_lower
 #print axioms overlap_peak_bound
 #print axioms exact_atom_caps
