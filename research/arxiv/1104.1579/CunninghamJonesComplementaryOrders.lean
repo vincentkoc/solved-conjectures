@@ -140,6 +140,25 @@ private lemma coprime_of_square {u v j : ℕ} (hj : 0 < j) (hs : ((u:ZMod v)^2)^
   apply (ZMod.isUnit_iff_coprime ..).mp
   exact (isOfFinOrder_iff_pow_eq_one.mpr ⟨2*j,by omega,by simpa [pow_mul] using hs⟩).isUnit
 
+/-- The two nonconstant factors supply coprime complementary constants and
+a degree congruence in each of the two residue rings. -/
+theorem jones_reducible_constant_split {m j : ℕ} (hm : 3 ≤ m) (hj : 0 < j)
+    (hred : ¬Irreducible ((jonesSumPolynomial m j).map (Int.castRingHom ℚ))) :
+    ∃ u v : ℕ, 1 < u ∧ 1 < v ∧ u*v=m ∧ u.Coprime v ∧
+      ((u : ZMod v)^2)^j=1 ∧ ((v : ZMod u)^2)^j=1 := by
+  obtain ⟨A,B,ha,hb,hab,_,_,ca,cb⟩ := extract_factors hm hj hred
+  let u := (A.coeff 0).toNat
+  let v := (B.coeff 0).toNat
+  have au : A.coeff 0=(u:ℤ) := by dsimp [u]; omega
+  have bv : B.coeff 0=(v:ℤ) := by dsimp [v]; omega
+  have huv := constant_product hab
+  rw [au,bv] at huv
+  have hs := complementary_square hj (by omega) ha hab au bv
+  exact ⟨u,v,by omega,by omega,by exact_mod_cast huv,coprime_of_square hj hs,hs,
+    complementary_square hj (by omega) hb ((mul_comm B A).trans hab) bv au⟩
+
+#print axioms jones_reducible_constant_split
+
 private lemma split_prime_power {u v q : ℕ} (hu : 1<u) (hv : 1<v) (hc : u.Coprime v)
     (h : u*v=2*q) (hq : IsPrimePow q) : u=2 ∨ v=2 := by
   obtain ⟨p,k,hp,hk,rfl⟩ := (isPrimePow_nat_iff q).mp hq
