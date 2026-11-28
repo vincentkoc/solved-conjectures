@@ -170,7 +170,8 @@ private theorem primeCounting_ratio : Tendsto (fun N : ℕ => (N.primeCounting :
   rw [div_le_iff₀ hn]
   simpa only [Function.comp_apply,Nat.floor_natCast,mul_div_assoc,div_mul_eq_mul_div,mul_comm,mul_left_comm,mul_assoc] using hN
 
-private theorem sparse_shift_primes (H : ℕ → ℕ)
+/-- The shift determinants exclude a sublinear number of primes at these radii. -/
+theorem sparse_shift_primes (H : ℕ → ℕ)
     (hh : Tendsto (fun N : ℕ => (H N : ℝ)^2/(N*Real.log N)) atTop (𝓝 0)) :
     Tendsto (fun N : ℕ => ((shiftDetProduct (H N)).primeFactors.card : ℝ)/N) atTop (𝓝 0) := by
   let B (N : ℕ) := shiftDetProduct (H N)
@@ -349,6 +350,7 @@ theorem isolated_primes_on_both_diagonals (r d : ℕ) (hd : 0 < d) (e f : ℕ �
 
 
 end HosoyaNeighbor
+#print axioms HosoyaNeighbor.sparse_shift_primes
 #print axioms HosoyaNeighbor.almost_all_isolated_primes
 #print axioms HosoyaNeighbor.isolated_primes_at_moving_cutoffs
 #print axioms HosoyaNeighbor.isolated_primes_on_both_diagonals
