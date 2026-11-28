@@ -48,6 +48,7 @@ def compile_module(root, relative, out, env):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, help="reuse the source archive at the pinned revision")
+    parser.add_argument("--with-products", action="store_true", help="also replay the six-point-block product family")
     args = parser.parse_args()
     upstream = Path.cwd().resolve()
     manifest = json.loads((upstream / "lake-manifest.json").read_text())
@@ -63,8 +64,12 @@ def main():
     env = os.environ.copy()
     roots = sorted({str(f.parent) for f in files})
     env["LEAN_SRC_PATH"] = os.pathsep.join([str(RESEARCH.parent), *roots, env["LEAN_SRC_PATH"]])
-    root = TOPIC / "Erdos722ExtremalParameters.lean"
-    order, _, aliases = runner["dependency_order"]([root], files, upstream, env)
+    selected = [TOPIC / "Erdos722ExtremalParameters.lean"]
+    adapters = ["Erdos722WittMinimumOrders"]
+    if args.with_products:
+        selected.append(TOPIC / "Erdos722PrimePowerProducts.lean")
+        adapters.append("Erdos722WittPointedProducts")
+    order, _, aliases = runner["dependency_order"](selected, files, upstream, env)
     with TemporaryDirectory(prefix="steiner-minimum-orders-") as directory:
         work = Path(directory)
         src, out = work / "src", work / "obj"
@@ -83,13 +88,16 @@ def main():
             runner["compile_proof"](path, out, env)
             if path in aliases:
                 runner["compile_alias"](path, out, env)
-        adapter = src / "Erdos722WittMinimumOrders.lean"
-        shutil.copyfile(TOPIC / (adapter.name + ".in"), adapter)
-        runner["compile_proof"](adapter, out, env)
+        checked = list(order)
+        for name in adapters:
+            adapter = src / f"{name}.lean"
+            shutil.copyfile(TOPIC / (adapter.name + ".in"), adapter)
+            runner["compile_proof"](adapter, out, env)
+            checked.append(adapter)
         for name in MODULES:
             subprocess.run(["leanchecker", "-v", f"Solution.Witt.{name}"], env=env, check=True)
-        runner["replay_kernel"]([*order, adapter], env)
-        print(f"Replayed {len(order) + 1} notebook and adapter modules and six Witt modules.")
+        runner["replay_kernel"](checked, env)
+        print(f"Replayed {len(checked)} notebook and adapter modules and six Witt modules.")
 
 
 if __name__ == "__main__":

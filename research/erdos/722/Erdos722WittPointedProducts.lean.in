@@ -1,0 +1,19 @@
+import Erdos722WittMinimumOrders
+import Erdos722PrimePowerProducts
+
+/-!
+# Six-point blocks from the small Witt design
+
+The 22-point design derived twice from the audited large Witt design
+supplies the second seed for the prime-power product at q = 5.
+-/
+
+namespace Erdos722.PointedProduct.PrimePower
+
+/-- The ordinary six-point-block family, with both exponents arbitrary. -/
+theorem witt_mixed_orders (u v : ℕ) :
+    ∃ H : Finset (Finset (Fin (5^u*21^v+1))), H.IsBlockDesign 3 6 :=
+  mixed_orders ((by decide : Nat.Prime 5).isPrimePow) MinimumOrder.six_minimum.1.2 u v
+
+#print axioms witt_mixed_orders
+end Erdos722.PointedProduct.PrimePower
