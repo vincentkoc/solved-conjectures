@@ -59,7 +59,7 @@ private lemma S_trip (hp : p % 2 = 1) :
   rw [sum_comm (f := fun a b : ZMod p => (if a * b ∈ odds p then (1 : ℂ) else 0))]
   ring
 
-private lemma orthog (x : ZMod p) :
+theorem orthog (x : ZMod p) :
     ∑ t : ZMod p, ZMod.stdAddChar (x * t) = if x = 0 then (p : ℂ) else 0 := by
   split_ifs with h
   · simp [h, ZMod.card]
@@ -157,9 +157,9 @@ private lemma sum_progression (hp : p % 2 = 1) {M : Type*} [AddCommMonoid M] (f 
 
 private lemma norm_char (t : ZMod p) : ‖ZMod.stdAddChar t‖ = 1 := Circle.norm_coe _
 
-private noncomputable def weight (t : ZMod p) : ℝ := 2 / ‖ZMod.stdAddChar t - 1‖
+noncomputable def weight (t : ZMod p) : ℝ := 2 / ‖ZMod.stdAddChar t - 1‖
 
-private lemma char_ne_one (t : ZMod p) (ht : t ≠ 0) : ZMod.stdAddChar t ≠ 1 := by
+theorem char_ne_one (t : ZMod p) (ht : t ≠ 0) : ZMod.stdAddChar t ≠ 1 := by
   rw [← (ZMod.stdAddChar (N := p)).map_zero_eq_one]
   exact fun h => ht (ZMod.injective_stdAddChar h)
 
@@ -239,7 +239,7 @@ private lemma sum_nonzero (f : ZMod p → ℝ) :
   · intros; rw [ZMod.natCast_zmod_val]
 
 /-- Reflect the upper frequencies and sum the reciprocal bound on the lower half. -/
-private lemma weight_mass (hp : p % 2 = 1) :
+theorem weight_mass (hp : p % 2 = 1) :
     ∑ t ∈ univ.erase (0 : ZMod p), weight t ≤ (p : ℝ) * harmonic (p / 2) := by
   let m := p / 2
   have hsplit : p = 2 * m + 1 := by dsimp [m]; omega
