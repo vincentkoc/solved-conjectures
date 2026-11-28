@@ -255,6 +255,21 @@ private lemma finite_brun_bound (N : ℕ) (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.
     _ ≤ N * truncMass Q B (2*r) + truncError Q B (2*r) := by linarith
     _ ≤ _ := by rw [hstep]; gcongr
 
+/-- Even Bonferroni truncation for arbitrary forbidden residues, with the
+full-period main term and the incomplete-period error displayed separately. -/
+theorem brun_upper_residue_count (N : ℕ) (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.Prime)
+    (B : (q : ℕ) → Finset (ZMod q)) (r : ℕ) [DecidablePred fun x : ℕ => ∀ q ∈ Q, (x:ZMod q) ∉ B q] :
+    (((range N).filter fun x => ∀ q ∈ Q, (x:ZMod q) ∉ B q).card : ℝ) ≤
+      N*((∏ q ∈ Q, (1-((B q).card:ℝ)/q)) +
+        ∑ T ∈ Q.powersetCard (2*r+1), ∏ q ∈ T, ((B q).card:ℝ)/q) +
+        ∑ j ∈ range (2*r+1), ∑ T ∈ Q.powersetCard j, ∏ q ∈ T, ((B q).card:ℝ) := by
+  convert! finite_brun_bound N Q hQ B r using 1
+  congr 2
+  ext x
+  simp
+
+#print axioms brun_upper_residue_count
+
 private lemma euler_harmonic_bound (z : ℕ) :
     (harmonic z : ℝ) * ∏ q ∈ (z+1).primesBelow, (1 - (q : ℝ)⁻¹) ≤ 1 := by
   classical

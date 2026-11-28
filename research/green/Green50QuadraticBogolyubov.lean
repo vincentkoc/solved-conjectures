@@ -131,13 +131,14 @@ private def sliceForm (B : U →ₗ[F₂] U →ₗ[F₂] V) (W : Submodule F₂ 
     map_add' := by intros; ext; rfl
     map_smul' := by intros; ext; rfl }
 
-/-- There are m attainable vertical dimensions. The cost of the horizontal restriction
-is at most 2m/k for k independent polar products. -/
-theorem weighted_graph_flat (f : U → V) (B : U →ₗ[F₂] U →ₗ[F₂] V)
+/-- Select input and output subspaces so that the polar form vanishes in the quotient
+and every selected output is a sum of `k` polar values. -/
+theorem polar_compression (f : U → V) (B : U →ₗ[F₂] U →ₗ[F₂] V)
     (hf : ∀ a x, f x + f (x+a) = B a x + (f 0+f a)) (k : ℕ) :
-    ∃ (S : Submodule F₂ (U × V)) (t : U × V) (m : ℕ), m ≤ Module.finrank F₂ V ∧
-      (∀ p ∈ S, t+p ∈ (2*k+1) • graph f) ∧
-      k*Module.finrank F₂ U + k*m ≤ k*Module.finrank F₂ S + 2*m := by
+    ∃ (H : Submodule F₂ U) (W : Submodule F₂ V),
+      (∀ x y : H, B x.val y.val ∈ W) ∧
+      (∀ w : W, ((0:U),w.val) ∈ k • vertical B) ∧
+      k*(Module.finrank F₂ U - Module.finrank F₂ H) ≤ 2*Module.finrank F₂ W := by
   classical
   obtain ⟨a,ha⟩ := weighted_directions B k
   let W := (evaluation B a).range
@@ -175,6 +176,20 @@ theorem weighted_graph_flat (f : U → V) (B : U →ₗ[F₂] U →ₗ[F₂] V)
   have free (w : W) : ((0:U),w.val) ∈ k • vertical B := by
     obtain ⟨z,hz⟩ := w.property
     exact (mem_vertical_sum B k _).mpr ⟨a,z,by simpa [evaluation,LinearMap.sum_apply] using hz⟩
+  exact ⟨H,W,his,free,paid⟩
+
+/-- There are m attainable vertical dimensions. The cost of the horizontal restriction
+is at most 2m/k for k independent polar products. -/
+theorem weighted_graph_flat (f : U → V) (B : U →ₗ[F₂] U →ₗ[F₂] V)
+    (hf : ∀ a x, f x + f (x+a) = B a x + (f 0+f a)) (k : ℕ) :
+    ∃ (S : Submodule F₂ (U × V)) (t : U × V) (m : ℕ), m ≤ Module.finrank F₂ V ∧
+      (∀ p ∈ S, t+p ∈ (2*k+1) • graph f) ∧
+      k*Module.finrank F₂ U + k*m ≤ k*Module.finrank F₂ S + 2*m := by
+  classical
+  obtain ⟨H,W,his,free,paid⟩ := polar_compression f B hf k
+  let m := Module.finrank F₂ W
+  let loss := Module.finrank F₂ U - Module.finrank F₂ H
+  change k*loss ≤ 2*m at paid
   obtain ⟨S,t,hS,he⟩ := flat_of_compression f B hf H W his k free
   refine ⟨S,t,m,W.finrank_le,hS,?_⟩
   have decomp : Module.finrank F₂ U = Module.finrank F₂ H + loss :=
@@ -248,6 +263,7 @@ theorem quadratic_model_green50 {n : ℕ} (A : Finset (Fin n → F₂))
 
 end
 end Green50QuadraticBogolyubov
+#print axioms Green50QuadraticBogolyubov.polar_compression
 #print axioms Green50QuadraticBogolyubov.weighted_graph_flat
 #print axioms Green50QuadraticBogolyubov.fivefold_quadratic_flat
 #print axioms Green50QuadraticBogolyubov.threefold_quadratic_flat
