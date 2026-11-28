@@ -39,9 +39,15 @@ private theorem contribution {m n : ℕ} (a : Fin m → ℤ) (b : Fin n → ℤ)
       (pos _) (fun p _ _ => (pos p).le)
     exact lt.ne (e.trans total.symm)
 
-/-- Constant mass on all occupied sums forces one whole marginal to be flat
-whenever each has at most four labelled sites. -/
-theorem small_weights {m n : ℕ} (hm : m ≤ 3) (hn : n ≤ 3)
+/-- Singleton representations form a rectangle of maximal rows and columns.
+This criterion asks whether such a rectangle contains an entire side. -/
+def GridTest (m n : ℕ) : Prop :=
+  ∀ (a : Fin (m+1) → ℤ) (b : Fin (n+1) → ℤ), StrictMono a → StrictMono b →
+    ∀ (u : Fin (m+1) → Prop) (v : Fin (n+1) → Prop),
+      (∀ i j, Alone a b i j ↔ u i ∧ v j) → u 0 → u (Fin.last m) →
+        v 0 → v (Fin.last n) → (∀ i, u i) ∨ (∀ j, v j)
+
+private theorem weights_of_grid {m n : ℕ} (test : GridTest m n)
     (a : Fin (m+1) → ℤ) (b : Fin (n+1) → ℤ) (ha : StrictMono a) (hb : StrictMono b)
     (f : Fin (m+1) → ℝ) (g : Fin (n+1) → ℝ) (hf : ∀ i, 0 < f i) (hg : ∀ j, 0 < g j)
     (c : ℝ) (mass : ∀ i j, ∑ p ∈ univ.filter (fun p : Fin (m+1) × Fin (n+1) => a p.1+b p.2=a i+b j),
@@ -75,7 +81,16 @@ theorem small_weights {m n : ℕ} (hm : m ≤ 3) (hn : n ≤ 3)
         exact (lt.trans_le (mul_le_mul_of_nonneg_right (fbound i) (hg 0).le)).ne eq
     · rintro ⟨e,r⟩; rw [e,r]
   have ends := (rect _ _).mp last
-  exact small_grid hm hn _ _ ha hb _ _ rect rfl ends.1 rfl ends.2
+  exact test _ _ ha hb _ _ rect rfl ends.1 rfl ends.2
+
+/-- Constant mass on all occupied sums forces one whole marginal to be flat
+whenever each has at most four labelled sites. -/
+theorem small_weights {m n : ℕ} (hm : m ≤ 3) (hn : n ≤ 3)
+    (a : Fin (m+1) → ℤ) (b : Fin (n+1) → ℤ) (ha : StrictMono a) (hb : StrictMono b)
+    (f : Fin (m+1) → ℝ) (g : Fin (n+1) → ℝ) (hf : ∀ i, 0 < f i) (hg : ∀ j, 0 < g j)
+    (c : ℝ) (mass : ∀ i j, ∑ p ∈ univ.filter (fun p : Fin (m+1) × Fin (n+1) => a p.1+b p.2=a i+b j),
+      f p.1*g p.2 = c) : (∀ i, f i=f 0) ∨ (∀ j, g j=g 0) := by
+  exact weights_of_grid (small_grid hm hn) a b ha hb f g hf hg c mass
 
 private theorem indexed_bind {P : PMF ℤ} {s : Finset ℤ} {n : ℕ}
     (supp : P.support = (s : Set ℤ)) (size : s.card = n) (F : ℤ → PMF ℤ) (z : ℤ) :
@@ -119,18 +134,16 @@ private theorem rational_of_constant {P : PMF ℤ} {s : Finset ℤ} {n : ℕ}
   · exact ⟨1,by rw [values hx,← values hy]; simp [pos.ne']⟩
   · exact ⟨0,by simp [(P.apply_eq_zero_iff _).mpr hx]⟩
 
-/-- Positive answer to the pinned Green 28 conclusion when both integer laws have
-at most four atoms, with arbitrary integer spacings and arbitrary positive real masses. -/
-theorem uniform_of_at_most_four_atoms {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum P Q))
-    (pc : P.support.ncard ≤ 4) (qc : Q.support.ncard ≤ 4) : IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
+/-- Apply a singleton-rectangle criterion at the actual marginal cardinalities. -/
+theorem uniform_of_grid {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum P Q))
+    (test : ∀ m n, P.support.ncard=m+1 → Q.support.ncard=n+1 → GridTest m n) :
+    IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
   classical
   obtain ⟨pf,qf⟩ := Green28UniformSums.finite_of_uniform_sum uniform
   let s := pf.toFinset
   let t := qf.toFinset
   have ps : P.support = (s : Set ℤ) := pf.coe_toFinset.symm
   have qs : Q.support = (t : Set ℤ) := qf.coe_toFinset.symm
-  have sc : s.card ≤ 4 := (Set.ncard_eq_toFinset_card _ pf) ▸ pc
-  have tc : t.card ≤ 4 := (Set.ncard_eq_toFinset_card _ qf) ▸ qc
   have sn : 0 < s.card := card_pos.mpr (pf.toFinset_nonempty.mpr P.support_nonempty)
   have tn : 0 < t.card := card_pos.mpr (qf.toFinset_nonempty.mpr Q.support_nonempty)
   have ms : s.card = s.card-1+1 := by omega
@@ -149,10 +162,20 @@ theorem uniform_of_at_most_four_atoms {P Q : PMF ℤ} (uniform : IsUniformOnSupp
     rw [eq,PMF.support_uniformOfFinset] at hab
     rw [←indexed_sum ps qs ms ns,eq,PMF.uniformOfFinset_apply_of_mem hv hab,ENNReal.toReal_inv,ENNReal.toReal_natCast]
   apply Green28UniformSums.uniform_of_rational_ratios ⟨v,hv,eq⟩
-  rcases small_weights (by omega : s.card-1 ≤ 3) (by omega : t.card-1 ≤ 3) a b a.strictMono b.strictMono _ _ fp gp _ mass with h|h
+  have grid := test _ _ ((Set.ncard_eq_toFinset_card _ pf).trans ms) ((Set.ncard_eq_toFinset_card _ qf).trans ns)
+  rcases weights_of_grid grid a b a.strictMono b.strictMono _ _ fp gp _ mass with h|h
   · exact Or.inl (rational_of_constant ps ms _ h)
   · exact Or.inr (rational_of_constant qs ns _ h)
 
+/-- Positive answer to the pinned Green 28 conclusion when both integer laws have
+at most four atoms, with arbitrary integer spacings and arbitrary positive real masses. -/
+theorem uniform_of_at_most_four_atoms {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum P Q))
+    (pc : P.support.ncard ≤ 4) (qc : Q.support.ncard ≤ 4) : IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
+  apply uniform_of_grid uniform
+  intro m n pm qn
+  exact small_grid (by omega) (by omega)
+
+#print axioms uniform_of_grid
 #print axioms uniform_of_at_most_four_atoms
 #print axioms small_weights
 
