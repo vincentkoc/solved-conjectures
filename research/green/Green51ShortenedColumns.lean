@@ -52,9 +52,10 @@ structure Presentation (A:Finset V) where
   rank : Module.finrank F P.ker=A.card-12
   onto : Function.Surjective P
 
-/-- All avoiding sets in the shortened range have a surjective check map and
-the exact relation dimension. -/
-theorem presentation {A:Finset V} (lo:18≤A.card) (hi:A.card≤23) (avoid:¬FlatAt A 0) :
+/-- A set with only doubly even label relations has a full presentation
+already at seventeen labels. -/
+theorem presentation_of_four {A:Finset V} (lo:17≤A.card) (hi:A.card≤23) (avoid:¬FlatAt A 0)
+    (fourSum:∀ T⊆A,2∣T.card → syndrome T=0 → 4∣T.card) :
     Nonempty (Presentation A) := by
   classical
   have free : ∀T⊆A,T.card=4 ∨ T.card=6 → syndrome T≠0 := fun T sub sz zero=>
@@ -73,7 +74,7 @@ theorem presentation {A:Finset V} (lo:18≤A.card) (hi:A.card≤23) (avoid:¬Fla
     have e:=parity c.val c.property
     have sum : syndrome (selected A c.val)=0 := congrArg Prod.snd ((ev c.val).symm.trans c.property)
     rw [←selected_card] at e ⊢
-    exact Green51ResidualPacking.four_divisibility lo avoid (selected_sub ..) e sum
+    exact fourSum _ (selected_sub ..) e sum
   have allowed (c:P.ker) : (supp c.val).card∈({0,8,12,16}:Finset ℕ) := by
     have f:=four c
     have upper: (supp c.val).card≤A.card := (supp c.val).card_le_univ.trans_eq (by simp)
@@ -94,6 +95,13 @@ theorem presentation {A:Finset V} (lo:18≤A.card) (hi:A.card≤23) (avoid:¬Fla
   have rank:=(Green51ResidualPacking.projection (by omega) P.ker (by omega) dist four).1
   exact ⟨⟨P,ev,allowed,rank,LinearMap.range_eq_top.mp
     (Submodule.eq_top_of_finrank_eq (by rw [target];omega))⟩⟩
+
+/-- All avoiding sets in the shortened range have a surjective check map and
+the exact relation dimension. -/
+theorem presentation {A:Finset V} (lo:18≤A.card) (hi:A.card≤23) (avoid:¬FlatAt A 0) :
+    Nonempty (Presentation A) := by
+  exact presentation_of_four (by omega) hi avoid fun _ sub even zero =>
+    Green51ResidualPacking.four_divisibility lo avoid sub even zero
 
 /-- Orthogonality is precisely invariance of weight modulo four under
 translation by a word of weight divisible by four. -/
@@ -117,3 +125,5 @@ end Green51ShortenedColumns
 #print axioms Green51ShortenedColumns.selected_sub
 #print axioms Green51ShortenedColumns.selected_injective
 #print axioms Green51ShortenedColumns.selected_onto
+
+#print axioms Green51ShortenedColumns.presentation_of_four

@@ -13,7 +13,7 @@ local notation "V" => Cube 11
 noncomputable def holes (A:Finset V) : Finset V :=
   univ.filter fun v=>v∉A ∧ ¬FlatAt (insert v A) 0
 
-private theorem hole_iff {A:Finset V} (high:18≤A.card) (avoid:¬FlatAt A 0) (v:V) :
+private theorem hole_iff {A:Finset V} (high:17≤A.card) (avoid:¬FlatAt A 0) (v:V) :
     v∈holes A ↔ ∀T⊆A,T.card=1 ∨ T.card=3 ∨ T.card=5 → syndrome T≠v := by
   classical
   simp only [holes,mem_filter,mem_univ,true_and]
@@ -84,7 +84,7 @@ private theorem fst_one {A:Finset V} (D:Presentation A) {z:Cube A.card} (odd:(su
   change ((supp z).card:F)=1
   rw [←ZMod.natCast_mod _ 2,odd];rfl
 
-private theorem hole_fibre {A:Finset V} (lo:18≤A.card) (avoid:¬FlatAt A 0) (D:Presentation A)
+private theorem hole_fibre {A:Finset V} (lo:17≤A.card) (avoid:¬FlatAt A 0) (D:Presentation A)
     (v:V) : v∈holes A ↔ (1,v)∈((pool D.P.ker).image D.P)\((triples D.P.ker).image D.P) := by
   classical
   constructor
@@ -126,7 +126,7 @@ private theorem hole_fibre {A:Finset V} (lo:18≤A.card) (avoid:¬FlatAt A 0) (D
 
 /-- Each eligible syndrome represents one full kernel coset. Triple words
 give distinct forbidden syndromes since the code has minimum distance eight. -/
-theorem hole_count {A:Finset V} (lo:18≤A.card) (avoid:¬FlatAt A 0) (D:Presentation A) :
+theorem hole_count_from_seventeen {A:Finset V} (lo:17≤A.card) (avoid:¬FlatAt A 0) (D:Presentation A) :
     ((holes A).card+(triples D.P.ker).card)*Fintype.card D.P.ker=(pool D.P.ker).card := by
   classical
   let U:=pool D.P.ker
@@ -187,5 +187,11 @@ theorem hole_count {A:Finset V} (lo:18≤A.card) (avoid:¬FlatAt A 0) (D:Present
   change ((holes A).card+T.card)*Fintype.card D.P.ker=U.card
   rw [show (holes A).card+T.card=H.card by omega,ucount]
 
+/-- Count extensions when a presentation is available at length at least eighteen. -/
+theorem hole_count {A:Finset V} (lo:18≤A.card) (avoid:¬FlatAt A 0) (D:Presentation A) :
+    ((holes A).card+(triples D.P.ker).card)*Fintype.card D.P.ker=(pool D.P.ker).card :=
+  hole_count_from_seventeen (by omega) avoid D
+
 end Green51ExtensionFibres
 #print axioms Green51ExtensionFibres.hole_count
+#print axioms Green51ExtensionFibres.hole_count_from_seventeen

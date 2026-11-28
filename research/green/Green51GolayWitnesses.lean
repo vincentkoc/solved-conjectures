@@ -10,7 +10,8 @@ local notation "V" => Cube 11
 
 private def point (a : ℕ) : V := fun i => if a.testBit i.val then 1 else 0
 
-private def rows : List ℕ → Finset V
+/-- Decode a list of eleven-bit labels. -/
+def rows : List ℕ → Finset V
   | [] => ∅
   | r::rs => insert (point r) (rows rs)
 
@@ -35,7 +36,8 @@ private theorem point_weight (v : ℕ) : (supp (point v)).card=bitCount v 11 := 
   intro i _
   cases h : v.testBit i.val <;> simp [point,h]
 
-private def test (v k : ℕ) : List ℕ → Bool
+/-- Exclude low-weight cancellations of the extra columns with unit labels. -/
+def test (v k : ℕ) : List ℕ → Bool
   | [] => decide (k=0 ∨ 6<k+bitCount v 11)
   | r::rs => test v k rs && test (v ^^^ r) (k+1) rs
 
@@ -64,7 +66,8 @@ private theorem test_sound (rs : List ℕ) (v k : ℕ) (ok : test v k rs=true)
       intro u hu
       exact (mem_insert.mp (sub hu)).resolve_left (fun e => h (e ▸ hu))
 
-private def units : List ℕ := [0,1,2,4,8,16,32,64,128,256,512,1024]
+/-- Zero and the eleven coordinate unit vectors. -/
+def units : List ℕ := [0,1,2,4,8,16,32,64,128,256,512,1024]
 private def extra : List ℕ := [1393,1993,996,1595,797,1607,1258,1468,734,367,183,1938]
 private def shortExtra : List ℕ := [1393,1468,734,367,183,1938]
 
@@ -78,25 +81,26 @@ def shortened : Finset V := rows units ∪ rows shortExtra
 set_option maxHeartbeats 4000000 in
 private theorem checked : test 0 0 extra=true := by decide +kernel
 
-private theorem distance (U : Finset V) (sub : U⊆rows extra) (non : U.Nonempty) :
-    6<U.card+(supp (∑ u∈U,u)).card := by
-  have b := test_sound extra 0 0 checked U sub
-  have z : point 0=0 := by funext i; simp [point]
-  simpa only [Nat.zero_add,z,zero_add,show U.card≠0 from ne_of_gt (card_pos.mpr non),
-    false_or] using b
-
 theorem sizes : full.card=24 ∧ shortened.card=18 := by decide +kernel
 
-theorem no_linear : ¬FlatAt full 0 := by
-  have unitsIn : ∀u∈rows units,(supp u).card≤1 := by decide +kernel
-  have sub : full ⊆ ball 11 1 ∪ rows extra := by
-    apply union_subset_union _ (Subset.rfl)
-    intro u hu
-    exact mem_filter.mpr ⟨mem_univ _,unitsIn u hu⟩
-  intro h
-  obtain ⟨T,hT,sz,zero⟩ := (Green51SparseDimensions.linear_three_iff full (by rw [sizes.1];decide)).mp
-    ((flat_zero full).mp h)
-  exact Green51SmallWitnesses.add_labels_of_distance _ distance T (hT.trans sub) sz zero
+/-- The branch test excludes every subset of the extra columns that can
+cancel with at most six of the full collection of columns. -/
+theorem avoids_of_certificate (rs : List ℕ) (oc : test 0 0 rs = true)
+    (large : 5 ≤ (rows units ∪ rows rs).card) : ¬FlatAt (rows units ∪ rows rs) 0 := by
+  have dist (U : Finset V) (sub : U ⊆ rows rs) (inh : U.Nonempty) :
+      6 < U.card+(supp (∑ u∈U,u)).card := by
+    have b := test_sound rs 0 0 oc U sub
+    have z : point 0 = 0 := by funext i; simp [point]
+    simpa only [Nat.zero_add,z,zero_add,show U.card≠0 from ne_of_gt (card_pos.mpr inh),false_or] using b
+  have base : ∀ u ∈ rows units, (supp u).card ≤ 1 := by decide +kernel
+  have inside : rows units ∪ rows rs ⊆ ball 11 1 ∪ rows rs := union_subset_union
+    (fun u hu => mem_filter.mpr ⟨mem_univ _,base u hu⟩) Subset.rfl
+  intro flat
+  obtain ⟨T,sub,sz,sum⟩ := (Green51SparseDimensions.linear_three_iff _ large).mp ((flat_zero _).mp flat)
+  exact Green51SmallWitnesses.add_labels_of_distance _ dist T (sub.trans inside) sz sum
+
+theorem no_linear : ¬FlatAt full 0 :=
+  avoids_of_certificate extra checked (by change 5 ≤ full.card;rw [sizes.1];decide)
 
 theorem no_affine : ¬∃p, FlatAt shortened p := by
   have sub : shortened⊆full := by decide +kernel
@@ -119,3 +123,5 @@ end Green51GolayWitnesses
 #print axioms Green51GolayWitnesses.sizes
 #print axioms Green51GolayWitnesses.no_linear
 #print axioms Green51GolayWitnesses.no_affine
+
+#print axioms Green51GolayWitnesses.avoids_of_certificate
