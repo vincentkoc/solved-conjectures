@@ -107,17 +107,27 @@ theorem plane_maximal {L : V →ₗ[F] G} (inj : Function.Injective L) {t : G} {
   exact no_three_space hu hv hw huv uw vw
     (pair_compatible inj avoid inc huv hw ne.2.2 iuv iw)
 
-/-- Fifteen simplex labels in one ten-flat, three in a parallel flat and two
-in another force an affine three-space in the double. The conclusion also
-holds for any two disjoint exterior families with the same internal
-difference conditions. -/
-theorem three_and_two {A B C : Finset G} (L : V →ₗ[F] G) (inj : Function.Injective L)
-    (t : G) (inc : core L t⊆A) (size : 5≤A.card) (inB : B⊆A) (inC : C⊆A)
-    (three : B.card=3) (two : C.card=2) (sep : Disjoint B C)
-    (outB : Disjoint B (core L t)) (outC : Disjoint C (core L t))
-    (bDiff : ∀ x∈B,∀ y∈B,x+y∈L.range) (cDiff : ∀ x∈C,∀ y∈C,x+y∈L.range) :
-    ∃ p, FlatAt A p := by
-  by_contra avoid
+/-- A pair sum in a flat-free configuration determines its unordered pair. -/
+theorem pair_equal {A:Finset G} (size:5≤A.card) (avoid:¬∃p,FlatAt A p)
+    {a b c d:G} (ha:a∈A) (hb:b∈A) (hc:c∈A) (hd:d∈A) (ab:a≠b) (cd:c≠d)
+    (eq:a+b=c+d) : c∈({a,b}:Finset G) ∧ d∈({a,b}:Finset G) := by
+  by_cases ac:a=c
+  · subst c;have bd := add_left_cancel eq;subst d;simp
+  by_cases ad:a=d
+  · subst d;rw [add_comm c a] at eq;have bc := add_left_cancel eq;subst c;simp
+  by_cases bc:b=c
+  · subst c;rw [add_comm b d] at eq;have ad := add_right_cancel eq;subst d;simp
+  by_cases bd:b=d
+  · subst d;have ac := add_right_cancel eq;subst c;simp
+  exact False.elim (conflict size avoid ha hb hc hd ab cd ac ad bc bd eq)
+
+/-- Any exterior pair with direction in the core space must lie in a given
+exterior three-point fibre, whenever the ambient double has no three-flat. -/
+theorem triangle_controls {A B C:Finset G} (L:Cube 10→ₗ[F] G) (inj:Function.Injective L)
+    (t:G) (inc:core L t⊆A) (size:5≤A.card) (avoid:¬∃p,FlatAt A p)
+    (inB:B⊆A) (inC:C⊆A) (three:B.card=3) (two:C.card=2)
+    (outB:Disjoint B (core L t)) (outC:Disjoint C (core L t))
+    (bDiff:∀ x∈B,∀ y∈B,x+y∈L.range) (cDiff:∀ x∈C,∀ y∈C,x+y∈L.range) : C⊆B := by
   obtain ⟨a,b,c,ab,ac,bc,eqB⟩ := card_eq_three.mp three
   obtain ⟨d,e,de,eqC⟩ := card_eq_two.mp two
   have ha : a∈B := eqB ▸ (by simp)
@@ -143,17 +153,32 @@ theorem three_and_two {A B C : Finset G} (L : V →ₗ[F] G) (inj : Function.Inj
   rw [encode_add] at huV iuV
   have eq := plane_maximal inj avoid inc (hB ha hb ab ru) (hB ha hc ac rv) huV hw
     (mem (inB ha) (inB hb) ru) (mem (inB ha) (inB hc) rv) iuV (mem (inC hd) (inC he) rw')
-  have neq {x y : G} (hx : x∈B) (hy : y∈B) (xy : x≠y) {z : V} (rz : L z=x+y) :
-      encode z≠encode w := by
-    intro same
-    have equal : z=w := by simpa using congrArg (decode 10) same
-    have cross {k l : G} (hk : k∈B) (hl : l∈C) : k≠l :=
-      fun e => disjoint_left.mp sep hk (e ▸ hl)
-    exact conflict size avoid (inB hx) (inB hy) (inC hd) (inC he) xy de
-      (cross hx hd) (cross hx he) (cross hy hd) (cross hy he)
-      (rz.symm.trans ((congrArg L equal).trans rw'))
+  have both {x y:G} (hx:x∈B) (hy:y∈B) (xy:x≠y) {z:Cube 10} (rz:L z=x+y)
+      (same:encode z=encode w) : C⊆B := by
+    have zw:z=w := by simpa using congrArg (decode 10) same
+    have equal := rz.symm.trans ((congrArg L zw).trans rw')
+    have hit := pair_equal size avoid (inB hx) (inB hy) (inC hd) (inC he) xy de equal
+    have sub : ({x,y}:Finset G)⊆B := by
+      intro i hi;rcases mem_insert.mp hi with rfl|k;exact hx;simpa only [mem_singleton.mp k] using hy
+    rw [eqC]
+    exact insert_subset (sub hit.1) (singleton_subset_iff.mpr (sub hit.2))
   rw [←encode_add] at eq
-  exact eq.elim (neq ha hb ab ru) (fun h => h.elim (neq ha hc ac rv) (neq hb hc bc ruv))
+  exact eq.elim (both ha hb ab ru) (fun h=>h.elim (both ha hc ac rv) (both hb hc bc ruv))
+
+/-- Fifteen simplex labels in one ten-flat, three in a parallel flat and two
+in another force an affine three-space in the double. The conclusion also
+holds for any two disjoint exterior families with the same internal
+difference conditions. -/
+theorem three_and_two {A B C : Finset G} (L : V →ₗ[F] G) (inj : Function.Injective L)
+    (t : G) (inc : core L t⊆A) (size : 5≤A.card) (inB : B⊆A) (inC : C⊆A)
+    (three : B.card=3) (two : C.card=2) (sep : Disjoint B C)
+    (outB : Disjoint B (core L t)) (outC : Disjoint C (core L t))
+    (bDiff : ∀ x∈B,∀ y∈B,x+y∈L.range) (cDiff : ∀ x∈C,∀ y∈C,x+y∈L.range) :
+    ∃ p, FlatAt A p := by
+  by_contra avoid
+  have sub := triangle_controls L inj t inc size avoid inB inC three two outB outC bDiff cDiff
+  obtain ⟨x,hx⟩ := card_pos.mp (show 0<C.card by omega)
+  exact disjoint_left.mp sep (sub hx) hx
 
 end Green51SimplexFibres
 #print axioms Green51SimplexFibres.pair_direction
@@ -161,3 +186,6 @@ end Green51SimplexFibres
 
 #print axioms Green51SimplexFibres.plane_maximal
 #print axioms Green51SimplexFibres.three_and_two
+
+#print axioms Green51SimplexFibres.pair_equal
+#print axioms Green51SimplexFibres.triangle_controls

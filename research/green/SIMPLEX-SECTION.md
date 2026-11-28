@@ -2,6 +2,8 @@
 
 Every set \(A\) of 24 points in \(\mathbb F_2^{12}\) has a translate of a three-dimensional subspace inside \(A+A\). The same conclusion holds for 23 points if 18 lie on a common affine hyperplane. Together with the explicit 20-point counterexample, this places the least forcing cardinality in \([21,24]\). [Twenty-four labels and the hyperplane criterion](Green51TwentyFourLabels.lean) · [Twenty-point counterexample](Green51TwelveAffineWitness.lean)
 
+The [21-point threshold theorem](TWENTY-ONE-POINTS.md) determines the exact cardinality in this interval.
+
 For Green's original quantity \(F(12,\alpha)\), the guaranteed dimension is exactly three on \(23/4096<\alpha\le25/4096\), and at least three for every \(23/4096<\alpha\le1\). One admissible 25-point set throughout the exact interval has no linear three-space in its double. The general density question remains open. [Density theorems](Green51TwentyFourBounds.lean) · [Pinned Green 51](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/51.lean)
 
 ## The fifteen-point section

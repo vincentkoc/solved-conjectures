@@ -1,0 +1,19 @@
+# Twenty-one points force an affine three-space in twelve dimensions
+
+The smallest number of points in \(\mathbb F_2^{12}\) that forces an affine three-dimensional subspace in \(A+A\) is **21**. An explicit 20-point set avoids every such translate. Requiring the subspace to pass through zero raises the threshold to 26. [Exact affine threshold](Green51TwentyOneBounds.lean) · [Twenty-point example](Green51TwelveAffineWitness.lean) · [Exact linear threshold](Green51TwelveThreshold.lean)
+
+For the pinned Green 51 quantity, \(F(12,\alpha)\ge 3\) if and only if \(20/4096<\alpha\), for every \(\alpha\le 1\). Its value is two on \(2/4096<\alpha\le20/4096\) and three on \(20/4096<\alpha\le25/4096\). One 25-point set is admissible throughout the second interval and avoids all three-spaces through zero. Green's question about growth with the ambient dimension remains open. [Density thresholds](Green51TwentyOneBounds.lean) · [Lower plateau](Green51TwelveAffineBounds.lean) · [Pinned statement](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/51.lean)
+
+## Finding the fifteen-point section
+
+Some affine hyperplane contains at least 17 of any 21 labels. In the full affine span, the evaluations of affine functions form a binary code of length 21 and dimension 13. A nonzero word of weight at most four gives the hyperplane. The classical upper bound for the minimum distance follows here by taking the residual code outside a minimum-weight word and packing disjoint radius-one Hamming balls. [Section theorem](Green51TwentyOneSection.lean) · [Residual-code proof](Green51SmallResidual.lean) · [Grassl's tables with Brouwer's bound](https://www.codetables.de/BKLC/BKLC.php?q=2&n=21&k=13)
+
+If the double contains no affine three-space, the augmented relation code on the 17 chosen labels in that hyperplane has a weight-two dual word. Its zero level contains 15 labels in a ten-dimensional affine space. Their relation code is the binary simplex code, whose fifteen nonzero columns each occur once. The earlier section theorem identifies their configuration up to an affine change of coordinates. [Seventeen-label weight calculation](Green51SeventeenSection.lean) · [Simplex normal form](Green51SimplexModel.lean) · [Bonisoli's classification of equidistant codes](https://iris.unimore.it/handle/11380/448444)
+
+## Placing the last six points
+
+The ten-space contains precisely those 15 labels. Consider the three other cosets of its direction space. If any coset contains a triple, every pair in a single exterior coset must consist of members of that triple. Its three remaining exterior labels would then need three further cosets, where only two are available. Hence each of the three exterior cosets contains exactly two labels. [Occupancy of the ten-space](Green51CoreOccupancy.lean) · [Triple and pair constraint](Green51SimplexFibres.lean) · [Exterior counts](Green51ExteriorFibres.lean)
+
+The three pair differences are distinct members of the 28 allowed directions. If they sum to zero, the two triples obtained by choosing complementary endpoints have equal sums. Such a collision forces a linear three-space. In the other case the differences are linearly independent. The 15 simplex labels have 470 distinct sums of one or three labels. For every compatible independent triple of differences, the eight translations of these 470 sums cover the whole ten-space. Choosing endpoints from the exterior pairs now produces an odd sum equal to one from the simplex. [Direction covering certificate](Green51ThreePairs.lean) · [Translation of the 1024-bit masks](Green51BitTranslations.lean) · [Exterior sum collision](Green51ParallelPairs.lean) · [Assembly](Green51TwentyOne.lean)
+
+From the pinned Formal Conjectures checkout, set `notebook` to this repository's path and run `lake env python3 "$notebook/scripts/replay-research" Green51TwentyOneBounds`.
