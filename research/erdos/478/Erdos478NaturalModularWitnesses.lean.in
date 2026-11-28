@@ -1,0 +1,56 @@
+import Erdos478CompositeFirstAtoms
+import Erdos478UniformProfileWindows
+import Erdos478NaturalFirstCollisions
+
+/-! # Ordinary prime densities certified by one regular modular witness -/
+
+namespace Erdos478.LocalWitness
+open Filter Finset Topology GapDensity GapSieve FirstCollision SplittingDensity BinaryGap FrobeniusBands
+open scoped Classical
+noncomputable section
+
+/-- Zero ordinary density is equivalent to confinement to the prime divisors of
+the explicit product of resultants and factorial boundary factors. -/
+theorem ordinary_profile_support {S : Finset ℕ} (hs : ∀ k∈S, 2≤k) (E : (S → ℕ) → Prop) :
+    Tendsto (fun X => fraction X (realizes S E)) atTop (𝓝 (density S E)) ∧
+    (density S E=0 ↔ ∀ p : ℕ, p.Prime → realizes S E p → p∣exceptionalProduct S) :=
+  ⟨density_limit degree_one_prime_ideal_theorem S hs E (realizes S E) 0 (fun _ _ _ => Iff.rfl),
+    zero_iff_exceptional degree_one_prime_ideal_theorem hs E⟩
+
+/-- The ordinary first-distance law has positive atoms at every length 2 to 11
+inclusive. The five composite atoms have an explicit factorial lower bound. -/
+theorem ordinary_first_through_eleven {l : ℕ} (lo : 2≤l) (hi : l≤11) :
+    Tendsto (fun X => fraction X (fun p => First p l)) atTop (𝓝 (firstDensity l)) ∧
+    0<firstDensity l ∧ (l∈({4,6,8,9,10}:Finset ℕ) → ((∏ k∈Icc 2 l,k.factorial : ℕ) : ℝ)⁻¹≤firstDensity l) :=
+  ⟨ordinary_first_law.1 l,through_eleven_pos degree_one_prime_ideal_theorem lo hi,small_composite_mass⟩
+
+/-- At fixed K a single cutoff works for all positive-density predicates on
+the entire short count vector. The window certifies actual loss of distinct residues. -/
+theorem ordinary_uniform_window {H : ℕ → ℕ} {L b z A : ℝ} (hL : 1<L)
+    (hw : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hz : 0<z) (hz₁ : z≤1)
+    (hA : A<b*Real.log z-(L-1)/3*Real.log ((1+z)/2)) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, ∀ P : (short K → ℕ) → Prop, 0<density (short K) P →
+      1-Real.exp (-A*K/Real.log K)<profileWindow X (short K) P (family K (H K)) (b*K/Real.log K) :=
+  uniform_window_of_inputs degree_one_prime_ideal_theorem broad_mass hL hw hz hz₁ hA
+
+theorem ordinary_uniform_dyadic {A : ℝ} (hA : A<Real.log (32/27)/9) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, ∀ P : (short K → ℕ) → Prop, 0<density (short K) P →
+      1-Real.exp (-A*K/Real.log K)<profileWindow X (short K) P (family K (2*K)) ((1/9:ℝ)*K/Real.log K) := by
+  refine ordinary_uniform_window (H:=fun K => 2*K) (L:=2) (b:=1/9) (z:=1/2)
+    (by norm_num) ?_ (by norm_num) (by norm_num) ?_
+  · apply (tendsto_const_nhds (x:=(2:ℝ))).congr'
+    filter_upwards [eventually_gt_atTop 0] with K hK
+    push_cast
+    field_simp
+  · have rate : Real.log (32/27)/9=(1/9)*Real.log (1/2)-(2-1)/3*Real.log ((1+1/2)/2) := by
+      rw [show (32/27:ℝ)=(1/2)/(3/4)^3 by norm_num,Real.log_div (by norm_num) (by norm_num),
+        Real.log_pow,show ((1+1/2)/2:ℝ)=3/4 by norm_num]
+      ring
+    exact rate ▸ hA
+
+#print axioms ordinary_profile_support
+#print axioms ordinary_first_through_eleven
+#print axioms ordinary_uniform_window
+#print axioms ordinary_uniform_dyadic
+end
+end Erdos478.LocalWitness
