@@ -154,6 +154,7 @@ These Lean files contain a proof of the positive Green 54 declaration and result
 | [Seven times a square on the Hosoya diagonals](arxiv/2211.10788/SevenSquareClass.md) | The lower values in this square class are exactly 7 and 343, and the upper diagonal has none. The lower neighbor has a private prime divisor exactly outside indices 4 and 12. | Unconditional. Removes three Mordell-table hypotheses and classifies the integral quartics with coefficient 245 and norm ±44. |
 | [Cube exclusion for the Hosoya neighbor product](arxiv/2211.10788/CubeNormAtEighteen.md) | The neighboring product is never a cube. More generally, `y³+1=11Fₙ²` has no nonnegative solution at any index. | Unconditional. The all-proper-powers theorem now requires only the separate Bennett–Skinner input. |
 | [Proper powers on the neighboring diagonals](arxiv/2211.10788/OddPowersAtNeighboringIndices.md) | A proper power forces a multiple-of-six index. At those indices the exact remaining question is `yᵖ + 1 = 11Fₙ²` for prime `p ≥ 5`. The opposite sign is excluded for all odd exponents without external hypotheses. | The remaining sign and upper prime-value infinitude are open in the kernel-checked development. |
+| [Prime exponents in the Hosoya neighbor product](arxiv/2211.10788/SplitPrimeExponentBounds.md) | If the neighboring product is a proper power, every prime divisor of its exponent is at least 101. Split-prime tests exclude all prime exponents from 5 through 97 at every positive multiple of six. |
 
 ## Replay
 
