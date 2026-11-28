@@ -17,15 +17,18 @@ private def supportEquiv (d : ℕ) : (Fin d → F) ≃ Finset (Fin d) where
     rcases bit_cases (x j) with h|h <;> simp [h]
   right_inv S := by ext j; simp
 
-private def splitSupport (d r : ℕ) :
+/-- Split a binary vector into its active support and its remaining coordinates. -/
+def splitSupport (d r : ℕ) :
     (Fin (d+r) → F) ≃ Finset (Fin d) × (Fin r → F) :=
   (Fin.appendEquiv d r).symm.trans ((supportEquiv d).prodCongr (Equiv.refl _))
 
-private def ball (k r : ℕ) : Finset (Fin (2*k+r) → F) :=
+/-- A radius `k − 1` Hamming ball on `2 * k` active coordinates with `r` free coordinates. -/
+def ball (k r : ℕ) : Finset (Fin (2*k+r) → F) :=
   (((univ : Finset (Finset (Fin (2*k)))).filter (fun S => S.card<k)) ×ˢ
     (univ : Finset (Fin r → F))).map (splitSupport (2*k) r).symm.toEmbedding
 
-private theorem ball_mem {k r : ℕ} {a : Fin (2*k+r) → F} :
+/-- Membership only depends on the weight of the active coordinates. -/
+theorem ball_mem {k r : ℕ} {a : Fin (2*k+r) → F} :
     a∈ball k r ↔ ((splitSupport (2*k) r a).1.card<k) := by
   simp [ball,Finset.mem_map_equiv]
 
@@ -40,7 +43,22 @@ private theorem prefix_mem {d r : ℕ} (x : Fin (d+r) → F) (j : Fin d) :
     j∈(splitSupport d r x).1 ↔ x (Fin.castAdd r j)≠0 := by
   simp [splitSupport,supportEquiv]
 
-private theorem ball_sum_iff {k r : ℕ} (z : Fin (2*k+r) → F) :
+open scoped symmDiff in
+/-- Addition on the active coordinates takes symmetric difference of their supports. -/
+theorem support_add {d r : ℕ} (x y : Fin (d + r) → F) :
+    (splitSupport d r (x + y)).1 = (splitSupport d r x).1 ∆ (splitSupport d r y).1 := by
+  ext i
+  simp only [mem_symmDiff, prefix_mem, Pi.add_apply]
+  rcases bit_cases (x (Fin.castAdd r i)) with hx | hx <;>
+    rcases bit_cases (y (Fin.castAdd r i)) with hy | hy <;> simp [hx, hy, ZModModule.add_self]
+
+/-- The zero vector has empty active support. -/
+theorem active_zero (d r : ℕ) : (splitSupport d r (0 : Fin (d + r) → F)).1 = ∅ := by
+  ext i
+  simp [prefix_mem]
+
+/-- The double occupies every active weight through `2 * k − 2` for `k ≥ 1`. -/
+theorem ball_sum_iff {k r : ℕ} (z : Fin (2*k+r) → F) :
     z∈ball k r+ball k r ↔ (splitSupport (2*k) r z).1.card+2≤2*k := by
   classical
   constructor
@@ -168,6 +186,14 @@ private theorem cylinder_no_flat (k r : ℕ) :
       by_contra ne; simp [Pi.single_eq_of_ne ne] at ht
     exact (at_i j hj).trans (at_i l hl).symm
 
+/-- The size, missing directions and hyperplane obstruction for the specified cylinder. -/
+theorem hamming_ball_data (k r : ℕ) :
+    2 * (ball k r).card + 2 ^ r * (2 * k).choose k = 2 ^ (2 * k + r) ∧
+    (ball k r + ball k r)ᶜ.card = 2 ^ r * (2 * k + 1) ∧
+    ∀ S : AffineSubspace F (Fin (2 * k + r) → F), (∃ x, x ∈ S) →
+      (∀ x ∈ S, x ∈ ball k r + ball k r) → Module.finrank F S.direction + 1 < 2 * k + r :=
+  ⟨ball_count k r, missing_count k r, cylinder_no_flat k r⟩
+
 /-- The Hamming cylinder at the threshold has exactly the top two active weight
 layers missing, with a free choice in every remaining coordinate. -/
 theorem hamming_cylinder (k r : ℕ) :
@@ -176,7 +202,7 @@ theorem hamming_cylinder (k r : ℕ) :
       (A+A)ᶜ.card=2^r*(2*k+1) ∧
       ∀ S : AffineSubspace F (Fin (2*k+r) → F), (∃ x,x∈S) →
         (∀ x∈S,x∈A+A) → Module.finrank F S.direction+1<2*k+r :=
-  ⟨ball k r,ball_count k r,missing_count k r,cylinder_no_flat k r⟩
+  ⟨ball k r, hamming_ball_data k r⟩
 
 /-- At the exact threshold there is a cylinder over a Hamming ball whose
 double contains no nonempty affine subspace of codimension at most one. -/
@@ -246,6 +272,11 @@ theorem third_class_boundary (n : ℕ) :
   omega
 
 end Green51Hyperplane
+#print axioms Green51Hyperplane.ball_mem
+#print axioms Green51Hyperplane.support_add
+#print axioms Green51Hyperplane.active_zero
+#print axioms Green51Hyperplane.ball_sum_iff
+#print axioms Green51Hyperplane.hamming_ball_data
 #print axioms Green51Hyperplane.hamming_cylinder
 #print axioms Green51Hyperplane.extremal_example
 #print axioms Green51Hyperplane.small_third_class
