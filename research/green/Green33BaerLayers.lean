@@ -469,13 +469,16 @@ theorem split_count {v : ℕ+} (A B : Finset (ZMod v)) :
 
 #print axioms split_count
 
-private def frame {K : Type*} [AddCommGroup K] [DecidableEq K]
+/-- Express a set in additive coordinates based at a chosen center. -/
+def frame {K : Type*} [AddCommGroup K] [DecidableEq K]
     (e : G≃+K) (c : K) (S : Finset G) := S.image fun z => e z-c
 
 omit [Fintype G] [DecidableEq G] in
-private theorem frame_card {K : Type*} [AddCommGroup K] [DecidableEq K]
+theorem frame_card {K : Type*} [AddCommGroup K] [DecidableEq K]
     (e : G≃+K) (c : K) (S : Finset G) : (frame e c S).card=S.card :=
   card_image_of_injective _ (fun _ _ eq => e.injective (sub_left_injective eq))
+
+#print axioms frame_card
 
 omit [Fintype G] in
 private theorem frame_sum {K : Type*} [AddCommGroup K] [DecidableEq K]
@@ -563,4 +566,34 @@ def chart (t : ℕ) (h j : ℕ+) (hl : h.val=t^2+t+1) (jr : j.val+t=t^2+1) :
     ZMod (h*j : ℕ+) ≃+ ZMod h × ZMod j :=
   (ZMod.chineseRemainder (baer_coprime t h j hl jr)).toAddEquiv
 
+
+/-- The normalized planar set in cyclic coordinates, with its full row profile. -/
+theorem frame_rows {v : ℕ+} (e : ZMod v≃+H×J) (D : Finset (ZMod v))
+    {t : ℕ} (pos : 0<t) (perf : Perfect D) (size : D.card=t^2+1)
+    (left : Fintype.card H=t^2+t+1) (right : Fintype.card J+t=t^2+1) :
+    let c:= -(t^2 • ∑ z∈D.image e,z)
+    let A:=frame e c D
+    Perfect A ∧ ∀ j : J,(row A j).card=(if j=0 then t else 0)+1 := by
+  let c:= -(t^2 • ∑ z∈D.image e,z)
+  have mp:=mapped_perfect e D perf
+  have ds : (D.image e).card=t^2+1 := (card_image_of_injective D e.injective).trans size
+  have rows:= (normalized_rows _ mp pos ds left right).2
+  change ∀ j,(row ((D.image e).image (fun d => d-c)) j).card=_ at rows
+  simpa only [frame,image_image,Function.comp_def] using And.intro (shifted_perfect _ mp c) rows
+
+#print axioms frame_rows
+
+/-- A common change of origin on both input layers sends even sums to the
+corresponding translated even sums and preserves full coverage. -/
+theorem frame_even_full {K : Type*} [AddCommGroup K] [Fintype K] [DecidableEq K]
+    (e : G≃+K) (c : K) (d : G) (E F : Finset G) (full : E+E∪shift d (F+F)=univ) :
+    frame e c E+frame e c E∪shift (e d) (frame e c F+frame e c F)=univ := by
+  have h:=congrArg (frame e (c+c)) full
+  have union (S T : Finset G) : frame e (c+c) (S∪T)=frame e (c+c) S∪frame e (c+c) T := image_union _ _
+  rw [union,frame_shift,frame_sum,frame_sum] at h
+  refine h.trans (image_univ_of_surjective ?_)
+  intro z
+  exact ⟨e.symm (z+(c+c)),by simp⟩
+
+#print axioms frame_even_full
 end Green33BaerLayers
