@@ -102,6 +102,7 @@ These Lean files contain a proof of the positive Green 54 declaration and result
 | [Square Lucas–Fibonacci values](arxiv/2211.10788/SquareValues.md) | The upper diagonal has exactly three squares, 1, 4 and 9. The lower has just 81. Together these give all four solutions of Cohn’s two norm-44 quartics. | Infinitude of prime values remains open. |
 | [Cube values on the odd Hosoya diagonals](arxiv/2211.10788/OddIndexCubes.md) | Neither diagonal contains an integer cube at any positive odd index. The underlying primitive quadratic form never represents a cube. | Even indices and infinitude of prime values remain open here. |
 | [Norm representations of Hosoya values](arxiv/2211.10788/NormRepresentationCounts.md) | At every upper index, primality is equivalent to four representations by x²+xy+3y² including a primitive one. A divisor formula counts representations on both odd diagonals. | Infinitude of prime values remains open. |
+| [Isolated prime divisors on both Hosoya diagonals](arxiv/2211.10788/IsolatedPrimeDivisors.md) | On every positive-step progression, almost every index has a prime divisor on each diagonal exceeding `e(n)n log n` and absent from every other site within `f(n)√(n log n)` steps, for any `e,f → 0`. | A diagonal value can be composite. Infinitude of prime values remains open. |
 
 ## Replay
 

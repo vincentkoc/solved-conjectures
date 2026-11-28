@@ -21,11 +21,27 @@ private lemma sum_along_injection (A J : Finset ℕ) (w v h : ℕ → ℕ)
     _ = ∑ j ∈ A.image h, v j := (sum_image hinj).symm
     _ ≤ _ := sum_le_sum_of_subset_of_nonneg (by intro j hj; obtain ⟨i,hi,rfl⟩ := mem_image.mp hj; exact hmap i hi) (by simp)
 
+/-- Growth and common-divisor estimates used to count smooth terms on a progression. -/
+structure FibonacciSupportBounds (f : ℕ → ℕ) : Prop where
+  lower : ∀ n, 2^n ≤ (f n)^2
+  upper : ∀ n, f n ≤ 2^(n+3)
+  common : ∀ {m i j : ℕ} [NeZero m], m ∣ f i → m ∣ f (i+j) → m ∣ Nat.fib j
+
+namespace FibonacciSupportBounds
+
+variable {f : ℕ → ℕ} (bnd : FibonacciSupportBounds f)
+include bnd
+
+private lemma pos (n : ℕ) : 0 < f n := by
+  have h := bnd.lower n
+  by_contra! hz
+  simp [Nat.eq_zero_of_le_zero hz] at h
+
 private lemma gap_valuation (r d p a b : ℕ) (hd : 0 < d) (hp : p.Prime) (hab : a < b) :
-    min ((lucasFibonacciSum (r+d*a)).factorization p)
-      ((lucasFibonacciSum (r+d*b)).factorization p) ≤ (Nat.fib (d*(b-a))).factorization p := by
-  let u := lucasFibonacciSum (r+d*a)
-  let v := lucasFibonacciSum (r+d*b)
+    min ((f (r+d*a)).factorization p)
+      ((f (r+d*b)).factorization p) ≤ (Nat.fib (d*(b-a))).factorization p := by
+  let u := f (r+d*a)
+  let v := f (r+d*b)
   let e := min (u.factorization p) (v.factorization p)
   let m := p^e
   have : NeZero m := ⟨pow_ne_zero _ hp.ne_zero⟩
@@ -33,16 +49,16 @@ private lemma gap_valuation (r d p a b : ℕ) (hd : 0 < d) (hp : p.Prime) (hab :
   have hv : m ∣ v := (pow_dvd_pow p (min_le_right ..)).trans (Nat.ordProj_dvd v p)
   have he : r+d*a+d*(b-a) = r+d*b := by rw [Nat.add_assoc,←Nat.mul_add,show a+(b-a)=b by omega]
   exact (hp.pow_dvd_iff_le_factorization (Nat.fib_pos.mpr (Nat.mul_pos hd (by omega))).ne').mp
-    (common_divisor_lucasFibonacciSum_dvd_fib hu (by simpa [he] using hv))
+    (bnd.common hu (by simpa [he] using hv))
 
 private lemma interval_valuation (T : Finset ℕ) (r d a L p : ℕ) (hd : 0 < d) (hp : p.Prime)
     (hT : T ⊆ Ico a (a+L)) {s : ℕ} (hs : s ∈ T)
-    (hm : ∀ t ∈ T, (lucasFibonacciSum (r+d*t)).factorization p ≤
-      (lucasFibonacciSum (r+d*s)).factorization p) :
-    (∑ t ∈ T, (lucasFibonacciSum (r+d*t)).factorization p) ≤
-      (lucasFibonacciSum (r+d*s)).factorization p +
+    (hm : ∀ t ∈ T, (f (r+d*t)).factorization p ≤
+      (f (r+d*s)).factorization p) :
+    (∑ t ∈ T, (f (r+d*t)).factorization p) ≤
+      (f (r+d*s)).factorization p +
         2*∑ j ∈ Icc 1 L, (Nat.fib (d*j)).factorization p := by
-  let w (t : ℕ) := (lucasFibonacciSum (r+d*t)).factorization p
+  let w (t : ℕ) := (f (r+d*t)).factorization p
   let v (j : ℕ) := (Nat.fib (d*j)).factorization p
   let S := T.erase s
   have si := mem_Ico.mp (hT hs)
@@ -58,7 +74,7 @@ private lemma interval_valuation (T : Finset ℕ) (r d a L p : ℕ) (hd : 0 < d)
       dsimp at e; omega
     · intro t ht
       obtain ⟨ht,hlt⟩ := mem_filter.mp ht
-      have h := gap_valuation r d p t s hd hp hlt
+      have h := gap_valuation bnd r d p t s hd hp hlt
       rwa [min_eq_left (hm t (mem_of_mem_erase ht))] at h
   have right : (∑ t ∈ S.filter (fun t => ¬t<s), w t) ≤ ∑ j ∈ Icc 1 L, v j := by
     apply sum_along_injection _ _ _ _ (· - s)
@@ -74,7 +90,7 @@ private lemma interval_valuation (T : Finset ℕ) (r d a L p : ℕ) (hd : 0 < d)
     · intro t ht
       obtain ⟨ht,hlt⟩ := mem_filter.mp ht
       obtain ⟨hne,ht'⟩ := mem_erase.mp ht
-      have h := gap_valuation r d p s t hd hp (by omega)
+      have h := gap_valuation bnd r d p s t hd hp (by omega)
       rwa [min_eq_right (hm t ht')] at h
   have hsplit := S.sum_filter_add_sum_filter_not (fun t => t<s) w
   have herase := T.add_sum_erase w hs
@@ -82,22 +98,18 @@ private lemma interval_valuation (T : Finset ℕ) (r d a L p : ℕ) (hd : 0 < d)
   change (∑ t ∈ T, w t) ≤ w s + 2*∑ j ∈ Icc 1 L, v j
   omega
 
-private lemma term_pos (n : ℕ) : 0 < lucasFibonacciSum n := by
-  have h := Nat.fib_pos.mpr (show 0 < n+2 by omega)
-  unfold lucasFibonacciSum; omega
-
 /-- Short-interval product bound. The square accounts for the two directions
 from a term of maximal valuation for each prime. -/
-theorem lucasFibonacciSum_prod_dvd_lcm_mul_fib (T : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
+private theorem prod_dvd_lcm (T : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
     (hT : T ⊆ Ico a (a+L)) :
-    (∏ t ∈ T, lucasFibonacciSum (r+d*t)) ∣
-      T.lcm (fun t => lucasFibonacciSum (r+d*t)) * (∏ j ∈ Icc 1 L, Nat.fib (d*j))^2 := by
+    (∏ t ∈ T, f (r+d*t)) ∣
+      T.lcm (fun t => f (r+d*t)) * (∏ j ∈ Icc 1 L, Nat.fib (d*j))^2 := by
   classical
   rcases T.eq_empty_or_nonempty with rfl|hne
   · simp
-  let u (t : ℕ) := lucasFibonacciSum (r+d*t)
+  let u (t : ℕ) := f (r+d*t)
   let F (j : ℕ) := Nat.fib (d*j)
-  have hu (t : ℕ) : u t ≠ 0 := (term_pos _).ne'
+  have hu (t : ℕ) : u t ≠ 0 := (bnd.pos _).ne'
   have hF (j : ℕ) (hj : j ∈ Icc 1 L) : F j ≠ 0 :=
     (Nat.fib_pos.mpr (Nat.mul_pos hd (mem_Icc.mp hj).1)).ne'
   have hl : T.lcm u ≠ 0 := lcm_ne_zero_iff.mpr (fun t _ => hu t)
@@ -107,7 +119,7 @@ theorem lucasFibonacciSum_prod_dvd_lcm_mul_fib (T : Finset ℕ) (r d a L : ℕ) 
   intro p
   by_cases hp : p.Prime
   · obtain ⟨s,hs,hm⟩ := exists_max_image T (fun t => (u t).factorization p) hne
-    have hi := interval_valuation T r d a L p hd hp hT hs hm
+    have hi := interval_valuation bnd T r d a L p hd hp hT hs hm
     have hs' := (Nat.factorization_le_iff_dvd (hu s) hl).mpr (dvd_lcm hs) p
     change (T.prod u).factorization p ≤ (T.lcm u * (∏ j ∈ Icc 1 L, F j)^2).factorization p
     rw [Nat.factorization_mul hl (pow_ne_zero _ hf),Finsupp.add_apply,Nat.factorization_pow,
@@ -119,6 +131,7 @@ theorem lucasFibonacciSum_prod_dvd_lcm_mul_fib (T : Finset ℕ) (r d a L : ℕ) 
   · simp [Nat.factorization_eq_zero_of_not_prime _ hp]
 
 
+omit bnd in
 private lemma lcm_le_of_support {T P : Finset ℕ} (u : ℕ → ℕ) (M : ℕ)
     (hu : ∀ t ∈ T, 0 < u t) (hm : ∀ t ∈ T, u t ≤ M)
     (hs : ∀ t ∈ T, (u t).primeFactors ⊆ P) (hM : 0 < M) : T.lcm u ≤ M^P.card := by
@@ -149,37 +162,31 @@ private lemma lcm_le_of_support {T P : Finset ℕ} (u : ℕ → ℕ) (M : ℕ)
       (Nat.le_of_dvd (hu _ (ha p)) (Nat.ordProj_dvd _ p)).trans (hm _ (ha p)))
     _ = _ := by simp
 
-private lemma term_upper (n : ℕ) : lucasFibonacciSum n ≤ 2^(n+3) := by
-  have h := fib_le_two_pow n
-  have h' := fib_le_two_pow (n+2)
-  rw [pow_add] at h' ⊢
-  unfold lucasFibonacciSum; omega
-
 /-- A short-interval bound for terms supported on an arbitrary set of primes.
 The interval length controls the cost of repeated occurrences of a prime. -/
-theorem lucasFibonacciSum_smooth_interval_bound (T P : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
-    (hT : T ⊆ Ico a (a+L)) (hs : ∀ t ∈ T, (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P) :
+private theorem smooth_interval (T P : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
+    (hT : T ⊆ Ico a (a+L)) (hs : ∀ t ∈ T, (f (r+d*t)).primeFactors ⊆ P) :
     d*a*T.card ≤ 2*(r+d*(a+L)+3)*P.card + 4*d*L^2 := by
-  let u (t : ℕ) := lucasFibonacciSum (r+d*t)
+  let u (t : ℕ) := f (r+d*t)
   let F (j : ℕ) := Nat.fib (d*j)
   let E := r+d*(a+L)+3
   have hmin (t : ℕ) (ht : t ∈ T) : 2^(d*a) ≤ (u t)^2 :=
     (Nat.pow_le_pow_right (by decide) (show d*a ≤ r+d*t by
-      have := Nat.mul_le_mul_left d (mem_Ico.mp (hT ht)).1; omega)).trans (two_pow_le_lucasFibonacciSum_sq _)
+      have := Nat.mul_le_mul_left d (mem_Ico.mp (hT ht)).1; omega)).trans (bnd.lower _)
   have hlower : 2^(d*a*T.card) ≤ (T.prod u)^2 := by
     simpa only [prod_const,←pow_mul,prod_pow] using prod_le_prod' hmin
   have hmax (t : ℕ) (ht : t ∈ T) : u t ≤ 2^E := by
-    refine (term_upper _).trans (Nat.pow_le_pow_right (by decide) ?_)
+    refine (bnd.upper _).trans (Nat.pow_le_pow_right (by decide) ?_)
     have := Nat.mul_le_mul_left d (mem_Ico.mp (hT ht)).2.le
     dsimp [E]; omega
-  have hl := lcm_le_of_support u _ (fun t _ => term_pos _) hmax hs (pow_pos (by decide) _)
+  have hl := lcm_le_of_support u _ (fun t _ => bnd.pos _) hmax hs (pow_pos (by decide) _)
   have hF (j : ℕ) (hj : j ∈ Icc 1 L) : F j ≤ 2^(d*L) :=
     (fib_le_two_pow _).trans (Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul_left d (mem_Icc.mp hj).2))
   have hfp : (Icc 1 L).prod F ≤ 2^(d*L*L) := by
     simpa only [prod_const,Nat.card_Icc,Nat.add_sub_cancel,←pow_mul] using prod_le_prod' hF
   have hfpos : 0 < (Icc 1 L).prod F := prod_pos (fun j hj => Nat.fib_pos.mpr (Nat.mul_pos hd (mem_Icc.mp hj).1))
-  have hlpos : 0 < T.lcm u := Nat.pos_of_ne_zero (lcm_ne_zero_iff.mpr fun t _ => (term_pos _).ne')
-  have hu := Nat.le_of_dvd (Nat.mul_pos hlpos (pow_pos hfpos 2)) (lucasFibonacciSum_prod_dvd_lcm_mul_fib T r d a L hd hT)
+  have hlpos : 0 < T.lcm u := Nat.pos_of_ne_zero (lcm_ne_zero_iff.mpr fun t _ => (bnd.pos _).ne')
+  have hu := Nat.le_of_dvd (Nat.mul_pos hlpos (pow_pos hfpos 2)) (prod_dvd_lcm bnd T r d a L hd hT)
   have h := hlower.trans (Nat.pow_le_pow_left (hu.trans (Nat.mul_le_mul hl (Nat.pow_le_pow_left hfp 2))) 2)
   rw [←pow_mul,←pow_mul,←pow_add,←pow_mul] at h
   have he := (Nat.pow_le_pow_iff_right (by decide : 1 < 2)).mp h
@@ -189,13 +196,13 @@ theorem lucasFibonacciSum_smooth_interval_bound (T P : Finset ℕ) (r d a L : �
 
 private lemma tiled_smooth_count (P : Finset ℕ) (r d K B : ℕ)
     (hd : 0 < d) (hK : 0 < K) (hB : r+3 ≤ B) :
-    ((range (K^2*B)).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P).card ≤
+    ((range (K^2*B)).filter fun t => (f (r+d*t)).primeFactors ⊆ P).card ≤
       5*K*B + 4*K^3*P.card := by
   classical
   let S (j : ℕ) := (Ico (j*B) (j*B+B)).filter fun t =>
-    (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P
+    (f (r+d*t)).primeFactors ⊆ P
   let J := Ico K (K^2)
-  have hpart : ((range (K^2*B)).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P) ⊆
+  have hpart : ((range (K^2*B)).filter fun t => (f (r+d*t)).primeFactors ⊆ P) ⊆
       range (K*B) ∪ J.biUnion S := by
     intro t ht
     obtain ⟨ht,hp⟩ := mem_filter.mp ht
@@ -209,7 +216,7 @@ private lemma tiled_smooth_count (P : Finset ℕ) (r d K B : ℕ)
       simpa only [Nat.mul_add,Nat.mul_one,Nat.mul_comm B (t/B)] using h
   have hsize (j : ℕ) (hj : j ∈ J) : K*(S j).card ≤ 4*K^2*P.card+4*B := by
     have bounds := mem_Ico.mp hj
-    have h := lucasFibonacciSum_smooth_interval_bound (S j) P r d (j*B) B hd
+    have h := smooth_interval bnd (S j) P r d (j*B) B hd
       (filter_subset ..) (fun t ht => (mem_filter.mp ht).2)
     have hleft : d*B*(K*(S j).card) ≤ d*(j*B)*(S j).card := by
       have e := Nat.mul_le_mul_right (S j).card (Nat.mul_le_mul_left (d*B) bounds.1)
@@ -224,7 +231,7 @@ private lemma tiled_smooth_count (P : Finset ℕ) (r d K B : ℕ)
     have hr := Nat.mul_le_mul_right P.card (Nat.mul_le_mul_left 2 hupper)
     apply Nat.le_of_mul_le_mul_left (c:=d*B) _ (Nat.mul_pos hd (by omega))
     nlinarith only [h,hleft,hr]
-  have hcard : ((range (K^2*B)).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P).card ≤
+  have hcard : ((range (K^2*B)).filter fun t => (f (r+d*t)).primeFactors ⊆ P).card ≤
       K*B + ∑ j ∈ J, (S j).card := by
     refine (card_le_card hpart).trans ((card_union_le ..).trans ?_)
     simpa only [card_range] using Nat.add_le_add_left (card_biUnion_le : (J.biUnion S).card ≤ _) (K*B)
@@ -240,10 +247,10 @@ private lemma tiled_smooth_count (P : Finset ℕ) (r d K B : ℕ)
 
 /-- Any collection of o(N) candidate primes supports only o(N) of the first
 N terms on each fixed positive-step progression. The set can vary with N. -/
-theorem sparse_prime_support_density_zero (r d : ℕ) (hd : 0 < d) (P : ℕ → Finset ℕ)
+theorem sparse_support (r d : ℕ) (hd : 0 < d) (P : ℕ → Finset ℕ)
     (hs : Filter.Tendsto (fun N : ℕ => ((P N).card : ℝ)/N) Filter.atTop (nhds 0)) :
     Filter.Tendsto (fun N : ℕ =>
-      (((range N).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P N).card : ℝ)/N)
+      (((range N).filter fun t => (f (r+d*t)).primeFactors ⊆ P N).card : ℝ)/N)
       Filter.atTop (nhds 0) := by
   apply Metric.tendsto_nhds.mpr
   intro ε hε
@@ -273,10 +280,10 @@ theorem sparse_prime_support_density_zero (r d : ℕ) (hd : 0 < d) (P : ℕ → 
     rw [Nat.mul_add,Nat.mul_one,Nat.mul_comm (K^2)]
     have := Nat.div_mul_le_self N (K^2)
     omega
-  let C := ((range N).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P N).card
+  let C := ((range N).filter fun t => (f (r+d*t)).primeFactors ⊆ P N).card
   have hC : C ≤ 5*K*B+4*K^3*(P N).card := by
     refine (card_le_card (filter_subset_filter _ (range_mono hcover))).trans ?_
-    exact tiled_smooth_count (P N) r d K B hd hk hB
+    exact tiled_smooth_count bnd (P N) r d K B hd hk hB
   have hbr : (K:ℝ)^2 * B ≤ 2*N := by exact_mod_cast hbN
   have hcr : (C:ℝ) ≤ 5*(K:ℝ)*B+4*(K:ℝ)^3*(P N).card := by exact_mod_cast hC
   have hfirst : 5*(K:ℝ)*B/N ≤ 10/K := by
@@ -289,6 +296,39 @@ theorem sparse_prime_support_density_zero (r d : ℕ) (hd : 0 < d) (P : ℕ → 
     _ = 5*(K:ℝ)*B/N+4*(K:ℝ)^3*(((P N).card : ℝ)/N) := by ring
     _ < ε := by linarith only [hfirst,hP,hsmall]
 
+
+
+end FibonacciSupportBounds
+
+private lemma term_upper (n : ℕ) : lucasFibonacciSum n ≤ 2^(n+3) := by
+  have h := fib_le_two_pow n
+  have h' := fib_le_two_pow (n+2)
+  rw [pow_add] at h' ⊢
+  unfold lucasFibonacciSum; omega
+
+private theorem upper_support_bounds : FibonacciSupportBounds lucasFibonacciSum :=
+  ⟨two_pow_le_lucasFibonacciSum_sq,term_upper,common_divisor_lucasFibonacciSum_dvd_fib⟩
+
+/-- Product bound for upper terms in a parameter interval. -/
+theorem lucasFibonacciSum_prod_dvd_lcm_mul_fib (T : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
+    (hT : T ⊆ Ico a (a+L)) :
+    (∏ t ∈ T, lucasFibonacciSum (r+d*t)) ∣
+      T.lcm (fun t => lucasFibonacciSum (r+d*t)) * (∏ j ∈ Icc 1 L, Nat.fib (d*j))^2 :=
+  upper_support_bounds.prod_dvd_lcm T r d a L hd hT
+
+/-- Short-interval bound for upper terms supported on a specified prime set. -/
+theorem lucasFibonacciSum_smooth_interval_bound (T P : Finset ℕ) (r d a L : ℕ) (hd : 0 < d)
+    (hT : T ⊆ Ico a (a+L)) (hs : ∀ t ∈ T, (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P) :
+    d*a*T.card ≤ 2*(r+d*(a+L)+3)*P.card + 4*d*L^2 :=
+  upper_support_bounds.smooth_interval T P r d a L hd hT hs
+
+/-- A set of o(N) primes supports only o(N) upper terms on a positive-step progression. -/
+theorem sparse_prime_support_density_zero (r d : ℕ) (hd : 0 < d) (P : ℕ → Finset ℕ)
+    (hs : Filter.Tendsto (fun N : ℕ => ((P N).card : ℝ)/N) Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun N : ℕ =>
+      (((range N).filter fun t => (lucasFibonacciSum (r+d*t)).primeFactors ⊆ P N).card : ℝ)/N)
+      Filter.atTop (nhds 0) :=
+  upper_support_bounds.sparse_support r d hd P hs
 
 open Filter
 open scoped Topology
@@ -335,7 +375,7 @@ private lemma moving_threshold_smooth (r d : ℕ) (hd : 0 < d) (Y : ℕ → ℕ)
 
 /-- Chebyshev's estimate is uniform even when the cutoff oscillates.
 Majorizing it by n ensures its logarithm is at least log n. -/
-private lemma prime_count_threshold (e : ℕ → ℝ) (he : Tendsto e atTop (𝓝 0)) :
+lemma prime_count_threshold (e : ℕ → ℝ) (he : Tendsto e atTop (𝓝 0)) :
     Tendsto (fun n : ℕ => ((⌊e n * n * Real.log n⌋₊).primeCounting : ℝ)/n) atTop (𝓝 0) := by
   let X (n : ℕ) := max (n:ℝ) (e n*n*Real.log n)
   have hX : Tendsto X atTop atTop := tendsto_atTop_mono (fun n => le_max_left _ _) tendsto_natCast_atTop_atTop
@@ -426,6 +466,8 @@ theorem progression_sub_n_log_n_smooth_density_zero (e : ℕ → ℝ) (he : Tend
       field_simp
 
 #print axioms progression_sub_n_log_n_smooth_density_zero
+#print axioms FibonacciSupportBounds.sparse_support
+#print axioms prime_count_threshold
 #print axioms sub_n_log_n_smooth_density_zero
 #print axioms sparse_prime_support_density_zero
 
