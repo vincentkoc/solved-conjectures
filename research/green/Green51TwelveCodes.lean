@@ -216,16 +216,17 @@ private theorem unit_packing {I:Type*} [Fintype I] [DecidableEq I] (D:Submodule 
     exact Prod.ext rfl (inj (add_left_cancel eq))
   simpa [Fintype.card_prod,Fintype.card_option,Fintype.card_fun,ZMod.card] using Fintype.card_le_of_injective f fi
 
-/-- A ten-word leaves a single-error-correcting code on the outside
-coordinates, with dimension one less than the original code. -/
-theorem ten_packing {n:ℕ} (C:Submodule F (Cube n))
-    (dist:∀x:C,x≠0 → 8≤(supp x.val).card) (u:C) (w:(supp u.val).card=10) :
-    2^(Module.finrank F C-1)*(n-10+1)≤2^(n-10) := by
+/-- Restriction off a short codeword preserves all but one dimension and leaves
+a code of minimum distance at least three, to which the Hamming bound applies. -/
+theorem short_packing {n d k : ℕ} (C : Submodule F (Cube n))
+    (dist : ∀x:C,x≠0 → d≤(supp x.val).card) (u:C) (w:(supp u.val).card=k)
+    (non : 0<k) (short : k+5≤2*d) :
+    2^(Module.finrank F C-1)*(n-k+1)≤2^(n-k) := by
   classical
-  have nz:u≠0:=fun e=>by simp [e,supp] at w
+  have nz:u≠0:=fun e=>by simp [e,supp] at w;omega
   let T:Finset (Fin n):=(supp u.val)ᶜ
   let R:C→ₗ[F] (T→F):=LinearMap.pi fun i:T=>(LinearMap.proj i.val).comp C.subtype
-  have count:T.card=n-10:=by dsimp [T];rw [card_compl,Fintype.card_fin,w]
+  have count:T.card=n-k:=by dsimp [T];rw [card_compl,Fintype.card_fin,w]
   have ru:R u=0:=by funext i;change u.val i.val=0;simpa [T,supp] using i.property
   have ker:Module.finrank F R.ker=1:=residual_rank C u nz (by
     intro x nx ne sub
@@ -234,7 +235,7 @@ theorem ten_packing {n:ℕ} (C:Submodule F (Cube n))
     have b:=dist (x+u) ny
     have sum:=residual_weight x.val u.val
     rw [sdiff_eq_empty_iff_subset.mpr sub,card_empty,w] at sum
-    change 8≤(supp (x.val+u.val)).card at b
+    change d≤(supp (x.val+u.val)).card at b
     omega)
   have outside (x:C) : hammingNorm (R x)=(supp x.val\supp u.val).card:=by
     apply card_bij fun i _=>i.val
@@ -251,7 +252,7 @@ theorem ten_packing {n:ℕ} (C:Submodule F (Cube n))
     have ny:x+u≠0:=fun eq=>nz' (by rwa [add_right_cancel (eq.trans (ZModModule.add_self u).symm)])
     have a:=dist x nx
     have b:=dist (x+u) ny
-    change 8≤(supp (x.val+u.val)).card at b
+    change d≤(supp (x.val+u.val)).card at b
     have sum:=residual_weight x.val u.val
     rw [←outside x,w] at sum
     change 3≤hammingNorm (R x)
@@ -261,6 +262,13 @@ theorem ten_packing {n:ℕ} (C:Submodule F (Cube n))
   rw [Module.natCard_eq_pow_finrank (K:=F),Nat.card_zmod,
     show Module.finrank F R.range=Module.finrank F C-1 by omega,Fintype.card_coe,count] at bound
   exact bound
+
+/-- A ten-word leaves a single-error-correcting code on the outside
+coordinates, with dimension one less than the original code. -/
+theorem ten_packing {n:ℕ} (C:Submodule F (Cube n))
+    (dist:∀x:C,x≠0 → 8≤(supp x.val).card) (u:C) (w:(supp u.val).card=10) :
+    2^(Module.finrank F C-1)*(n-10+1)≤2^(n-10) :=
+  short_packing C dist u w (by decide) (by decide)
 
 /-- An even binary code of length 26 and minimum distance eight has
 dimension at most twelve. -/
@@ -388,3 +396,5 @@ end Green51TwelveResidual
 #print axioms Green51TwelveResidual.split_large
 #print axioms Green51TwelveResidual.ten_packing
 #print axioms Green51TwelveResidual.even_replacement
+
+#print axioms Green51TwelveResidual.short_packing
