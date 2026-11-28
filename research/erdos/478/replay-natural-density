@@ -22,7 +22,11 @@ PORT = "bb3b4fff6bb0210a0f94fc535bf9adbf46ecc55a"
 MATHLIB = "0df444a360eaa60ab8c11dca51a86af692955474"
 DIGEST = "0fe69072de0e3e61a7eea4f6b1227303ad902bf5d6931b55c67f7c663fc99fbd"
 URL = f"https://codeload.github.com/KitaKen1/simultaneous-primitive-roots/tar.gz/{PORT}"
-ADAPTERS = {"density": "Erdos478NaturalDensity", "gap-sieve": "Erdos478NaturalGapSieve"}
+ADAPTERS = {
+    "density": "Erdos478NaturalDensity",
+    "gap-sieve": "Erdos478NaturalGapSieve",
+    "patterns": "Erdos478NaturalPatternLaw",
+}
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
 
@@ -110,10 +114,14 @@ def main():
                 checked.extend(ready)
                 deps.done(*ready)
         print(f"Replaying {len(checked)} compiled modules with leanchecker.", flush=True)
-        # leanchecker recursively selects every compiled module below a namespace.
-        # Grouping the external modules avoids rescanning the Lake search path for each one.
-        targets = ["TauCeti", "Compat4331", *(name for name in checked if not external(name))]
-        subprocess.run(["leanchecker", "-v", *targets], env=env, check=True)
+        # A namespace argument selects every module below it concurrently.
+        # Limit external imports per process and replay each notebook module alone.
+        external_names = [name for name in checked if external(name)]
+        for i in range(0, len(external_names), 3):
+            subprocess.run(["leanchecker", "-v", *external_names[i:i + 3]], env=env, check=True)
+        for name in checked:
+            if not external(name):
+                subprocess.run(["leanchecker", "-v", name], env=env, check=True)
 
 
 if __name__ == "__main__":

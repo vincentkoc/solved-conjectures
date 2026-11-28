@@ -1,0 +1,41 @@
+import Erdos478FactorialPatternLaw
+import Erdos478GapSplittingDegrees
+import Erdos478NaturalDensity
+
+/-!
+# Natural densities of factorial collision patterns
+
+The checked prime ideal theorem supplies the ordinary prime average.
+The counts below use positive factorial indices strictly below the prime.
+-/
+
+namespace Erdos478.SplittingDensity
+open Filter Topology Finset GapDensity
+open scoped Classical
+
+/-- Exact joint density for saturated and unsaturated factorial separations
+in the specified progression, including the resulting factorial deficit. -/
+theorem factorial_pattern_density {m : ℕ} (hm : 0<m) (S T : Finset ℕ)
+    (hS : ∀ k∈S, 2≤k) (hT : ∀ k∈T, 2≤k) :
+    Tendsto (fun X => (((Nat.primesLE X).filter (observed m S T)).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (patternDensity m S T)) :=
+  factorial_pattern_of_pit degree_one_prime_ideal_theorem hm S T hS hT
+
+/-- Any finite collection of gap lengths attains its full number of
+factorial collisions at a positive, explicitly characterized density. -/
+theorem saturated_gap_density {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S, 2≤k) :
+    0 < splitDensity m S ∧
+      Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+        m ∣ p-1 ∧ (∀ k∈S, (endpoints k p).card=k) ∧
+        ((Ico 1 p).image (fun j => j.factorial % p)).card + ∑ k∈S, k ≤ p-1).card : ℝ) /
+        (Nat.primesLE X).card) atTop (𝓝 (splitDensity m S)) := by
+  refine ⟨inv_pos.mpr (by exact_mod_cast (Module.finrank_pos (R:=ℚ) (M:=SplitField (test m S)))),?_⟩
+  have he : observed m S ∅ = fun p => m ∣ p-1 ∧ (∀ k∈S, (endpoints k p).card=k) ∧
+      ((Ico 1 p).image (fun j => j.factorial % p)).card + ∑ k∈S, k ≤ p-1 := by
+    funext p
+    simp [observed]
+  simpa [he,patternDensity] using factorial_pattern_density hm S ∅ hS (by simp)
+
+#print axioms factorial_pattern_density
+#print axioms saturated_gap_density
+end Erdos478.SplittingDensity
