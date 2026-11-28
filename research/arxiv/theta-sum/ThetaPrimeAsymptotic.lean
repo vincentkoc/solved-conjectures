@@ -33,11 +33,11 @@ theorem cone_interpolation {p J K : ℕ} (hK : K%2=1) (hp : p.Prime) (hJ : 2*J<p
   apply sum_congr rfl; intro k _
   dsimp [f]; push_cast; ring
 
-/-- Uniform error in approximating the off-diagonal by the variable-width rational cone. -/
-theorem uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%2=1)
+/-- The scale and width errors separate after retaining one denominator power. -/
+theorem vanishing_cone_error {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%2=1)
     (hKN : K≤N) (hl : N^56≤p) (hh : p≤N^64) (ho : p%2=1) :
     |offDiagonal p - (8*p/Real.pi^2)*(rationalCone p (N^52) K:ℝ)| ≤
-      2300000*(p:ℝ) + (2*(p:ℝ)/K)*(1+Real.log p) := by
+      2265642*(p:ℝ)/N + (2*(p:ℝ)/K)*(1+Real.log p) := by
   have hN₁ : 1≤N := by omega
   have hNr : 1≤(N:ℝ) := by exact_mod_cast hN₁
   have hpr : 0<(p:ℝ) := by exact_mod_cast (Fact.out : p.Prime).pos
@@ -60,19 +60,18 @@ theorem uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%
     rw [show N^64=(N^32)*(N^32) by ring,Nat.sqrt_eq]
   have hs' : (p.sqrt:ℝ)≤(N:ℝ)^50 := by exact_mod_cast hs.trans (Nat.pow_le_pow_right hN₁ (by decide : 32≤50))
   have hD : discrepancy p+2*(p.sqrt:ℝ) ≤ 17426*(N:ℝ)^50 := by linarith [scale_discrepancy hN₁ hh]
-  have ht : 2*(discrepancy p+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*(↑(N^52 : ℕ):ℝ)+1) ≤ 2265380*p := by
-    rw [div_le_iff₀ (by positivity)]; push_cast
+  have ht : 2*(discrepancy p+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*(↑(N^52 : ℕ):ℝ)+1) ≤ 2265380*p/N := by
+    rw [div_le_div_iff₀ (by positivity) (by positivity)]; push_cast
     have he := mul_le_mul hD hH hH₀ (by positivity)
-    have h51 := pow_le_pow_right₀ hNr (by decide : 51≤52)
-    nlinarith only [mul_le_mul_of_nonneg_right he hpr.le,mul_le_mul_of_nonneg_right h51 hpr.le,hpr.le,
+    nlinarith only [mul_le_mul_of_nonneg_right he (show 0≤(p:ℝ)*N by positivity),hpr.le,
       mul_nonneg (pow_nonneg (Nat.cast_nonneg N : (0:ℝ)≤N) 52) hpr.le]
-  have hlin : 2*(↑(N^52:ℕ):ℝ)^2*(2*(harmonic (K*N^52):ℝ)+(K:ℝ)^2)/p ≤ 262*p := by
-    rw [div_le_iff₀ hpr]; push_cast
+  have hlin : 2*(↑(N^52:ℕ):ℝ)^2*(2*(harmonic (K*N^52):ℝ)+(K:ℝ)^2)/p ≤ 262*p/N := by
+    rw [div_le_div_iff₀ hpr (by positivity)]; push_cast
     have h := pow_le_pow_left₀ hKr.le (show (K:ℝ)≤N by exact_mod_cast hKN) 2
     have hn : (N:ℝ)≤(N:ℝ)^2 := by nlinarith only [mul_nonneg (Nat.cast_nonneg N : (0:ℝ)≤N) (sub_nonneg.mpr hNr)]
     have he : 2*(harmonic (K*N^52):ℝ)+(K:ℝ)^2 ≤ 131*(N:ℝ)^2 := by linarith
-    nlinarith only [mul_le_mul_of_nonneg_left he (show 0≤(N:ℝ)^104 by positivity),
-      pow_le_pow_right₀ hNr (by decide : 106≤112),
+    nlinarith only [mul_le_mul_of_nonneg_left he (show 0≤(N:ℝ)^105 by positivity),
+      pow_le_pow_right₀ hNr (by decide : 107≤112),
       pow_le_pow_left₀ (by positivity) (show (N:ℝ)^56≤p by exact_mod_cast hl) 2]
   have hH' : (harmonic (N^52):ℝ)≤1+Real.log p := by
     apply (harmonic_le_one_add_log _).trans; apply add_le_add le_rfl
@@ -81,7 +80,18 @@ theorem uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%
   have hw : 2*(p:ℝ)*harmonic (N^52)/K ≤ (2*(p:ℝ)/K)*(1+Real.log p) := by
     rw [mul_div_right_comm]
     exact mul_le_mul_of_nonneg_left hH' (by positivity)
-  exact (offDiagonal_cone_error ho hK (by omega) hfit).trans (by linarith)
+  apply (offDiagonal_cone_error ho hK (by omega) hfit).trans
+  exact (add_le_add (add_le_add ht hw) hlin).trans_eq (by ring)
+
+/-- Uniform error in approximating the off-diagonal by the variable-width rational cone. -/
+theorem uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%2=1)
+    (hKN : K≤N) (hl : N^56≤p) (hh : p≤N^64) (ho : p%2=1) :
+    |offDiagonal p - (8*p/Real.pi^2)*(rationalCone p (N^52) K:ℝ)| ≤
+      2300000*(p:ℝ) + (2*(p:ℝ)/K)*(1+Real.log p) := by
+  apply (vanishing_cone_error hN hK hKN hl hh ho).trans
+  apply add_le_add _ le_rfl
+  apply (div_le_self (by positivity) (by exact_mod_cast (show 1≤N by omega))).trans
+  exact mul_le_mul_of_nonneg_right (by norm_num) (Nat.cast_nonneg _)
 
 private noncomputable def coeff : ℝ := 8/Real.pi^2
 
@@ -187,4 +197,5 @@ end Arxiv.«2501.03234».ThetaPrimeAsymptotic
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.prime_asymptotic_exception_bound
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.prime_density_asymptotic
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.cone_interpolation
+#print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.vanishing_cone_error
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.uniform_approximation

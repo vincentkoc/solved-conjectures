@@ -200,7 +200,21 @@ theorem window_variance_uniform : ∃ K : ℝ, 0≤K ∧ ∀ L : ℕ → ℕ, L 
   exact ⟨15876*C,by positivity,fun L hL N hN =>
     ThetaReciprocalVariance.window_variance_from_energy hC (ht L hL) N hN⟩
 
+/-- Every zero-mean reflected periodic wave has convergent reciprocal
+prefixes in their natural order. -/
+theorem reciprocal_window_cauchy {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {d : ℕ} (hd : 0<d) (v : ℕ → E) {M : ℝ} (hv : ∀ j, ‖v j‖≤M) (hz : v 0=0)
+    (hp : ∀ j, v (2*d+j)=v j) (hr : ∀ j≤2*d, v (2*d-j)= -v j) :
+    CauchySeq (fun K : ℕ => ∑ i∈range K, ((i:ℝ)+1)⁻¹ • v (i+1)) := by
+  have hm : Antitone (fun i : ℕ => ((i:ℝ)+1)⁻¹) := by
+    intro a b hab; exact inv_anti₀ (by positivity) (by exact_mod_cast Nat.add_le_add_right hab 1)
+  have hl : Filter.Tendsto (fun i : ℕ => ((i:ℝ)+1)⁻¹) Filter.atTop (nhds 0) := by
+    simp only [← one_div]; exact tendsto_one_div_add_atTop_nhds_zero_nat
+  exact hm.cauchySeq_series_mul_of_tendsto_zero_of_bounded hl
+    (period_prefix hd v hv hp (reflect_period v hz hr))
+
 end Arxiv.«2501.03234».ThetaUniformWindows
+#print axioms Arxiv.«2501.03234».ThetaUniformWindows.reciprocal_window_cauchy
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.numeratorWindow_uniform
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.windowBlock_uniform
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.windowEnergy_uniform

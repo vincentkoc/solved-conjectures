@@ -8,7 +8,8 @@ open Finset ThetaReciprocalInversion ThetaReciprocalBlocks ThetaDenominatorTails
 
 private noncomputable def E (p : ℕ) : ℝ := (S p:ℝ)/p-Real.log p/2
 
-private theorem band_card {N : ℕ} (hN : 2≤N) (s : Finset ℕ)
+/-- The elementary Chebyshev bound for a subset of the prime scale. -/
+theorem band_card {N : ℕ} (hN : 2≤N) (s : Finset ℕ)
     (hs : ∀ p∈s, p.Prime ∧ N<p ∧ p≤N^64) :
     (s.card:ℝ) ≤ Real.log 4*(N:ℝ)^64/Real.log N := by
   have hp : (1:ℝ)<N := by exact_mod_cast hN
@@ -303,5 +304,6 @@ end Arxiv.«2501.03234».ThetaPrimeVariance
 #print axioms Arxiv.«2501.03234».ThetaPrimeVariance.prime_mean_absolute_relative
 #print axioms Arxiv.«2501.03234».ThetaPrimeVariance.relative_square_sum
 #print axioms Arxiv.«2501.03234».ThetaPrimeVariance.prime_mean_relative_squared
+#print axioms Arxiv.«2501.03234».ThetaPrimeVariance.band_card
 #print axioms Arxiv.«2501.03234».ThetaPrimeVariance.prime_second_moment
 #print axioms Arxiv.«2501.03234».ThetaPrimeVariance.prime_mean_squared_error
