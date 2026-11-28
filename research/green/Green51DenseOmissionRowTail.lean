@@ -16,7 +16,7 @@ def SpreadClass {s r h : ℕ} (C : Finset (𝔽₂ (2*(s+1)))) (B : ℕ)
       (layers C row).card=(2*s+3)*2^r-h ∧ FibrePresents C row d.val ∧
       B ≤ (occupiedRows (fun i : C => (row i.val)ᶜ)).card
 
-private theorem total_unused {s r h : ℕ} (C : Finset (𝔽₂ (2*(s+1))))
+theorem total_unused {s r h : ℕ} (C : Finset (𝔽₂ (2*(s+1))))
     (w : 𝔽₂ (2*(s+1)) → Finset (𝔽₂ r)) (small : h<2^r) (size : C.card=2*s+3)
     (sz : (layers C w).card=(2*s+3)*2^r-h) :
     (∑ i : C,(w i.val)ᶜ.card)=h := by
@@ -27,6 +27,30 @@ private theorem total_unused {s r h : ℕ} (C : Finset (𝔽₂ (2*(s+1))))
   have limit : h≤(2*s+3)*2^r := small.le.trans (Nat.le_mul_of_pos_left _ (by omega))
   rw [sz] at both
   omega
+
+theorem stable_omission_margin {s r h : ℕ} (hs : 5 ≤ s) (small : h<2^r) :
+    min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*((2*s+3)*2^r-h) := by
+  have le := Nat.mul_le_mul_right (2^r) (min_le_right (5*(2*s+3)+12) (4*(2*s+3)+20))
+  have base : 13 ≤ 2*s+3 := by omega
+  have prod := Nat.mul_le_mul_right (2^r) base
+  have room : h≤(2*s+3)*2^r := small.le.trans (Nat.le_mul_of_pos_left _ (by omega))
+  have sub := Nat.sub_add_cancel room
+  nlinarith only [le,prod,sub,small]
+
+theorem class_eq_of_omission_match {s r h : ℕ}
+    (near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*((2*s+3)*2^r-h))
+    {C : Finset (𝔽₂ (2*(s+1)))} (circuit : ShortestOddCircuit C C) (size : C.card=2*s+3)
+    (span : Submodule.span F (C : Set (𝔽₂ (2*(s+1))))=⊤) {p q : DoubleFamily s r h}
+    {a b : 𝔽₂ (2*(s+1)) → Finset (𝔽₂ r)}
+    (live : ∀ i∈C,(a i).Nonempty) (live' : ∀ i∈C,(b i).Nonempty)
+    (sz : (layers C a).card=(2*s+3)*2^r-h) (sz' : (layers C b).card=(2*s+3)*2^r-h)
+    (pa : FibrePresents C a p.val) (pb : FibrePresents C b q.val)
+    (w : WordMatch (fun i : C => (a i.val)ᶜ) (fun i : C => (b i.val)ᶜ)) :
+    Quotient.mk (affineSetoid (DoubleFamily s r h)) p=Quotient.mk _ q := by
+  apply Quotient.sound
+  apply (presented_fibre_equivalence near circuit size span live live' sz sz' pa pb).mpr
+  apply (word_histogram C _ _).mp
+  simpa only [compl_compl] using w.compl
 
 theorem dense_row_exception {s r h B : ℕ} (large : 10 ≤ h) (cut : 64*(Nat.log 2 h+2) ≤ B)
     (small : h<2^r)
@@ -41,12 +65,9 @@ theorem dense_row_exception {s r h B : ℕ} (large : 10 ≤ h) (cut : 64*(Nat.lo
   have total (q : Q) : ∑ i,(defects q i).card=h := total_unused C (row q) small size (sz q)
   apply many_active_presentations_rare large cut defects total many
   intro p q w
-  have matched : WordMatch (fun i : C => row p i.val) (fun i : C => row q i.val) := by
-    simpa only [defects,compl_compl] using w.compl
-  have aff := (presented_fibre_equivalence near circuit size span (live p) (live q) (sz p) (sz q)
-    (presentation p) (presentation q)).mpr ((word_histogram C _ _).mp matched)
-  apply Subtype.ext
-  exact (eq p).symm.trans ((Quotient.sound (s := affineSetoid (DoubleFamily s r h)) aff).trans (eq q))
+  have eq' := class_eq_of_omission_match near circuit size span (live p) (live q) (sz p) (sz q)
+    (presentation p) (presentation q) w
+  exact Subtype.ext ((eq p).symm.trans (eq'.trans (eq q)))
 
 /-- In the stable range this is a bound relative to the count of all actual affine classes. -/
 theorem dense_row_fraction {s r h B : ℕ} (hs : 5 ≤ s) (rows : h ≤ 2*s+3)
@@ -54,13 +75,7 @@ theorem dense_row_fraction {s r h B : ℕ} (hs : 5 ≤ s) (rows : h ≤ 2*s+3)
     {C : Finset (𝔽₂ (2*(s+1)))} (circuit : ShortestOddCircuit C C) (size : C.card=2*s+3)
     (span : Submodule.span F (C : Set (𝔽₂ (2*(s+1))))=⊤) :
     2^(B*h/8)*Nat.card {q // SpreadClass (r := r) (h := h) C B q} ≤ fibreClasses s r h := by
-  have le := Nat.mul_le_mul_right (2^r) (min_le_right (5*(2*s+3)+12) (4*(2*s+3)+20))
-  have base : 13 ≤ 2*s+3 := by omega
-  have prod := Nat.mul_le_mul_right (2^r) base
-  have room : h≤(2*s+3)*2^r := small.le.trans (Nat.le_mul_of_pos_left _ (by omega))
-  have near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*((2*s+3)*2^r-h) := by
-    have sub := Nat.sub_add_cancel room
-    nlinarith only [le,prod,sub,small]
+  have near := stable_omission_margin hs small
   rw [stable_dense_number hs rows small rank]
   exact dense_row_exception large cut small near circuit size span
 
@@ -100,6 +115,9 @@ theorem dense_small_rows_fraction {s r h B L : ℕ} (hs : 5 ≤ s) (rows : h ≤
     (dense_row_fraction hs rows small rank large cut circuit size span)
 
 end Green51FrameIsomorphisms
+#print axioms Green51FrameIsomorphisms.total_unused
+#print axioms Green51FrameIsomorphisms.stable_omission_margin
+#print axioms Green51FrameIsomorphisms.class_eq_of_omission_match
 #print axioms Green51FrameIsomorphisms.dense_row_exception
 #print axioms Green51FrameIsomorphisms.dense_row_fraction
 #print axioms Green51FrameIsomorphisms.dense_small_rows_fraction
