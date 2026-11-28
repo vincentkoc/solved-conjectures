@@ -51,7 +51,9 @@ private theorem scale_cost (a b u n : ℝ) (hn : 0<n) :
   rw [show 2*(a^2/n)-2=(2*a^2-2*n)/n by field_simp,abs_div,abs_of_pos hn]
   field_simp
 
-private theorem critical_support {v : ℕ→ℕ+} (A B : ∀ i, Finset (ZMod (v i)))
+/-- The two even-sum supports have half density and vanishing overlap, and
+the normalized finite deviation bound tends to zero. -/
+theorem critical_support {v : ℕ→ℕ+} (A B : ∀ i, Finset (ZMod (v i)))
     (grow : Tendsto (fun i => (v i).val) atTop atTop)
     (full : ∀ i, split (A i) (B i)+split (A i) (B i)=univ)
     (critical : Tendsto (fun i => ((split (A i) (B i)).card:ℝ)/Real.sqrt ((2*(v i).val:ℕ):ℝ))
@@ -235,6 +237,7 @@ theorem seven_eighths {v : ℕ→ℕ+} (A B : ∀ i, Finset (ZMod (v i)))
     _ ≤ _ := by
       rw [mul_assoc]
       exact mul_le_mul_of_nonneg_left cb (by norm_num)
+#print axioms critical_support
 #print axioms balance
 #print axioms seven_eighths
 
