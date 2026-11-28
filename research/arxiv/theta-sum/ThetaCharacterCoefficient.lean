@@ -34,7 +34,8 @@ private lemma commonWeight_eq (Y d : ℕ) :
     push_cast
     rfl
 
-private theorem weight_limit {d : ℕ} (hd : 0 < d) :
+/-- The odd common-factor weights increase to the odd reciprocal-square sum. -/
+theorem commonWeight_limit {d : ℕ} (hd : 0 < d) :
     Tendsto (fun N : ℕ => commonWeight (2*N^52) d) atTop (𝓝 (Real.pi^2/8)) := by
   simp_rw [commonWeight_eq]
   apply odd_reciprocal_square.tendsto_sum_nat.comp
@@ -75,7 +76,7 @@ private theorem model_mean_limit {T : ℕ} (hT : 3 ≤ T) :
   by_cases H : Odd d ∧ 3 ∣ d
   · let : NeZero d := ⟨H.1.pos.ne'⟩
     simp only [dif_pos H, coeff, if_pos H, unitMean]
-    have w := (weight_limit H.1.pos).div_const d
+    have w := (commonWeight_limit H.1.pos).div_const d
     have h := ((ThetaCharacterNumerator.row_character_numerator_limit H.1 H.2).comp (window_limit h2)).div_const (d.totient:ℝ)
     convert w.mul h using 1
     congr 1
@@ -224,5 +225,7 @@ theorem prime_class_statistics_exact (hAP : ProgressionMangoldt) :
 
 #print axioms prime_character_exact
 #print axioms prime_class_statistics_exact
+
+#print axioms commonWeight_limit
 
 end Arxiv.«2501.03234».ThetaCharacterCoefficient

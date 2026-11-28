@@ -11,12 +11,11 @@ private lemma char_bound (p : ℕ) : |(chi p : ℝ)| ≤ 1 := by
   unfold chi
   split_ifs <;> norm_num
 
-/-- Every sufficiently large pair of successive cutoffs approximates the
-prime character mean. The cutoffs tend to infinity in the stated order. -/
-theorem twisted_approx_eventually {ε : ℝ} (he : 0 < ε) :
+/-- Bounded weights preserve the iterated prime mean approximation by reciprocal models. -/
+theorem bounded_twist_approx_eventually (w : ℕ → ℝ) (hw : ∀ p, |w p| ≤ 1) {ε : ℝ} (he : 0 < ε) :
     ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
-      |primeMean (fun p => (chi p : ℝ)*scaledOff p) X -
-       primeMean (fun p => (chi p : ℝ)*model T V p) X| ≤ ε := by
+      |primeMean (fun p => w p*scaledOff p) X -
+       primeMean (fun p => w p*model T V p) X| ≤ ε := by
   filter_upwards [prime_model_absolute_eventually he] with T hT
   filter_upwards [hT] with V H
   have hπ : Tendsto (fun N : ℕ => (N.primeCounting : ℝ)) atTop atTop :=
@@ -25,7 +24,15 @@ theorem twisted_approx_eventually {ε : ℝ} (he : 0 < ε) :
   rw [primeMean,primeMean,← sub_div,← sum_sub_distrib,abs_div,abs_of_pos hx,div_le_iff₀ hx]
   apply (abs_sum_le_sum_abs _ _).trans ((sum_le_sum (fun p _ => ?_)).trans hX)
   rw [← mul_sub,abs_mul]
-  exact mul_le_of_le_one_left (abs_nonneg _) (char_bound p)
+  exact mul_le_of_le_one_left (abs_nonneg _) (hw p)
+
+/-- Every sufficiently large pair of successive cutoffs approximates the
+prime character mean. The cutoffs tend to infinity in the stated order. -/
+theorem twisted_approx_eventually {ε : ℝ} (he : 0 < ε) :
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      |primeMean (fun p => (chi p : ℝ)*scaledOff p) X -
+       primeMean (fun p => (chi p : ℝ)*model T V p) X| ≤ ε :=
+  bounded_twist_approx_eventually _ char_bound he
 
 private lemma twisted_approx {ε : ℝ} (he : 0 < ε) :
     ∃ T V : ℕ, 3 ≤ T ∧ 2 ≤ V ∧ ∀ᶠ X : ℕ in atTop,
@@ -52,7 +59,8 @@ private lemma model_character_limit (hAP : ProgressionMangoldt) {T V : ℕ} (hT 
   have hc : chi (n%M) = chi n := by simp only [chi,Nat.mod_mod_of_dvd _ h3]
   rw [hc,hper n]
 
-private lemma limit_of_prime_models {f : ℕ → ℝ} {b : ℝ}
+/-- Vanishing uniform mean approximation transfers existence of a limit and its lower bound. -/
+theorem limit_of_prime_models {f : ℕ → ℝ} {b : ℝ}
     (h : ∀ ε : ℝ, 0 < ε → ∃ g : ℕ → ℝ, ∃ L : ℝ, b ≤ L ∧
       Tendsto g atTop (𝓝 L) ∧ ∀ᶠ X : ℕ in atTop, |f X - g X| ≤ ε) :
     ∃ L : ℝ, b ≤ L ∧ Tendsto f atTop (𝓝 L) := by
@@ -111,7 +119,8 @@ private lemma primeMean_linear (a b : ℝ) (f g : ℕ → ℝ) (X : ℕ) :
   simp only [primeMean,sum_add_distrib,← mul_sum]
   ring
 
-private lemma primeMean_of_close {f g : ℕ → ℝ} {L : ℝ}
+/-- Eventual pointwise approximation along primes preserves the limiting prime mean. -/
+theorem primeMean_of_close {f g : ℕ → ℝ} {L : ℝ}
     (h : ∀ ε : ℝ, 0 < ε → ∀ᶠ p : ℕ in atTop, p.Prime → |f p-g p| < ε)
     (hg : Tendsto (primeMean g) atTop (𝓝 L)) : Tendsto (primeMean f) atTop (𝓝 L) := by
   have hd : Tendsto (primeMean (fun p => f p-g p)) atTop (𝓝 0) :=
@@ -132,26 +141,33 @@ theorem chi_prime_mean (hAP : ProgressionMangoldt) :
     norm_num [sum_range_succ,Nat.Coprime,chi]
   simpa only [hz] using periodic_prime_mean hAP hper
 
-/-- Convert a twisted off-diagonal mean to a mean of the original residual. -/
-theorem residual_twist {L : ℝ} (hAP : ProgressionMangoldt)
-    (hL : Tendsto (primeMean (fun p => (chi p : ℝ)*scaledOff p)) atTop (𝓝 L)) :
-    Tendsto (primeMean (fun p => (chi p : ℝ)*residual p)) atTop (𝓝 (8/Real.pi^2*L)) := by
-  let g (p : ℕ) := diagonalConstant*(chi p : ℝ)+(8/Real.pi^2)*((chi p : ℝ)*scaledOff p)
-  have hg := ((chi_prime_mean hAP).const_mul diagonalConstant).add (hL.const_mul (8/Real.pi^2))
+/-- A centered bounded weight transfers an off-diagonal mean to the original residual. -/
+theorem bounded_residual_twist {L : ℝ} (w : ℕ → ℝ) (hw : ∀ p, |w p| ≤ 1)
+    (hw0 : Tendsto (primeMean w) atTop (𝓝 0))
+    (hL : Tendsto (primeMean (fun p => w p*scaledOff p)) atTop (𝓝 L)) :
+    Tendsto (primeMean (fun p => w p*residual p)) atTop (𝓝 (8/Real.pi^2*L)) := by
+  let g (p : ℕ) := diagonalConstant*w p+(8/Real.pi^2)*(w p*scaledOff p)
+  have hg := (hw0.const_mul diagonalConstant).add (hL.const_mul (8/Real.pi^2))
   rw [mul_zero,zero_add] at hg
   apply primeMean_of_close (g := g) _ (hg.congr' (Eventually.of_forall (fun X =>
-    (primeMean_linear diagonalConstant (8/Real.pi^2) (fun n => (chi n : ℝ)) (fun n => (chi n : ℝ)*scaledOff n) X).symm)))
+    (primeMean_linear diagonalConstant (8/Real.pi^2) (fun n => w n) (fun n => w n*scaledOff n) X).symm)))
   intro ε he
   filter_upwards [Metric.tendsto_nhds.mp diagonal_second_order ε he,eventually_gt_atTop 2] with p H hp hprime
   let : Fact p.Prime := ⟨hprime⟩
   have hodd := hprime.eq_two_or_odd.resolve_left (by omega)
-  have heq : (chi p : ℝ)*residual p - g p =
-      (chi p : ℝ)*(divisibleDiagonal p/p-Real.log p/2-diagonalConstant) := by
+  have heq : w p*residual p - g p =
+      w p*(divisibleDiagonal p/p-Real.log p/2-diagonalConstant) := by
     simp only [g,residual,scaledOff,S_eq_diagonal_add_offDiagonal hodd,add_div]
     field_simp [Real.pi_ne_zero]
     ring
   rw [heq,abs_mul]
-  exact (mul_le_of_le_one_left (abs_nonneg _) (char_bound p)).trans_lt H
+  exact (mul_le_of_le_one_left (abs_nonneg _) (hw p)).trans_lt H
+
+/-- Convert a twisted off-diagonal mean to a mean of the original residual. -/
+theorem residual_twist {L : ℝ} (hAP : ProgressionMangoldt)
+    (hL : Tendsto (primeMean (fun p => (chi p : ℝ)*scaledOff p)) atTop (𝓝 L)) :
+    Tendsto (primeMean (fun p => (chi p : ℝ)*residual p)) atTop (𝓝 (8/Real.pi^2*L)) :=
+  bounded_residual_twist _ char_bound (chi_prime_mean hAP) hL
 
 private lemma class_limit {r : ℕ} {s B C : ℝ} {f : ℕ → ℝ}
     (hrs : (r=1 ∧ s=1) ∨ (r=2 ∧ s= -1)) (hAP : ProgressionMangoldt)
@@ -413,5 +429,10 @@ theorem S_prime_class_statistics (hAP : ProgressionMangoldt) :
 #print axioms twisted_approx_eventually
 #print axioms residual_twist
 #print axioms chi_prime_mean
+
+#print axioms bounded_twist_approx_eventually
+#print axioms bounded_residual_twist
+#print axioms primeMean_of_close
+#print axioms limit_of_prime_models
 
 end Arxiv.«2501.03234».ThetaCharacterPrimeMeans
