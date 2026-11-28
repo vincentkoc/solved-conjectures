@@ -90,7 +90,7 @@ private lemma residue_count_exact (N M : ℕ) [NeZero M] (B : Finset (ZMod M)) (
 
 /-- Simultaneous congruence conditions at distinct primes are independent over
 one full period, and have discrepancy at most one per allowed residue on a prefix. -/
-private lemma crt_count (N : ℕ) (T : Finset ℕ) (hT : ∀ q ∈ T, q.Prime)
+lemma sieve_residue_intersection_count (N : ℕ) (T : Finset ℕ) (hT : ∀ q ∈ T, q.Prime)
     (B : (q : ℕ) → Finset (ZMod q)) :
     |(((range N).filter fun x => ∀ q ∈ T, (x : ZMod q) ∈ B q).card : ℝ) -
       (N : ℝ) * ∏ q ∈ T, ((B q).card : ℝ) / q| ≤ ∏ q ∈ T, ((B q).card : ℝ) ∧
@@ -182,7 +182,7 @@ private lemma trunc_comparison (N : ℕ) (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.P
     |truncCount N Q B m - N * truncMass Q B m| ≤ truncError Q B m ∧
       ((∏ q ∈ Q, q) ∣ N → truncCount N Q B m = N * truncMass Q B m) := by
   classical
-  have hcrt {j : ℕ} (T : Finset ℕ) (hT : T ∈ Q.powersetCard j) := crt_count N T
+  have hcrt {j : ℕ} (T : Finset ℕ) (hT : T ∈ Q.powersetCard j) := sieve_residue_intersection_count N T
     (fun q hq => hQ q ((mem_powersetCard.mp hT).1 hq)) B
   have rearrange : truncCount N Q B m - N * truncMass Q B m =
       ∑ j ∈ range (m+1), (-1 : ℝ)^j * ∑ T ∈ Q.powersetCard j,
@@ -224,7 +224,7 @@ private lemma exact_survivors (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.Prime)
     simp only [C, full, card_sdiff_of_subset (subset_univ _), card_univ, ZMod.card,
       Nat.cast_sub hle]
     field_simp [(by exact_mod_cast (hQ q hq).ne_zero : (q : ℝ) ≠ 0)]
-  have H := (crt_count (∏ q ∈ Q, q) Q hQ C).2 dvd_rfl
+  have H := (sieve_residue_intersection_count (∏ q ∈ Q, q) Q hQ C).2 dvd_rfl
   rw [prod_congr rfl fun q hq => hc hq] at H
   convert H using 2
   unfold survivorCount
@@ -343,7 +343,7 @@ private lemma select_product {α : Type*} (s : Finset α) (f : α → ℝ) {L : 
       have hh := mul_le_mul_of_nonneg_right (hf a (mem_insert_self ..)) hpos
       linarith [lt_of_not_ge h]
 
-private lemma symmetric_tail {α : Type*} (Q : Finset α) (u : α → ℝ) (j : ℕ)
+lemma sieve_symmetric_tail_bound {α : Type*} (Q : Finset α) (u : α → ℝ) (j : ℕ)
     (hu : ∀ q ∈ Q, 0 ≤ u q ∧ u q ≤ 1) :
     ((2 : ℝ)^j * (∑ T ∈ Q.powersetCard j, ∏ q ∈ T, u q)) *
       (∏ q ∈ Q, (1-u q))^2 ≤ 1 := by
@@ -492,7 +492,7 @@ private lemma pair_pure_sieve (b : Bool) (N z r : ℕ) (hz : 2 ≤ z) (L : ℝ)
     rw [hu hq]
     have h : (2 : ℝ) < q := by exact_mod_cast (hQ q hq).2.1
     exact ⟨by positivity, (div_le_one (by linarith)).mpr h.le⟩
-  have ht := symmetric_tail Q u (2*r+1) hu₀
+  have ht := sieve_symmetric_tail_bound Q u (2*r+1) hu₀
   rw [hV] at ht
   let E := ∑ T ∈ Q.powersetCard (2*r+1), hitMass T (pairResidues b)
   change 2^(2*r+1) * E * (∏ q ∈ Q, f q)^2 ≤ 1 at ht
@@ -726,5 +726,9 @@ theorem summable_exact_length_reciprocals_iff (b : Bool) (k : ℕ) :
 
 #print axioms summable_prime_pair_reciprocals
 #print axioms summable_exact_length_reciprocals_iff
+
+#print axioms sieve_residue_intersection_count
+
+#print axioms sieve_symmetric_tail_bound
 
 end CunninghamChain

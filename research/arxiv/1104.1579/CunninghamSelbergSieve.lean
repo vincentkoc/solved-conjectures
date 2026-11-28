@@ -16,7 +16,7 @@ open Finset
 
 /-- A factorial counts at least `z / q` copies of each prime `q ≤ z`.
 Taking logarithms bounds the expected log modulus in the sieve. -/
-private lemma prime_log_sum (z : ℕ) (hz : 0 < z) (Q : Finset ℕ)
+lemma sieve_sum_log_div_prime_le (z : ℕ) (hz : 0 < z) (Q : Finset ℕ)
     (hQ : ∀ q ∈ Q, q.Prime ∧ q ≤ z) :
     ∑ q ∈ Q, Real.log q / q ≤ 2 * Real.log z := by
   classical
@@ -142,7 +142,7 @@ private lemma truncated_euler_mass (k z : ℕ) (hk : 0 < k) (hz : 1 < z) (Q : Fi
       have he : 1+(k:ℝ)/((q:ℝ)-k) = q/((q:ℝ)-k) := by field_simp [hden]; ring
       rw [he]
       field_simp [hden, hq0.ne']
-    have hm := prime_log_sum z (by omega) Q (fun q hq => ⟨(hQ q hq).1, (hQ q hq).2.2⟩)
+    have hm := sieve_sum_log_div_prime_le z (by omega) Q (fun q hq => ⟨(hQ q hq).1, (hQ q hq).2.2⟩)
     have he : (∑ q ∈ Q, (k : ℝ)/((q : ℝ)-k) / (1+k/((q : ℝ)-k)) * Real.log q) =
         k * ∑ q ∈ Q, Real.log q / q := by
       rw [mul_sum]
@@ -797,5 +797,7 @@ theorem exactChainCount_one_asymptotic_primeCounting (b : Bool) :
 #print axioms exactChainCount_isBigO
 #print axioms primePrefixSeedCount_asymptotic_iff_exact
 #print axioms exactChainCount_one_asymptotic_primeCounting
+
+#print axioms sieve_sum_log_div_prime_le
 
 end CunninghamChain
