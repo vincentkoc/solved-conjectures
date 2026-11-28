@@ -353,6 +353,23 @@ private lemma rms_scaled_limit (hAP : ProgressionMangoldt) :
   apply (rms_dist scaledOff (model T V) X).trans
   exact (Real.sqrt_le_left he.le).mpr ((div_le_iff₀ hpos).mpr hX)
 
+/-- The remaining diagonal error vanishes in ordinary prime mean square. -/
+theorem diagonal_square_error :
+    Tendsto (primeMean (fun p => (residual p-diagonalConstant-8/Real.pi^2*scaledOff p)^2)) atTop (𝓝 0) := by
+  have hd := ((diagonal_second_order.sub_const diagonalConstant).pow 2)
+  rw [sub_self,show (0 : ℝ)^2=0 by norm_num] at hd
+  apply prime_mean_of_convergence
+  intro ε he
+  filter_upwards [Metric.tendsto_nhds.mp hd ε he,eventually_gt_atTop 2] with p h hp hprime
+  let : Fact p.Prime := ⟨hprime⟩
+  have hh : residual p-diagonalConstant-8/Real.pi^2*scaledOff p = divisibleDiagonal p/p-Real.log p/2-diagonalConstant := by
+    simp only [residual,scaledOff,S_eq_diagonal_add_offDiagonal (hprime.eq_two_or_odd.resolve_left (by omega)),add_div]
+    field_simp [Real.pi_ne_zero]
+    ring
+  simpa only [hh,Real.dist_eq] using h
+
+#print axioms diagonal_square_error
+
 /-- The centered second moment has a finite positive limit, with its
 lower bound supplied by the modulo-three correlation. -/
 private lemma variance_limit (hAP : ProgressionMangoldt) {C : ℝ}
@@ -363,19 +380,8 @@ private lemma variance_limit (hAP : ProgressionMangoldt) {C : ℝ}
   let f (p : ℕ) := residual p-diagonalConstant
   let g (p : ℕ) := a*scaledOff p
   have ha : 0 ≤ a := by dsimp [a]; positivity
-  have hd := ((diagonal_second_order.sub_const diagonalConstant).pow 2)
-  rw [sub_self,show (0 : ℝ)^2=0 by norm_num] at hd
   have herr : Tendsto (primeRms (fun p => f p-g p)) atTop (𝓝 0) := by
-    have hl : Tendsto (primeMean (fun p => (f p-g p)^2)) atTop (𝓝 0) := by
-      apply prime_mean_of_convergence
-      intro ε he
-      filter_upwards [Metric.tendsto_nhds.mp hd ε he,eventually_gt_atTop 2] with p h hp hprime
-      let : Fact p.Prime := ⟨hprime⟩
-      have hh : f p-g p = divisibleDiagonal p/p-Real.log p/2-diagonalConstant := by
-        simp only [f,g,a,residual,scaledOff,S_eq_diagonal_add_offDiagonal (hprime.eq_two_or_odd.resolve_left (by omega)),add_div]
-        field_simp [Real.pi_ne_zero]
-        ring
-      simpa only [hh,Real.dist_eq] using h
+    have hl : Tendsto (primeMean (fun p => (f p-g p)^2)) atTop (𝓝 0) := diagonal_square_error
     change Tendsto (fun X => Real.sqrt (primeMean (fun p => (f p-g p)^2) X)) atTop (𝓝 0)
     simpa only [Real.sqrt_zero] using hl.sqrt
   obtain ⟨K,_,hK⟩ := rms_scaled_limit hAP
