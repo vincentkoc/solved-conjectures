@@ -7,14 +7,15 @@ import CunninghamBalancedRootEstimate
 namespace CunninghamChain.LinearRoots
 open Polynomial
 
-/-- Every prime p above the stated dyadic threshold gives a common irreducible prefix for
-the two Jones recurrences starting from p(X−1). Index zero is the seed. -/
-theorem shared_prime_seed_prefix {p : ℕ} (hp : p.Prime) (s : ℕ) (hsize : 2*16^s<p)
-    (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s) : Irreducible (term k p (-p) n) := by
+/-- The balanced root estimate proves irreducibility once every factorization of a positive
+iterate has a factor with unit leading coefficient. -/
+theorem shared_seed_prefix_of_unit_leading_factor {p : ℕ} (s : ℕ) (hsize : 2*16^s<p)
+    (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s)
+    (hsplit : n≠0 → ∀ A B : ℤ[X], polynomialTerm k (C (p:ℤ)*X+C (-(p:ℤ))) n = A*B →
+      IsUnit A.leadingCoeff ∨ IsUnit B.leadingCoeff) : Irreducible (term k p (-p) n) := by
   let seed : ℤ[X] := C (p:ℤ)*X+C (-(p:ℤ))
-  have hpz : (p:ℤ)≠0 := by exact_mod_cast hp.ne_zero
+  have hpz : (p:ℤ)≠0 := by exact_mod_cast (show p≠0 by omega)
   have hdeg : seed.natDegree=1 := natDegree_linear hpz
-  have hlead : seed.leadingCoeff=p := leadingCoeff_linear hpz
   let f := polynomialTerm k seed n
   have shape := polynomialTerm_shape k seed (by omega) n
   have deg : f.natDegree=1+n := by simpa [f,hdeg] using shape.1
@@ -30,8 +31,7 @@ theorem shared_prime_seed_prefix {p : ℕ} (hp : p.Prime) (s : ℕ) (hsize : 2*1
     rw [hj]
     cases k <;> simp [polynomialTerm]
   let G : ℤ[X] := X^(s*4^s)*(X-1)
-  apply irreducible_of_prime_leading_root_test f G (by omega) hu
-    (by rw [show f.leadingCoeff=p from shape.2.trans hlead]; exact (Nat.prime_iff_prime_int.mp hp).irreducible)
+  apply irreducible_of_unit_leading_factor_root_test f G (by omega) hu (hsplit hn0)
   intro z hz
   have hz0 : z≠0 := by
     rintro rfl
@@ -73,6 +73,21 @@ theorem shared_prime_seed_prefix {p : ℕ} (hp : p.Prime) (s : ℕ) (hsize : 2*1
   rw [calcG]
   exact ⟨mul_pos (pow_pos (norm_pos_iff.mpr hz0) _) (norm_pos_iff.mpr (sub_ne_zero.mpr hz1)),hb⟩
 
+/-- Every prime p above the stated dyadic threshold gives a common irreducible prefix for
+the two Jones recurrences starting from p(X−1). Index zero is the seed. -/
+theorem shared_prime_seed_prefix {p : ℕ} (hp : p.Prime) (s : ℕ) (hsize : 2*16^s<p)
+    (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s) : Irreducible (term k p (-p) n) := by
+  apply shared_seed_prefix_of_unit_leading_factor s hsize k n hn
+  intro _ A B he
+  let seed : ℤ[X] := C (p:ℤ)*X+C (-(p:ℤ))
+  have hne : (p:ℤ)≠0 := by exact_mod_cast hp.ne_zero
+  have hdeg : seed.natDegree=1 := natDegree_linear hne
+  have hl := (polynomialTerm_shape k seed (by omega) n).2.trans (leadingCoeff_linear hne)
+  have eq : (p:ℤ)=A.leadingCoeff*B.leadingCoeff := by
+    rw [←leadingCoeff_mul,←he]
+    exact hl.symm
+  exact (Nat.prime_iff_prime_int.mp hp).irreducible.isUnit_or_isUnit eq
+
 /-- At every prescribed finite length there are arbitrarily large prime coefficients
 for which all indices through that length are irreducible for both signs. -/
 theorem arbitrarily_large_shared_prefixes (L B : ℕ) :
@@ -86,6 +101,7 @@ theorem arbitrarily_large_shared_prefixes (L B : ℕ) :
   have hL : L ≤ 4*s^2 := by dsimp [s]; nlinarith [Nat.zero_le (L^2)]
   exact hn.trans (hL.trans (Nat.le_mul_of_pos_right _ (by omega)))
 
+#print axioms shared_seed_prefix_of_unit_leading_factor
 #print axioms shared_prime_seed_prefix
 #print axioms arbitrarily_large_shared_prefixes
 
