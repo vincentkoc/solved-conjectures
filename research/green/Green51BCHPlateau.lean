@@ -10,13 +10,13 @@ local notation "F" => ZMod 2
 
 open Finset in
 /-- Transport the projected curve and its double along a binary linear equivalence. -/
-theorem transport_curve {K H : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
-    [AddCommGroup H] [Module F H] {n : ℕ} (L : K →ₗ[F] H)
+theorem transport_dimension {K H : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
+    [AddCommGroup H] [Module F H] {n d : ℕ} (L : K →ₗ[F] H)
     (E : (Space K × H) ≃ₗ[F] Cube n)
     (avoid : ∀ (p : Space K × H) (W : Submodule F (Space K × H)),
-      p+ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L) → Module.finrank F W≤2) :
+      p+ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L) → Module.finrank F W≤d) :
     ∃ A : Finset (Cube n), A.card=Fintype.card K ∧
-      ∀ (W : Submodule F (Cube n)) (p : Cube n),p+ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) → Module.finrank F W≤2 := by
+      ∀ (W : Submodule F (Cube n)) (p : Cube n),p+ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) → Module.finrank F W≤d := by
   classical
   let v := fun x : K => E (lifted L x)
   let A := univ.image v
@@ -37,6 +37,16 @@ theorem transport_curve {K H : Type*} [Field K] [CharP K 2] [Algebra F K] [Finty
   refine ⟨_,⟨a,rfl⟩,_,⟨b,rfl⟩,E.injective ?_⟩
   change E (lifted L a+lifted L b)=E (E.symm p+w)
   rwa [map_add,map_add,LinearEquiv.apply_symm_apply]
+
+open Finset in
+/-- Transport the projected curve and its double along a binary linear equivalence. -/
+theorem transport_curve {K H : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
+    [AddCommGroup H] [Module F H] {n : ℕ} (L : K →ₗ[F] H)
+    (E : (Space K × H) ≃ₗ[F] Cube n)
+    (avoid : ∀ (p : Space K × H) (W : Submodule F (Space K × H)),
+      p+ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L) → Module.finrank F W≤2) :
+    ∃ A : Finset (Cube n), A.card=Fintype.card K ∧
+      ∀ (W : Submodule F (Cube n)) (p : Cube n),p+ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) → Module.finrank F W≤2 := transport_dimension L E avoid
 
 open Finset in
 /-- Two bits of the fourth BCH coordinate may be omitted. -/
@@ -103,6 +113,7 @@ theorem plateau {n : ℕ} (hn : 6≤n) {α : ℝ}
   simpa [sz] using hi
 
 end Green51BCHCompression
+#print axioms Green51BCHCompression.transport_dimension
 #print axioms Green51BCHCompression.transport_curve
 #print axioms Green51BCHCompression.plateau_of_example
 #print axioms Green51BCHCompression.affine_examples
