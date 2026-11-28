@@ -130,7 +130,8 @@ theorem fresh_mixed_bound (U B : Finset G) (hB : IsSidon (B : Set G)) :
   exact ⟨loss U B,by omega,loss_sq U B hB⟩
 
 omit [Fintype G] in
-private lemma sum_upper (W : Finset G) : 2*(W+W).card ≤ W.card^2+W.card := by
+/-- The number of sums is bounded by the number of unordered pairs, including repetitions. -/
+theorem sum_upper (W : Finset G) : 2*(W+W).card ≤ W.card^2+W.card := by
   let s : Sym2 G → G := Sym2.lift ⟨(·+·),add_comm⟩
   have sub : W+W ⊆ W.sym2.image s := by
     intro x hx
@@ -141,6 +142,8 @@ private lemma sum_upper (W : Finset G) : 2*(W+W).card ≤ W.card^2+W.card := by
   have h' : ((W+W).card : ℝ) ≤ (↑((W.card+1).choose 2) : ℝ) := by exact_mod_cast h
   rw [Nat.cast_choose_two,Nat.cast_add_one] at h'
   exact_mod_cast (show 2*((W+W).card : ℝ) ≤ (W.card : ℝ)^2+W.card by linarith)
+
+#print axioms sum_upper
 
 section Layers
 
