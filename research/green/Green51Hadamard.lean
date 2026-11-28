@@ -146,6 +146,57 @@ private theorem planes (u v : Cube 3) :
       bitAt u s+bitAt v s+bitAt (u+v) s+bitAt 0 s=c+dot b s := by
   decide +revert +kernel
 
+/-- Three independent nonconstant balanced rows give a partition into pairs. -/
+private theorem partition_from_rows (C:Submodule F (Cube 16)) (i₀ i₁:Fin 16)
+    (L:Cube 3 →ₗ[F] C) (injective:Function.Injective L)
+    (vanish₀:∀b,(L b).val i₀=0) (vanish₁:∀b,(L b).val i₁=0)
+    (allOnes:(fun _=>1)∈C)
+    (balanced:∀x:C,x≠0 → x.val≠(fun _=>1) → 16=2*(supp x.val).card) :
+    ∃p:Fin 16→Cube 3,p i₀=0 ∧ p i₁=0 ∧ (∀s,(univ.filter fun i=>p i=s).card=2) ∧
+      ∀u v:Cube 3,(fun i=>bitAt u (p i)+bitAt v (p i)+bitAt (u+v) (p i)+bitAt 0 (p i))∈C := by
+  let T := C.subtype.comp L
+  let p (i:Fin 16) (j:Fin 3) := T (Pi.single j 1) i
+  have coord (b:Cube 3) (i:Fin 16) : T b i=dot b (p i) := by
+    have expand : ∑ j:Fin 3,b j • Pi.single j (1:F)=b := by
+      funext i
+      simp only [Finset.sum_apply,Pi.smul_apply,smul_eq_mul,Pi.single_apply]
+      simp [mul_ite]
+    conv_lhs => rw [←expand]
+    simp [map_sum,Finset.sum_apply,p,dot]
+  have rows (b:Cube 3) : (∑ i,sign (dot b (p i)))=if b=0 then 16 else 0 := by
+    simp_rw [←coord]
+    by_cases zero : b=0
+    · simp [zero,sign]
+    · have non : L b ≠ 0 := fun h=>zero (injective (h.trans L.map_zero.symm))
+      have different : (L b).val≠(fun _=>1) := by
+        intro bad
+        have h:=vanish₀ b
+        simp [bad] at h
+      have eq:=balanced _ non different
+      rw [if_neg zero]
+      change imbalance (L b).val=0
+      rw [imbalance_weight];omega
+  refine ⟨p,?_,?_,?_,?_⟩
+  · funext j;exact vanish₀ (Pi.single j 1)
+  · funext j;exact vanish₁ (Pi.single j 1)
+  · intro s
+    have joint : (∑ i:Fin 16,∑ b:Cube 3,sign (dot b (p i))*sign (dot b s))=16 := by
+      rw [sum_comm]
+      simp_rw [←sum_mul,rows]
+      simp [ite_mul,sign,dot]
+    simp_rw [table] at joint
+    have h : (∑ i:Fin 16,if s=p i then (8:ℤ) else 0)=
+        8*((univ.filter fun i => p i=s).card:ℤ) := by simp [sum_ite,eq_comm,mul_comm]
+    omega
+  · intro u v
+    obtain ⟨b,c,h⟩ := planes u v
+    have eq : (fun i => bitAt u (p i)+bitAt v (p i)+bitAt (u+v) (p i)+bitAt 0 (p i))=
+        c • (fun _:Fin 16 => (1:F))+T b := by
+      funext i
+      simpa only [Pi.add_apply,Pi.smul_apply,smul_eq_mul,mul_one,coord] using h (p i)
+    rw [eq]
+    exact C.add_mem (C.smul_mem c allOnes) (L b).property
+
 /-- Three independent balanced rows partition the sixteen positions into
 eight pairs, with both prescribed positions in the zero fiber. The union of the four pairs in any plane through zero is a
 codeword. Repeated points in a degenerate plane cancel in characteristic two. -/
@@ -170,51 +221,9 @@ theorem pair_partition {n : ℕ} (length : n=16) (C : Submodule F (Cube n)) (i�
     have low : Module.finrank F (Cube 3)=3 := by simp [Cube]
     rw [low]; omega
   obtain ⟨L,injective⟩ := finrank_le_iff_exists_linearMap.mp fits
-  let T := (C.subtype.comp l.ker.subtype).comp L
-  let p (i:Fin 16) (j:Fin 3) := T (Pi.single j 1) i
-  have coord (b:Cube 3) (i:Fin 16) : T b i=dot b (p i) := by
-    have expand : ∑ j:Fin 3,b j • Pi.single j (1:F)=b := by
-      funext i
-      simp only [Finset.sum_apply,Pi.smul_apply,smul_eq_mul,Pi.single_apply]
-      simp [mul_ite]
-    conv_lhs => rw [←expand]
-    simp [map_sum,Finset.sum_apply,p,dot]
-  have rows (b:Cube 3) : (∑ i,sign (dot b (p i)))=if b=0 then 16 else 0 := by
-    simp_rw [←coord]
-    by_cases zero : b=0
-    · simp [zero,sign]
-    · have non : (L b).val≠0 := by
-        intro bad
-        exact zero (injective (show L b=L 0 by rw [map_zero];exact Subtype.ext bad))
-      have different : (L b).val.val≠(fun _ => 1) := by
-        intro bad
-        have h := congrArg Prod.fst (show l (L b).val=0 from (L b).property)
-        change (L b).val.val i₀=0 at h
-        simp [bad] at h
-      have eq := balanced _ non different
-      rw [if_neg zero]
-      change imbalance (L b).val.val=0
-      rw [imbalance_weight];omega
-  refine ⟨p,?_,?_,?_,?_⟩
-  · funext j;exact congrArg Prod.fst (show l (L (Pi.single j 1)).val=0 from (L _).property)
-  · funext j;exact congrArg Prod.snd (show l (L (Pi.single j 1)).val=0 from (L _).property)
-  · intro s
-    have joint : (∑ i:Fin 16,∑ b:Cube 3,sign (dot b (p i))*sign (dot b s))=16 := by
-      rw [sum_comm]
-      simp_rw [←sum_mul,rows]
-      simp [ite_mul,sign,dot]
-    simp_rw [table] at joint
-    have h : (∑ i:Fin 16,if s=p i then (8:ℤ) else 0)=
-        8*((univ.filter fun i => p i=s).card:ℤ) := by simp [sum_ite,eq_comm,mul_comm]
-    omega
-  · intro u v
-    obtain ⟨b,c,h⟩ := planes u v
-    have eq : (fun i => bitAt u (p i)+bitAt v (p i)+bitAt (u+v) (p i)+bitAt 0 (p i))=
-        c • (fun _:Fin 16 => (1:F))+T b := by
-      funext i
-      simpa only [Pi.add_apply,Pi.smul_apply,smul_eq_mul,mul_one,coord] using h (p i)
-    rw [eq]
-    exact C.add_mem (C.smul_mem c allOnes) (L b).val.property
+  exact partition_from_rows C i₀ i₁ (l.ker.subtype.comp L) (Subtype.val_injective.comp injective)
+    (fun b=>congrArg Prod.fst (show l (L b).val=0 from (L b).property))
+    (fun b=>congrArg Prod.snd (show l (L b).val=0 from (L b).property)) allOnes balanced
 
 /-- If every common linear shift leaves eight ones in the two rows together,
 the rows take opposite values at every paired position. -/
@@ -248,7 +257,46 @@ theorem opposite_on_pairs (u v : Cube 3 → F)
   rw [same] at invert
   omega
 
+
+/-- Four independent codewords suffice when the length-sixteen all-one word is available. -/
+theorem partition_of_ones {n:ℕ} (length:n=16) (C:Submodule F (Cube n))
+    (rank:4≤Module.finrank F C) (ones:(fun _=>1)∈C)
+    (distance:∀x:C,x≠0 → 8≤(supp x.val).card) :
+    ∃p:Fin n→Cube 3,(∀s,(univ.filter fun i=>p i=s).card=2) ∧
+      ∀u v:Cube 3,(fun i=>bitAt u (p i)+bitAt v (p i)+bitAt (u+v) (p i)+bitAt 0 (p i))∈C := by
+  subst n
+  let l:=column C (0:Fin 16)
+  have sum:=l.finrank_range_add_finrank_ker
+  have bound:=Submodule.finrank_le l.range
+  rw [show Module.finrank F F=1 by simp] at bound
+  have fits:Module.finrank F (Cube 3)≤Module.finrank F l.ker := by
+    rw [show Module.finrank F (Cube 3)=3 by simp [Cube]]
+    omega
+  obtain ⟨L,inj⟩:=finrank_le_iff_exists_linearMap.mp fits
+  have balanced (x:C) (non:x≠0) (diff:x.val≠(fun _=>1)) : 16=2*(supp x.val).card := by
+    let O:C:=⟨_,ones⟩
+    have nz:x+O≠0 := by
+      intro h
+      have e:=add_right_cancel (h.trans (ZModModule.add_self O).symm)
+      exact diff (congrArg Subtype.val e)
+    have comp:supp (x+O).val=(supp x.val)ᶜ := by
+      ext i
+      change i∈supp (x.val+(fun _:Fin 16=>(1:F))) ↔ _
+      rcases (show ∀a:F,a=0 ∨ a=1 from by decide) (x.val i) with e|e <;>
+        simp [supp,e,show (1:F)+1=0 by decide]
+    have low:=distance x non
+    have high:=distance (x+O) nz
+    rw [comp,card_compl,Fintype.card_fin] at high
+    have atMost:=(supp x.val).card_le_univ
+    rw [Fintype.card_fin] at atMost
+    omega
+  have vanish (b:Cube 3):(L b).val.val 0=0:=(L b).property
+  obtain ⟨p,_,_,h,k⟩:=partition_from_rows C 0 0 (l.ker.subtype.comp L)
+    (Subtype.val_injective.comp inj) vanish vanish ones balanced
+  exact ⟨p,h,k⟩
+
 end Green51Hadamard
+#print axioms Green51Hadamard.partition_of_ones
 
 #print axioms Green51Hadamard.equality_words
 #print axioms Green51Hadamard.pair_partition

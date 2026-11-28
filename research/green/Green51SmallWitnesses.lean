@@ -49,10 +49,10 @@ private theorem unit_sum {n : ℕ} (T : Finset (Cube n)) (sub : T⊆ball n 1) (t
     exact ne ((single hv nz).trans (single hu hit).symm)
   · exact fun h => (h hu).elim
 
-/-- A basis of any binary linear code of minimum weight six can be added
-to the zero vector and coordinate units without a four- or six-point relation. -/
-theorem add_heavy_labels {n : ℕ} (E : Finset (Cube n))
-    (heavy : ∀ U⊆E, U.Nonempty → 6≤(supp (∑ u∈U,u)).card) :
+/-- Systematic parity columns exclude all four- and six-point relations if
+each nonempty subset and its sum have combined weight at least seven. -/
+theorem add_labels_of_distance {n : ℕ} (E : Finset (Cube n))
+    (heavy : ∀ U⊆E, U.Nonempty → 6<U.card+(supp (∑ u∈U,u)).card) :
     ∀ T⊆ball n 1∪E, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0 := by
   intro T sub number zero
   let U := T∩E
@@ -69,11 +69,22 @@ theorem add_heavy_labels {n : ℕ} (E : Finset (Cube n))
     have eq : (∑ t∈T\U,t)=(∑ t∈U,t) :=
       add_right_cancel (((sum_sdiff ut (f:=id)).trans zero).trans (ZModModule.add_self _).symm)
     rw [eq,card_sdiff_of_subset ut] at low
-    have pos := card_pos.mpr non
+    have within := card_le_card ut
     omega
   · have empty := not_nonempty_iff_eq_empty.mp non
     rw [empty,sdiff_empty] at rest
     exact unit_sum T rest (by omega) zero
+
+/-- A basis of any binary linear code of minimum weight six can be added
+to the zero vector and coordinate units without a four- or six-point relation. -/
+theorem add_heavy_labels {n : ℕ} (E : Finset (Cube n))
+    (heavy : ∀ U⊆E, U.Nonempty → 6≤(supp (∑ u∈U,u)).card) :
+    ∀ T⊆ball n 1∪E, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0 := by
+  apply add_labels_of_distance E
+  intro U h non
+  have := heavy U h non
+  have := card_pos.mpr non
+  omega
 
 private def binaryPoint (n a : ℕ) : Cube n := fun i => if a.testBit i.val then 1 else 0
 
@@ -213,6 +224,7 @@ theorem first_plateau {n : ℕ} (lo : 3≤n) (hi : n≤9) {α : ℝ}
 
 end Green51SmallWitnesses
 
+#print axioms Green51SmallWitnesses.add_labels_of_distance
 #print axioms Green51SmallWitnesses.add_heavy_labels
 #print axioms Green51SmallWitnesses.max_dim_of_avoiding
 #print axioms Green51SmallWitnesses.cutoff_witness

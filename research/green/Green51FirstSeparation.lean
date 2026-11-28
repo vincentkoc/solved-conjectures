@@ -88,18 +88,19 @@ theorem seventeen_linear (A : Finset (Cube 10)) (size : 17≤A.card) :
   have small := card_le_one.mpr (fun x hx y hy => (total x hx).symm.trans (total y hy))
   omega
 
-/-- For an extremal set with no linear three-space, every sum of distinct
-labels belongs to an affine three-space in its double. -/
-theorem affine_through_pair (A : Finset (Cube 10)) (size : A.card=16)
-    (linear : ¬∃ W : Submodule F (Cube 10), Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A)
-    {a b : Cube 10} (ha : a∈A) (hb : b∈A) (ne : a≠b) :
-    ∃ W : Submodule F (Cube 10), Module.finrank F W=3 ∧ ∀ w∈W,(a+b)+w∈A+A := by
+/-- Eight equally sized pairs whose plane unions are relations give an affine
+three-space of pair sums. Its origin is the sum of the pair indexed by zero. -/
+theorem partition_flat [DecidableEq G] (A : Finset G)
+    (P : Cube A.card →ₗ[F] F × G)
+    (eval : ∀ z, P z=∑ i∈supp z, ((1:F),(A.equivFin.symm i).val))
+    (distance : ∀ x:P.ker,x≠0 → 8≤(supp x.val).card)
+    (p : Fin A.card → Cube 3) (count : ∀ s,(univ.filter fun i => p i=s).card=2)
+    (planes : ∀ u v:Cube 3,
+      (fun i => Green51Hadamard.bitAt u (p i)+Green51Hadamard.bitAt v (p i)+
+        Green51Hadamard.bitAt (u+v) (p i)+Green51Hadamard.bitAt 0 (p i))∈P.ker) :
+    ∃ W : Submodule F G, Module.finrank F W=3 ∧
+      ∀ w∈W,(P (fun i => Green51Hadamard.bitAt 0 (p i))).2+w∈A+A := by
   classical
-  obtain ⟨P,eval,large,distance⟩ := checked_sixteen A size linear
-  let i₀ := A.equivFin ⟨a,ha⟩
-  let i₁ := A.equivFin ⟨b,hb⟩
-  have distinct : i₀≠i₁ := fun eq => ne (congrArg Subtype.val (A.equivFin.injective eq))
-  obtain ⟨p,h₀,h₁,count,planes⟩ := Green51Hadamard.pair_partition size P.ker i₀ i₁ large distance
   let block (s : Cube 3) : Cube A.card := fun i => Green51Hadamard.bitAt s (p i)
   have support (s : Cube 3) : supp (block s)=univ.filter fun i => p i=s := by
     ext i;simp [supp,block,Green51Hadamard.bitAt]
@@ -140,6 +141,27 @@ theorem affine_through_pair (A : Finset (Cube 10)) (size : A.card=16)
     have atI := congrFun same i
     by_contra different
     simp [block,Green51Hadamard.bitAt,is,different] at atI
+  apply affine_of_four q injective _ _ (fun s => (image s).2)
+  intro u v
+  have h : P (block u+block v+block (u+v)+block 0)=0 := planes u v
+  exact (show _ from by simpa only [map_add,Prod.snd_add,Prod.snd_zero,q] using congrArg Prod.snd h)
+
+/-- For an extremal set with no linear three-space, every sum of distinct
+labels belongs to an affine three-space in its double. -/
+theorem affine_through_pair (A : Finset (Cube 10)) (size : A.card=16)
+    (linear : ¬∃ W : Submodule F (Cube 10), Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A)
+    {a b : Cube 10} (ha : a∈A) (hb : b∈A) (ne : a≠b) :
+    ∃ W : Submodule F (Cube 10), Module.finrank F W=3 ∧ ∀ w∈W,(a+b)+w∈A+A := by
+  classical
+  obtain ⟨P,eval,large,distance⟩ := checked_sixteen A size linear
+  let i₀ := A.equivFin ⟨a,ha⟩
+  let i₁ := A.equivFin ⟨b,hb⟩
+  have distinct : i₀≠i₁ := fun eq => ne (congrArg Subtype.val (A.equivFin.injective eq))
+  obtain ⟨p,h₀,h₁,count,planes⟩ := Green51Hadamard.pair_partition size P.ker i₀ i₁ large distance
+  let block (s : Cube 3) : Cube A.card := fun i => Green51Hadamard.bitAt s (p i)
+  have support (s : Cube 3) : supp (block s)=univ.filter fun i => p i=s := by
+    ext i;simp [supp,block,Green51Hadamard.bitAt]
+  let q (s : Cube 3) := (P (block s)).2
   have target : q 0=a+b := by
     have eq : supp (block 0)={i₀,i₁} := by
       symm
@@ -151,10 +173,7 @@ theorem affine_through_pair (A : Finset (Cube 10)) (size : A.card=16)
     rw [eq,sum_pair distinct] at h
     simpa only [q,Prod.snd_add,i₀,i₁,Equiv.symm_apply_apply] using congrArg Prod.snd h
   rw [←target]
-  apply affine_of_four q injective _ _ (fun s => (image s).2)
-  intro u v
-  have h : P (block u+block v+block (u+v)+block 0)=0 := planes u v
-  exact (show _ from by simpa only [map_add,Prod.snd_add,Prod.snd_zero,q] using congrArg Prod.snd h)
+  exact partition_flat A P eval distance p count planes
 
 /-- Sixteen labels always force an affine three-space in ten dimensions. -/
 theorem sixteen_affine (A : Finset (Cube 10)) (size : A.card=16) :
@@ -242,6 +261,7 @@ theorem two_plateau {α : ℝ} (lo : 2/1024<α) (hi : α≤15/1024) :
 
 end Green51FirstSeparation
 
+#print axioms Green51FirstSeparation.partition_flat
 #print axioms Green51FirstSeparation.sixteen_sum
 #print axioms Green51FirstSeparation.seventeen_linear
 #print axioms Green51FirstSeparation.affine_through_pair
