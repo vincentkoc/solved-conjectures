@@ -289,7 +289,7 @@ open Green33ReflectedLayers
 def split {v : ℕ+} (D B : Finset (ZMod v)) : Finset (ZMod (2*v.val)) :=
   D.image (doubleHom v) ∪ B.image (fun b => 1+doubleHom v b)
 
-private theorem odd_holes {v : ℕ+} (D B : Finset (ZMod v)) :
+theorem odd_holes {v : ℕ+} (D B : Finset (ZMod v)) :
     (D+B)ᶜ.card ≤ (split D B+split D B)ᶜ.card := by
   let f := doubleHom v
   obtain ⟨inj,odd,axis⟩ := double_coordinates v 0
@@ -326,7 +326,7 @@ private theorem odd_holes {v : ℕ+} (D B : Finset (ZMod v)) :
   have h := card_le_card sub
   rwa [card_image_of_injective _ (fun a b h => inj (add_left_cancel h))] at h
 
-private theorem outside_reflection {v : ℕ+} (D B : Finset (ZMod v)) (c : ZMod v) :
+theorem outside_reflection {v : ℕ+} (D B : Finset (ZMod v)) (c : ZMod v) :
     ((split D B)\(doubled D c)).card ≤ B.card-occupancy D B c := by
   let f := doubleHom v
   let L := D.image (c-·)
@@ -359,7 +359,7 @@ private theorem outside_reflection {v : ℕ+} (D B : Finset (ZMod v)) (c : ZMod 
       rw [← eq,map_sub]; abel
   exact (card_le_card sub).trans (card_image_le.trans_eq cost)
 
-private theorem split_card {v : ℕ+} (A B : Finset (ZMod v)) :
+theorem split_card {v : ℕ+} (A B : Finset (ZMod v)) :
     (split A B).card=A.card+B.card := by
   let f := doubleHom v
   obtain ⟨inj,odd,_⟩ := double_coordinates v 0
@@ -488,7 +488,7 @@ theorem binary_holes {F K : ℕ→Type*} [∀ i, Field (F i)] [∀ i, Field (K i
 
 #print axioms binary_holes
 
-private theorem decompose {v : ℕ+} (W : Finset (ZMod (2*v.val))) :
+theorem decompose {v : ℕ+} (W : Finset (ZMod (2*v.val))) :
     ∃ U V : Finset (ZMod v), W=split U V ∧ W.card=U.card+V.card := by
   let f := doubleHom v
   let U := univ.filter fun x => f x∈W
