@@ -7,10 +7,13 @@ open scoped Classical Pointwise
 namespace Green51Hadamard
 local notation "F" => ZMod 2
 
-private def sign (x : F) : ℤ := if x=0 then 1 else -1
-private theorem sign_add (x y : F) : sign (x+y)=sign x*sign y := by decide +revert
+/-- The nontrivial additive character of the binary field. -/
+def sign (x : F) : ℤ := if x=0 then 1 else -1
+/-- Addition multiplies the binary character values. -/
+theorem sign_add (x y : F) : sign (x+y)=sign x*sign y := by decide +revert
 
-private theorem character_sum {V : Type*} [AddCommGroup V] [Module F V] [Fintype V]
+/-- Orthogonality of the additive character along a binary linear functional. -/
+theorem character_sum {V : Type*} [AddCommGroup V] [Module F V] [Fintype V]
     (f : V →ₗ[F] F) : (∑ x:V,sign (f x))=if f=0 then (Fintype.card V:ℤ) else 0 := by
   classical
   by_cases h : f=0
@@ -295,6 +298,11 @@ theorem partition_of_ones {n:ℕ} (length:n=16) (C:Submodule F (Cube n))
     (Subtype.val_injective.comp inj) vanish vanish ones balanced
   exact ⟨p,h,k⟩
 
+/-- The first binary character moment, expressed in support sizes. -/
+theorem weight_first_moment {n:ℕ} (C:Submodule F (Cube n)) :
+    0≤∑x:C,((n:ℤ)-2*(supp x.val).card) := by
+  simpa only [←imbalance_weight] using (moments C).1
+
 /-- The second binary character moment, expressed in support sizes. -/
 theorem weight_second_moment {n:ℕ} (C:Submodule F (Cube n)) :
     (n:ℤ)*Fintype.card C≤∑x:C,((n:ℤ)-2*(supp x.val).card)^2 := by
@@ -309,3 +317,8 @@ end Green51Hadamard
 #print axioms Green51Hadamard.opposite_on_pairs
 
 #print axioms Green51Hadamard.weight_second_moment
+
+#print axioms Green51Hadamard.weight_first_moment
+
+#print axioms Green51Hadamard.sign_add
+#print axioms Green51Hadamard.character_sum

@@ -7,7 +7,8 @@ open scoped Classical Pointwise
 namespace Green51AffineMatchings
 local notation "F" => ZMod 2
 
-private theorem weight_sum {n : ℕ} (u v : Cube n) :
+/-- Binary addition removes each shared support coordinate twice from the total weight. -/
+theorem weight_sum {n : ℕ} (u v : Cube n) :
     (supp (u+v)).card+2*(supp u∩supp v).card=(supp u).card+(supp v).card := by
   have dis : Disjoint (supp u\supp v) (supp v\supp u) := by
     rw [disjoint_left]; intro i hi hj
@@ -228,3 +229,5 @@ end Green51AffineMatchings
 #print axioms Green51AffineMatchings.affine_flat_cost
 #print axioms Green51AffineMatchings.sharp_examples
 #print axioms Green51AffineMatchings.least_labels
+
+#print axioms Green51AffineMatchings.weight_sum
