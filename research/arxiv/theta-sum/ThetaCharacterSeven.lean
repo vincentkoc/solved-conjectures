@@ -17,18 +17,18 @@ theorem chi7_mul (a b : ℕ) : chi7 (a*b)=chi7 a*chi7 b := by
 
 private lemma chi7_le (n : ℕ) : chi7 n≤1 := by unfold chi7; split_ifs <;> decide
 
-private lemma parity_odd_mul {p : ℕ} (hp : Odd p) (j : ℕ) : parity (p*j)=parity j := by
+theorem parity_odd_mul {p : ℕ} (hp : Odd p) (j : ℕ) : parity (p*j)=parity j := by
   simp [parity,pow_mul,hp.neg_one_pow]
 
 section Sieve
 variable {R : Type*} [CommRing R]
 
-private def sift (f : ℕ → R) (s : Finset ℕ) (j : ℕ) : R :=
+def sift (f : ℕ → R) (s : Finset ℕ) (j : ℕ) : R :=
   if ∀ p∈s, ¬p∣j then f j else 0
 
-private def siftedSum (f : ℕ → R) (s : Finset ℕ) (K : ℕ) : R := ∑ j∈range (K+1),sift f s j
+def siftedSum (f : ℕ → R) (s : Finset ℕ) (K : ℕ) : R := ∑ j∈range (K+1),sift f s j
 
-private lemma prefix_insert (f : ℕ → R) {p : ℕ} (hp : Nat.Prime p) {g : R} (h : ∀ j, f (p*j)=g*f j)
+theorem prefix_insert (f : ℕ → R) {p : ℕ} (hp : Nat.Prime p) {g : R} (h : ∀ j, f (p*j)=g*f j)
     {s : Finset ℕ} (hn : p∉s) (hs : ∀ a∈s,Nat.Prime a) (K : ℕ) :
     siftedSum f (insert p s) K=siftedSum f s K-g*siftedSum f s (K/p) := by
   classical
@@ -55,6 +55,8 @@ private lemma prefix_insert (f : ℕ → R) {p : ℕ} (hp : Nat.Prime p) {g : R}
     · intros; rfl
   unfold siftedSum
   simp_rw [ht]; rw [sum_sub_distrib,← sum_filter,he]; simp_rw [H]; rw [← mul_sum]
+#print axioms prefix_insert
+#print axioms parity_odd_mul
 end Sieve
 
 private lemma raw {d : ℕ} (ho : Odd d) (h7 : 7∣d) :
