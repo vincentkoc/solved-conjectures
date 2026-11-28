@@ -170,7 +170,8 @@ private theorem centered_energy {f : Ω → H} (hf : MemLp f 2 μ) :
   change (∫ z, ‖f z - m‖ ^ 2 ∂μ) + ‖m‖ ^ 2 = _
   simpa only [add_comm m, sub_add_cancel, add_comm (‖m‖ ^ 2)] using h.symm
 
-private theorem mean_energy_le {f : Ω → H} (hf : MemLp f 2 μ) :
+/-- Squared norm of a mean is bounded by the second moment on a probability space. -/
+theorem mean_energy_le {f : Ω → H} (hf : MemLp f 2 μ) :
     ‖∫ x, f x ∂μ‖ ^ 2 ≤ ∫ z, ‖f z‖ ^ 2 ∂μ := by
   rw [← centered_energy hf]
   exact le_add_of_nonneg_left (integral_nonneg fun _ => sq_nonneg _)
@@ -206,6 +207,7 @@ theorem conditional_error_energy {V W : Type*} [MeasurableSpace V] [MeasurableSp
 end ConditionalEnergy
 
 #print axioms fresh_update_preserving
+#print axioms mean_energy_le
 #print axioms conditional_error_energy
 #print axioms spliced_sum_preserving
 #print axioms adapted_sum_energy

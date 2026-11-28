@@ -50,7 +50,8 @@ theorem ae_slopes {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T) :
 def slopeError (T : E → E) (t : ℝ) (z : E × E) : E :=
   t⁻¹ • (T (z.1 + t • z.2) - T z.1) - fderiv ℝ T z.1 z.2
 
-private theorem slopeError_bound {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T)
+/-- A Lipschitz bound controls both terms in the directional approximation. -/
+theorem slopeError_bound {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T)
     (t : ℝ) (z : E × E) : ‖slopeError T t z‖ ≤ 2 * K * ‖z.2‖ := by
   have hD : ‖fderiv ℝ T z.1 z.2‖ ≤ K * ‖z.2‖ :=
     (ContinuousLinearMap.le_opNorm _ _).trans (mul_le_mul_of_nonneg_right
@@ -66,20 +67,31 @@ private theorem slopeError_bound {T : E → E} {K : ℝ≥0} (hT : LipschitzWith
       _ = _ := by field_simp
   exact (norm_sub_le _ _).trans (by linarith)
 
+omit [Fintype ι] in
+theorem scaled_slopeError (T : E → E) (t : ℝ) (z v : E) :
+    t • slopeError T t (z,v) = T (z+t • v) - T z - t • fderiv ℝ T z v := by
+  by_cases ht : t = 0
+  · simp [ht]
+  · simp [slopeError, smul_sub, smul_smul, ht]
+
+theorem measurable_slopeError {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T) (t : ℝ) :
+    Measurable (slopeError T t) := by
+  have heval : Continuous (fun z : (E →L[ℝ] E) × E => z.1 z.2) :=
+    continuous_fst.clm_apply continuous_snd
+  have hD : Measurable (fun z : E × E => fderiv ℝ T z.1 z.2) :=
+    heval.measurable.comp (((measurable_fderiv ℝ T).comp measurable_fst).prodMk measurable_snd)
+  have hTm := hT.continuous.measurable
+  unfold slopeError
+  fun_prop
+
 /-- The Gaussian mean squared linearization error, divided by the squared step size,
 tends to zero for every Lipschitz map in every finite dimension. -/
 theorem mean_square_slopes {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T) :
     Tendsto (fun t => ∫ z, ‖slopeError T t z‖ ^ 2 ∂(stdGaussian E).prod (stdGaussian E))
       (𝓝[≠] (0 : ℝ)) (𝓝 0) := by
   let γ := stdGaussian E
-  have heval : Continuous (fun z : (E →L[ℝ] E) × E => z.1 z.2) :=
-    continuous_fst.clm_apply continuous_snd
-  have hD : Measurable (fun z : E × E => fderiv ℝ T z.1 z.2) :=
-    heval.measurable.comp (((measurable_fderiv ℝ T).comp measurable_fst).prodMk measurable_snd)
-  have hTm := hT.continuous.measurable
   have hmeas (t : ℝ) : Measurable (fun z : E × E => ‖slopeError T t z‖ ^ 2) := by
-    unfold slopeError
-    fun_prop
+    exact (measurable_slopeError hT t).norm.pow_const 2
   have hnorm : Integrable (fun v : E => ‖v‖ ^ 2) γ := IsGaussian.memLp_two_id.norm.integrable_sq
   have hbound : Integrable (fun z : E × E => (2 * (K : ℝ) * ‖z.2‖) ^ 2) (γ.prod γ) := by
     simp only [mul_pow]
@@ -97,6 +109,9 @@ theorem mean_square_slopes {T : E → E} {K : ℝ≥0} (hT : LipschitzWith K T) 
   simpa [γ] using hlim
 
 #print axioms gaussian_ac_volume
+#print axioms slopeError_bound
+#print axioms scaled_slopeError
+#print axioms measurable_slopeError
 #print axioms ae_slopes
 #print axioms mean_square_slopes
 end Green54GaussianLinearization
