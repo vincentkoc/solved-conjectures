@@ -394,18 +394,23 @@ private lemma selberg_bound (N y : ℕ) (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.Pr
 
 private noncomputable def localShift (b : Bool) (q : ℕ) : ZMod q := if b then 1 else -1
 
-private noncomputable def chainRoots (b : Bool) (k q : ℕ) : Finset (ZMod q) := by
-  classical exact (range k).image fun i => localShift b q * (((2 : ZMod q)^i)⁻¹ - 1)
+private noncomputable def chainRoots (b : Bool) (I : Finset ℕ) (q : ℕ) : Finset (ZMod q) := by
+  classical exact I.image fun i => localShift b q * (((2 : ZMod q)^i)⁻¹ - 1)
 
-private lemma chainRoots_card (b : Bool) {k q : ℕ} (hq : q.Prime) (hlt : 2^k < q) :
-    (chainRoots b k q).card = k := by
+private lemma chainRoots_card (b : Bool) {I : Finset ℕ} {q : ℕ} (hq : q.Prime)
+    (hinj : Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) I) :
+    (chainRoots b I q).card = I.card := by
   classical
   let : Fact q.Prime := ⟨hq⟩
   unfold chainRoots
-  rw [card_image_of_injOn, card_range]
+  apply card_image_of_injOn
   intro i hi j hj h
   have hs : localShift b q ≠ 0 := by cases b <;> simp [localShift]
-  have he := inv_injective (sub_left_inj.mp (mul_left_cancel₀ hs h))
+  exact hinj hi hj (inv_injective (sub_left_inj.mp (mul_left_cancel₀ hs h)))
+
+private lemma powers_injective_in_range {k q : ℕ} (hlt : 2^k < q) :
+    Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) (range k) := by
+  intro i hi j hj he
   have hc : ((2^i : ℕ) : ZMod q) = ((2^j : ℕ) : ZMod q) := by simpa using he
   have hm := (ZMod.natCast_eq_natCast_iff ..).mp hc
   have hi' : 2^i < q := (Nat.pow_le_pow_right (by decide : 0 < 2) (mem_range.mp hi).le).trans_lt hlt
@@ -453,8 +458,8 @@ private lemma term_eq_mod (b : Bool) (q p i : ℕ) (hp : 0 < p) :
       simp [localShift, pow_succ]
       ring
 
-private lemma avoids_chainRoots (b : Bool) {k p q : ℕ} (hq : q.Prime) (hq2 : 2 < q) (hp : q < p)
-    (h : ∀ i < k, (chainTerm b p i).Prime) : (p : ZMod q) ∉ chainRoots b k q := by
+private lemma avoids_chainRoots (b : Bool) {I : Finset ℕ} {p q : ℕ} (hq : q.Prime) (hq2 : 2 < q) (hp : q < p)
+    (h : ∀ i ∈ I, (chainTerm b p i).Prime) : (p : ZMod q) ∉ chainRoots b I q := by
   let : Fact q.Prime := ⟨hq⟩
   have hp0 : 0 < p := by omega
   have h2 : (2 : ZMod q) ≠ 0 := by
@@ -465,7 +470,7 @@ private lemma avoids_chainRoots (b : Bool) {k p q : ℕ} (hq : q.Prime) (hq2 : 2
     rw [term_eq_mod b q p i hp0, ← he]
     field_simp
     ring
-  have heq := (Nat.prime_dvd_prime_iff_eq hq (h i (mem_range.mp hi))).mp
+  have heq := (Nat.prime_dvd_prime_iff_eq hq (h i hi)).mp
     ((ZMod.natCast_eq_zero_iff ..).mp hd)
   exact (hp.trans_le (seed_le_term b hp0 i)).ne heq
 
@@ -517,22 +522,19 @@ private lemma local_majorant {k q : ℕ} (hq : q.Prime) (hkq : k < q) :
   field_simp [sub_ne_zero.mpr hkq'.ne', hq0.ne']
   ring
 
-private lemma sieve_mass_lower (k C z : ℕ) (hk : 0 < k) (hC : k ≤ C) (hz : C ≤ z) (hz' : 1 < z) :
-    let Q := z.primesLE \ C.primesLE
+private lemma sieve_mass_lower (k z : ℕ) (E : Finset ℕ) (hk : 0 < k) (hz' : 1 < z)
+    (hs : E ⊆ z.primesLE) (hr : ∀ q ∈ z.primesLE \ E, k < q) :
+    let Q := z.primesLE \ E
     let h (q : ℕ) := (k : ℝ)/((q : ℝ)-k)
     let G := ∑ T ∈ smallSubsets Q (z^(4*k)), ∏ q ∈ T, h q
-    (Real.log ((z : ℝ)+1))^k ≤ 2*(∏ q ∈ C.primesLE, eulerFactor q)^k * G := by
-  let Q := z.primesLE \ C.primesLE
-  have hQ {q : ℕ} (hq : q ∈ Q) : q.Prime ∧ k < q ∧ q ≤ z := by
-    obtain ⟨hq, hno⟩ := mem_sdiff.mp hq
-    obtain ⟨hle, hp⟩ := Nat.mem_primesLE.mp hq
-    exact ⟨hp, by by_contra! h; exact hno (Nat.mem_primesLE.mpr ⟨h.trans hC, hp⟩), hle⟩
-  have hs : C.primesLE ⊆ z.primesLE := fun q hq => Nat.mem_primesLE.mpr
-    ⟨(Nat.le_of_mem_primesLE hq).trans hz, Nat.prime_of_mem_primesLE hq⟩
-  have hsmall := prod_pos (f := eulerFactor) (fun q (hq : q ∈ C.primesLE) =>
-    eulerFactor_pos (Nat.prime_of_mem_primesLE hq))
+    (Real.log ((z : ℝ)+1))^k ≤ 2*(∏ q ∈ E, eulerFactor q)^k * G := by
+  let Q := z.primesLE \ E
+  have hQ {q : ℕ} (hq : q ∈ Q) : q.Prime ∧ k < q ∧ q ≤ z :=
+    ⟨Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1, hr q hq, Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1⟩
+  have hsmall := prod_pos (f := eulerFactor) (fun q (hq : q ∈ E) =>
+    eulerFactor_pos (Nat.prime_of_mem_primesLE (hs hq)))
   have hprod : (∏ q ∈ z.primesLE, eulerFactor q) =
-      (∏ q ∈ Q, eulerFactor q) * ∏ q ∈ C.primesLE, eulerFactor q := (prod_sdiff hs).symm
+      (∏ q ∈ Q, eulerFactor q) * ∏ q ∈ E, eulerFactor q := (prod_sdiff hs).symm
   have hl := pow_le_pow_left₀ (Real.log_nonneg (by linarith [Nat.cast_nonneg (α := ℝ) z]))
     (log_le_euler z) k
   rw [hprod, mul_pow, ← prod_pow] at hl
@@ -547,38 +549,37 @@ private def cutoff (k : ℕ) := 2^k + 2*k + 2
 private noncomputable def sieveConstant (k : ℕ) : ℝ :=
   6*(∏ q ∈ (cutoff k).primesLE, eulerFactor q)^k
 
-private lemma finite_chain_bound (b : Bool) {k z N : ℕ} (hk : 0 < k) (hz : cutoff k ≤ z)
+/-- Sieve a finite selection of iterate indices. Distinct powers modulo each
+retained prime give the required number of distinct forbidden seed residues. -/
+theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
+    (hI : I.card = k) (hk : 0 < k) (hz : 1 < z) (hE : E ⊆ z.primesLE)
+    (hreg : ∀ q ∈ z.primesLE \ E,
+      2*k < q ∧ Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) I)
     (hy : (z^(4*k))^4 ≤ N) :
-    (((range N).filter fun p => z < p ∧ ∀ i < k, (chainTerm b p i).Prime).card : ℝ) *
-      (Real.log ((z : ℝ)+1))^k ≤ sieveConstant k * N := by
+    (((range N).filter fun p => z < p ∧
+      ∀ i ∈ I, ((if b then firstKindTerm else secondKindTerm) p i).Prime).card : ℝ) *
+      (Real.log ((z : ℝ)+1))^k ≤ 6*(∏ q ∈ E, (1-1/(q:ℝ))⁻¹)^k*N := by
   classical
-  let C := cutoff k
-  let Q := z.primesLE \ C.primesLE
+  let Q := z.primesLE \ E
   let h (q : ℕ) := (k : ℝ)/((q:ℝ)-k)
   let y := z^(4*k)
   let D := smallSubsets Q y
   let G := ∑ T ∈ D, ∏ q ∈ T, h q
-  let A := (range N).filter fun p => z < p ∧ ∀ i < k, (chainTerm b p i).Prime
-  let v (q : ℕ) := twoLevel (chainRoots b k q) (-1) (h q)
-  have hc₀ : 2^k ≤ C ∧ 2*k ≤ C ∧ 2 ≤ C :=
-    ⟨(Nat.le_add_right (2^k) (2*k)).trans (Nat.le_add_right _ 2),
-     (Nat.le_add_left (2*k) (2^k)).trans (Nat.le_add_right _ 2), Nat.le_add_left 2 _⟩
-  have hz' : 1 < z := by omega
-  have hQ {q : ℕ} (hq : q ∈ Q) : q.Prime ∧ C < q ∧ q ≤ z := by
-    obtain ⟨hq, hnot⟩ := mem_sdiff.mp hq
-    obtain ⟨hle, hp⟩ := Nat.mem_primesLE.mp hq
-    exact ⟨hp, by by_contra! h; exact hnot (Nat.mem_primesLE.mpr ⟨h, hp⟩), hle⟩
+  let A := (range N).filter fun p => z < p ∧ ∀ i ∈ I, (chainTerm b p i).Prime
+  let v (q : ℕ) := twoLevel (chainRoots b I q) (-1) (h q)
+  have hQ {q : ℕ} (hq : q ∈ Q) : q.Prime ∧ 2*k < q ∧ q ≤ z :=
+    ⟨Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1, (hreg q hq).1, Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1⟩
   have hv (q : ℕ) (hq : q ∈ Q) := by
     have ⟨hp, hc, _⟩ := hQ hq
     let : NeZero q := ⟨hp.ne_zero⟩
-    exact centered_local (chainRoots b k q) (chainRoots_card b hp (by omega)) (by omega)
+    exact centered_local (chainRoots b I q) ((chainRoots_card b hp (hreg q hq).2).trans hI) hc
   have hs := selberg_bound N y Q (fun q hq => (hQ hq).1) v h hv A (filter_subset ..) (by
     intro n hn q hq
     have ⟨_, hnz, hprime⟩ := mem_filter.mp hn
     have ⟨hp, hc, hle⟩ := hQ hq
     have h2 : 2 < q := by omega
     exact if_neg (avoids_chainRoots b hp h2 (hle.trans_lt hnz) hprime))
-  have hmass := sieve_mass_lower k C z hk (by omega) hz hz'
+  have hmass := sieve_mass_lower k z E hk hz hE (fun q hq => by have := (hreg q hq).1; omega)
   have hpos (q : ℕ) (hq : q ∈ Q) : 0 ≤ h q := by
     have hc := (hQ hq).2.1
     exact div_nonneg (Nat.cast_nonneg _) (sub_nonneg.mpr (by exact_mod_cast (by omega : k ≤ q)))
@@ -593,12 +594,41 @@ private lemma finite_chain_bound (b : Bool) {k z N : ℕ} (hk : 0 < k) (hz : cut
     apply le_of_mul_le_mul_right (a := G)
     · nlinarith [mul_le_mul_of_nonneg_left hG (Nat.cast_nonneg (α := ℝ) N)]
     · linarith
-  let F := (∏ q ∈ C.primesLE, eulerFactor q)^k
-  have hF : 0 ≤ F := pow_nonneg (prod_nonneg fun q hq => (eulerFactor_pos (Nat.prime_of_mem_primesLE hq)).le) _
+  let F := (∏ q ∈ E, eulerFactor q)^k
+  have hF : 0 ≤ F := pow_nonneg (prod_nonneg fun q hq => (eulerFactor_pos (Nat.prime_of_mem_primesLE (hE hq))).le) _
   change (Real.log ((z:ℝ)+1))^k ≤ 2*F*G at hmass
+  simp only [one_div]
   change (A.card : ℝ)*_ ≤ 6*F*N
   nlinarith only [mul_le_mul_of_nonneg_left hmass (Nat.cast_nonneg (α := ℝ) A.card),
     mul_le_mul_of_nonneg_right hAG (show 0 ≤ 2*F by positivity)]
+
+private lemma finite_chain_bound (b : Bool) {k z N : ℕ} (hk : 0 < k) (hz : cutoff k ≤ z)
+    (hy : (z^(4*k))^4 ≤ N) :
+    (((range N).filter fun p => z < p ∧ ∀ i < k, (chainTerm b p i).Prime).card : ℝ) *
+      (Real.log ((z : ℝ)+1))^k ≤ sieveConstant k * N := by
+  let C := cutoff k
+  have hc : 2^k ≤ C ∧ 2*k ≤ C ∧ 2 ≤ C := by
+    dsimp [C,cutoff]
+    exact ⟨(Nat.le_add_right ..).trans (Nat.le_add_right _ 2),
+      (Nat.le_add_left ..).trans (Nat.le_add_right _ 2),Nat.le_add_left ..⟩
+  have hE : C.primesLE ⊆ z.primesLE := fun _ hq => Nat.mem_primesLE.mpr
+    ⟨(Nat.le_of_mem_primesLE hq).trans hz,Nat.prime_of_mem_primesLE hq⟩
+  have hreg (q : ℕ) (hq : q ∈ z.primesLE \ C.primesLE) : 2*k < q ∧
+      Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) (range k) := by
+    obtain ⟨hqz,hqc⟩ := mem_sdiff.mp hq
+    have hlt : C < q := by
+      by_contra! h
+      exact hqc (Nat.mem_primesLE.mpr ⟨h,Nat.prime_of_mem_primesLE hqz⟩)
+    exact ⟨by omega,powers_injective_in_range (by omega)⟩
+  have h := finite_iterate_sieve_bound b (range k) C.primesLE (card_range k) hk (by omega) hE hreg hy
+  convert h using 2
+  · congr 2
+    apply Finset.filter_congr
+    intro p _
+    simp only [mem_range,chainTerm]
+  · simp [sieveConstant,eulerFactor,C,one_div]
+
+#print axioms finite_iterate_sieve_bound
 
 open Filter Asymptotics
 open scoped Topology
