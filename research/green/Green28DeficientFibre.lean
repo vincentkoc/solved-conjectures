@@ -278,10 +278,13 @@ private theorem span_one {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P 
   rw [←e]
   exact Submodule.sum_mem _ (fun x hx => Submodule.subset_span ⟨x,(low x hx).1,(low x hx).2,rfl⟩)
 
-private theorem times_defect {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
-    (w : Boundary P Q) (T : Submodule ℤ ℝ) (one : (1:ℝ) ∈ T)
-    (low : deficientWeights P w.a ⊆ T) {y : ℤ} (hy : y ∈ P.support) :
-    weight Q w.b w.d*weight P w.a y ∈ T := by
+/-- Every row paired with the exceptional column has a complementary sum
+of deficient row weights at distinct other sites in the same fibre. -/
+theorem deficient_remainder {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+    (w : Boundary P Q) {y : ℤ} (hy : y ∈ P.support) :
+    ∃ E : Finset ℤ, (∀ x ∈ E, x ≠ y ∧ x ∈ P.support ∧ y+w.d-x ∈ Q.support ∧
+      (P x).toReal<(P w.a).toReal) ∧
+      weight Q w.b w.d*weight P w.a y+(∑ x ∈ E,weight P w.a x) = 1 := by
   classical
   obtain ⟨pf,_⟩ := finite_of_uniform_sum flat
   let A := pf.toFinset
@@ -297,26 +300,38 @@ private theorem times_defect {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSu
   have yp : 0 < h y := by
     rw [ey]; exact mul_pos (ENNReal.toReal_pos ((P.mem_support_iff _).mp hy) (P.apply_ne_top _))
       (ENNReal.toReal_pos ((Q.mem_support_iff _).mp w.lowQ) (Q.apply_ne_top _))
-  have piece (x : ℤ) (hx : x ∈ A.erase y) : h x/scale ∈ T := by
-    obtain ⟨ne,xa⟩ := mem_erase.mp hx
-    by_cases hit : y+w.d-x ∈ Q.support
-    · have high := w.other _ hit (by omega)
-      have less : h x < scale := by
-        rw [←tot]
-        exact single_lt_sum ne.symm xa ya yp (fun z _ _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
-      have px : (P x).toReal<(P w.a).toReal := (mul_lt_mul_iff_left₀ qp).mp
-        (by simpa only [h,scale,high] using less)
-      have eq : h x/scale = weight P w.a x := by
-        simp only [h,scale,weight,high]; field_simp
-      exact eq ▸ low ⟨x,pf.mem_toFinset.mp xa,px,rfl⟩
-    · simp [h,(Q.apply_eq_zero_iff _).mpr hit]
+  let E := (A.erase y).filter fun x => y+w.d-x ∈ Q.support
+  have rows {x : ℤ} (hx : x ∈ E) : x ≠ y ∧ x ∈ P.support ∧ y+w.d-x ∈ Q.support ∧
+      (P x).toReal<(P w.a).toReal := by
+    obtain ⟨inA,hit⟩ := mem_filter.mp hx
+    obtain ⟨ne,xa⟩ := mem_erase.mp inA
+    have high := w.other _ hit (by omega)
+    have less : h x < scale := by
+      rw [←tot]
+      exact single_lt_sum ne.symm xa ya yp (fun z _ _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
+    exact ⟨ne,pf.mem_toFinset.mp xa,hit,(mul_lt_mul_iff_left₀ qp).mp
+      (by simpa only [h,scale,high] using less)⟩
+  refine ⟨E,fun _ hx => rows hx,?_⟩
   have total : (∑ x ∈ A,h x/scale) = 1 := by rw [←sum_div,tot,div_self sp.ne']
-  have rest := T.sub_mem one (T.sum_mem piece)
-  convert rest using 1
-  rw [←total,←add_sum_erase _ _ ya,add_sub_cancel_right]
-  rw [ey]
-  dsimp [weight,scale]
-  ring
+  rw [←total,←add_sum_erase _ _ ya]
+  congr 1
+  · rw [ey]; dsimp only [weight,scale]; ring
+  · change (∑ x ∈ (A.erase y).filter _,weight P w.a x) = _
+    rw [sum_filter]
+    apply sum_congr rfl
+    intro x hx
+    split_ifs with hit
+    · have eq := w.other _ hit (by have := (mem_erase.mp hx).1; omega)
+      simp only [h,scale,weight,eq]; field_simp
+    · simp [h,(Q.apply_eq_zero_iff _).mpr hit]
+
+private theorem times_defect {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+    (w : Boundary P Q) (T : Submodule ℤ ℝ) (one : (1:ℝ) ∈ T)
+    (low : deficientWeights P w.a ⊆ T) {y : ℤ} (hy : y ∈ P.support) :
+    weight Q w.b w.d*weight P w.a y ∈ T := by
+  obtain ⟨E,rows,eq⟩ := deficient_remainder flat w hy
+  rw [eq_sub_iff_add_eq.mpr eq]
+  exact T.sub_mem one (T.sum_mem (fun x hx => low ⟨x,(rows x hx).2.1,(rows x hx).2.2.2,rfl⟩))
 
 private theorem model_weight {P : PMF ℤ} {f : ℝ[X]} {l a : ℤ} {s : ℝ}
     (m : Models P f l s) (mon : f.Monic) (top : IsGreatest P.support a) (i : ℕ) :
@@ -394,5 +409,6 @@ theorem deficient_integer_span {P Q : PMF ℤ} (flat : IsUniformOnSupport (indep
 #print axioms subset_mass_of_one_deficit
 #print axioms uniform_of_commensurable_deficits
 #print axioms uniform_of_two_levels
+#print axioms deficient_remainder
 #print axioms deficient_integer_span
 end Green28DeficientFibre
