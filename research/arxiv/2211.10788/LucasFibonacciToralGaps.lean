@@ -72,7 +72,7 @@ def HosoyaNeighbor.value : HosoyaNeighbor → ℕ → ℕ
   | .upper, m => lucasFibonacciSum (m + 2)
   | .lower, m => lowerNeighborAtAddTwo m
 
-private theorem value_step (s : HosoyaNeighbor) (m : ℕ) :
+theorem HosoyaNeighbor.value_step (s : HosoyaNeighbor) (m : ℕ) :
     s.value (m + 2) = s.value (m + 1) + s.value m := by
   cases s with
   | upper => exact lucas_fibonacci_sum_recurrence (m + 2)
@@ -98,12 +98,12 @@ private theorem value_pos (s : HosoyaNeighbor) (n : ℕ) : 0 < s.value n :=
 
 /-- The determinant at shift h also obeys the recurrence in h. For all four choices
 of sides it is negative at shifts two and three, hence at every larger shift. -/
-private theorem pair_independent (s t : HosoyaNeighbor) (h : ℕ) (hd : s ≠ t ∨ 0 < h) :
+theorem HosoyaNeighbor.pair_independent (s t : HosoyaNeighbor) (h : ℕ) (hd : s ≠ t ∨ 0 < h) :
     (s.value 0 : ℚ) * t.value (1 + h) - (s.value 1 : ℚ) * t.value (0 + h) ≠ 0 := by
   let D (j : ℕ) := (s.value 0 : ℚ) * t.value (j + 1) - (s.value 1 : ℚ) * t.value j
   have recD (j : ℕ) : D (j + 2) = D (j + 1) + D j := by
     dsimp only [D]
-    rw [show j + 2 + 1 = (j + 1) + 2 by rfl, value_step t (j + 1), value_step t j]
+    rw [show j + 2 + 1 = (j + 1) + 2 by rfl, HosoyaNeighbor.value_step t (j + 1), HosoyaNeighbor.value_step t j]
     push_cast
     ring
   have neg (j : ℕ) : D (j + 2) < 0 := by
@@ -136,9 +136,9 @@ theorem hosoya_shifted_orbit_iff (s t : HosoyaNeighbor) (h : ℕ) :
       linear_combination (s.value 1 : ℚ) * ratio 0 - (s.value 0 : ℚ) * ratio 1
     cases s <;> norm_num [HosoyaNeighbor.value, lucasFibonacciSum, lowerNeighborAtAddTwo] at bad
   · intro hd
-    exact fibonacci_pair_orbit s.value (fun n => t.value (n + h)) (value_step s)
-      (fun n => by simpa [Nat.add_right_comm] using value_step t (n + h))
-      (pair_independent s t h hd)
+    exact fibonacci_pair_orbit s.value (fun n => t.value (n + h)) (HosoyaNeighbor.value_step s)
+      (fun n => by simpa [Nat.add_right_comm] using HosoyaNeighbor.value_step t (n + h))
+      (HosoyaNeighbor.pair_independent s t h hd)
 
 private theorem shifted_factors_tendsto (sieve : TraceOneToralSieveBound)
     (s t : HosoyaNeighbor) (h : ℕ) (hd : s ≠ t ∨ 0 < h) :
@@ -204,6 +204,8 @@ theorem finite_neighboring_prime_indices_of_toral_sieve (sieve : TraceOneToralSi
     (ArithmeticFunction.cardFactors_eq_one_iff_prime.mpr hl).le
   cases he.2
 
+#print axioms HosoyaNeighbor.value_step
+#print axioms HosoyaNeighbor.pair_independent
 #print axioms hosoya_shifted_orbit_iff
 #print axioms hosoya_window_factor_growth
 #print axioms hosoya_almost_prime_sites_separated
