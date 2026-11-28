@@ -77,6 +77,25 @@ private lemma read_state {M : ℕ} {z w : ℤ} (h : state M z = state M w) :
   simpa [state,signed,Int.fib_add_two] using
     congrArg (fun v : ZMod M × ZMod M => 2*v.1+(v.1+v.2)) h
 
+/-- Beyond a given signed index, its whole residue class modulo one
+positive period gives the same upper value modulo M. -/
+theorem signed_forward_period (M : ℕ) [NeZero M] (z : ℤ) :
+    ∃ T : ℕ, 0<T ∧ ∀ n : ℤ, z≤n → n ≡ z [ZMOD T] → (signed n : ZMod M)=signed z := by
+  obtain ⟨T,hT,fixed⟩ := (shift_injective M).mem_periodicPts (state M z)
+  refine ⟨T,hT,?_⟩
+  intro n big cl
+  obtain ⟨v,eq⟩ := cl.symm.dvd
+  have non : 0≤v := nonneg_of_mul_nonneg_right
+    (show 0≤(T:ℤ)*v by linarith only [eq,big]) (by exact_mod_cast hT)
+  have val : z+((v.toNat*T:ℕ):ℤ)=n := by
+    push_cast
+    rw [Int.toNat_of_nonneg non]
+    linarith only [eq]
+  rw [←val]
+  exact read_state ((state_iterate M z _).trans (fixed.const_mul v.toNat).eq)
+
+#print axioms signed_forward_period
+
 private lemma negative_hit (M : ℕ) [NeZero M] (k : ℕ) :
     ∃ n, (lucasFibonacciSum n : ZMod M) = signed (-(k:ℤ)) := by
   let z := -(k:ℤ)
