@@ -175,7 +175,8 @@ theorem row_mean_zero {P d : ℕ} [NeZero d] [NeZero P] (h : d∣P) (hd : 1<d) (
   unfold row; rw [sum_comm]
   simp_rw [← mul_sum,← Int.cast_sum,wave_sum hd,Int.cast_zero,mul_zero,sum_const_zero,zero_div]
 
-private lemma low_mean_zero {P T : ℕ} [NeZero P] (hdP : ∀ d∈Icc 2 T, Odd d → d∣P)
+/-- Every finite denominator model has mean zero over the units of a common period. -/
+theorem low_mean_zero {P T : ℕ} [NeZero P] (hdP : ∀ d∈Icc 2 T, Odd d → d∣P)
     (K : ℕ → ℕ) (a : ℕ → ℝ) : unitMean P (low T K a)=0 := by
   have H := mean_low P T K a (fun _ => 1)
   simp only [one_mul] at H
@@ -362,3 +363,5 @@ end Arxiv.«2501.03234».ThetaConditionalRows
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.twisted_three_lower
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.unitMean_lift
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.unitMean_mul
+
+#print axioms Arxiv.«2501.03234».ThetaConditionalRows.low_mean_zero
