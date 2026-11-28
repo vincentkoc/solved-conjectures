@@ -192,7 +192,8 @@ private theorem whole_component (H : ℚ[X]) (hm : H.Monic) (irr : Irreducible H
     obtain ⟨i,_,hit⟩ := covers x y
     exact hit ▸ norms i
 
-private theorem split_monic_divisor {K : Type*} [Field K] {f A B : K[X]} (fm : f.Monic)
+/-- Split a monic divisor of a product into monic divisors of the two pieces. -/
+theorem split_monic_divisor {K : Type*} [Field K] {f A B : K[X]} (fm : f.Monic)
     (dv : f∣A*B) : ∃ u v : K[X], u.Monic ∧ v.Monic ∧ u∣A ∧ v∣B ∧ f=u*v := by
   classical
   obtain ⟨a,b,da,db,eq⟩ := exists_dvd_and_dvd_of_dvd_mul dv
@@ -381,6 +382,7 @@ theorem uniform_of_distinct_prime_factors {P Q : PMF ℤ} {S : Finset ℤ} (ne :
   exact ⟨(fp.uniform_iff fm).mpr fb,(gp.uniform_iff gm).mpr gb⟩
 
 #print axioms Green28PrimitiveSupport.mask_factorization
+#print axioms split_monic_divisor
 #print axioms complex_subproduct
 #print axioms uniform_of_distinct_prime_factors
 

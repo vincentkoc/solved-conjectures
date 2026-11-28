@@ -264,7 +264,8 @@ theorem endpoint_weights {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum
   exact ⟨endpointWeights_of_model hP fm gm hQ.nonneg bin,
     endpointWeights_of_model hQ gm fm hP.nonneg (mul_comm f g ▸ bin)⟩
 
-private theorem Models.field_iff {P : PMF ℤ} {f : ℝ[X]} {a : ℤ} {s : ℝ}
+/-- A monic probability model has the same coefficient field as its point probabilities. -/
+theorem Models.field_iff {P : PMF ℤ} {f : ℝ[X]} {a : ℤ} {s : ℝ}
     (h : Models P f a s) (fm : f.Monic) (K : Subfield ℝ) :
     (∀ z, (P z).toReal ∈ K) ↔ (∀ i, f.coeff i ∈ K) := by
   classical
@@ -325,6 +326,7 @@ theorem algebraic_masses {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum
 #print axioms endpoint_weights
 #print axioms Models.mul
 #print axioms Models.uniform_iff
+#print axioms Models.field_iff
 #print axioms finite_of_uniform_sum
 #print axioms uniform_of_rational_ratios
 
