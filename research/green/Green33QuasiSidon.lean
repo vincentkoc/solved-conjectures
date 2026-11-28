@@ -8,12 +8,16 @@ open scoped Pointwise Topology
 
 namespace Green33QuasiSidon
 
-private lemma lift_interval {M : ℕ+} (A : Finset (ZMod M)) (hA : StrictCover A) :
-    ∃ B : Finset ℕ, B ⊆ Icc 1 M.val ∧ B.card=A.card ∧ M.val ≤ (B+B).card := by
+/-- Positive integer representatives of the cyclic basis points. -/
+def intervalCopy {M : ℕ+} (A : Finset (ZMod M)) : Finset ℕ := A.image (fun x => x.val+1)
+
+theorem intervalCopy_spec {M : ℕ+} (A : Finset (ZMod M)) (hA : StrictCover A) :
+    intervalCopy A ⊆ Icc 1 M.val ∧ (intervalCopy A).card=A.card ∧
+      M.val ≤ (intervalCopy A+intervalCopy A).card := by
   let f (x : ZMod M) := x.val+1
-  let B := A.image f
+  let B := intervalCopy A
   have hi : Function.Injective f := fun x y h => ZMod.val_injective _ (Nat.succ.inj h)
-  refine ⟨B,?_,card_image_of_injective _ hi,?_⟩
+  refine ⟨?_,card_image_of_injective _ hi,?_⟩
   · intro x hx
     obtain ⟨a,ha,rfl⟩ := mem_image.mp hx
     exact mem_Icc.mpr ⟨Nat.succ_pos _,a.val_lt⟩
@@ -28,6 +32,13 @@ private lemma lift_interval {M : ℕ+} (A : Finset (ZMod M)) (hA : StrictCover A
       ring
     have h := card_image_le (s := B+B) (f := g)
     simpa [hsur,ZMod.card] using h
+
+theorem order_le_choose {M : ℕ+} {A : Finset (ZMod M)} (h : StrictCover A) :
+    M.val ≤ A.card.choose 2 := by
+  have hs : strictSums A = univ := eq_univ_of_forall (fun x => mem_strictSums.mpr (h x))
+  have hc := card_image_le (s := A.powersetCard 2) (f := pairSum)
+  change (strictSums A).card ≤ _ at hc
+  simpa [hs,ZMod.card] using hc
 
 /-- A finite interval can accommodate all the residues of a strict extremizer.
 Padding the lifted representatives gives exactly the requested budget. -/
@@ -45,21 +56,19 @@ theorem finite_transfer {k N : ℕ} (hk : k ≤ N) (hcap : k.choose 2 ≤ N) :
       (by simp : (∅ : Finset ℕ).card ≤ k) (show k ≤ (Icc 1 N).card by simpa using hk)
     exact ⟨B,hB,hBk,by simp [h]⟩
   · have h := covers_true_iff.mp hA
-    have hs : strictSums A = univ := eq_univ_of_forall (fun x => mem_strictSums.mpr (h x))
-    have hM : M.val ≤ A.card.choose 2 := by
-      have hc := card_image_le (s := A.powersetCard 2) (f := pairSum)
-      change (strictSums A).card ≤ _ at hc
-      simpa [hs,ZMod.card] using hc
-    obtain ⟨D,hD,hd,hord⟩ := lift_interval A h
+    have hM := order_le_choose h
+    let D := intervalCopy A
+    obtain ⟨hD,hd,hord⟩ := intervalCopy_spec A h
     have hMN := hM.trans ((Nat.choose_le_choose 2 ha).trans hcap)
     obtain ⟨B,hDB,hB,hBk⟩ := exists_subsuperset_card_eq
       (hD.trans (Icc_subset_Icc le_rfl hMN)) (hd.trans_le ha)
       (show k ≤ (Icc 1 N).card by simpa using hk)
     exact ⟨B,hB,hBk,hm ▸ hord.trans (card_le_card (add_subset_add hDB hDB))⟩
 
-private def budget (N : ℕ) := Nat.sqrt (2*N)
+/-- Size budget for the interval of length N. -/
+def budget (N : ℕ) := Nat.sqrt (2*N)
 
-private lemma budget_fits (N : ℕ) : budget N ≤ N ∧ (budget N).choose 2 ≤ N := by
+theorem budget_fits (N : ℕ) : budget N ≤ N ∧ (budget N).choose 2 ≤ N := by
   have hk := Nat.sqrt_le' (2*N)
   change budget N ^ 2 ≤ 2*N at hk
   constructor
@@ -73,7 +82,7 @@ private lemma budget_floor (N : ℕ) : budget N = ⌊Real.sqrt 2*Real.sqrt N⌋�
   rw [← Real.sqrt_mul (by norm_num)]
   simpa [budget] using (Real.nat_floor_real_sqrt_eq_nat_sqrt (a := 2*N)).symm
 
-private lemma budget_scale :
+theorem budget_scale :
     Tendsto budget atTop atTop ∧
     Tendsto (fun N => (budget N : ℝ)/Real.sqrt N) atTop (𝓝 (Real.sqrt 2)) := by
   have hroot := Real.tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop
@@ -84,7 +93,7 @@ private lemma budget_scale :
   · simpa [Function.comp_def,budget_floor] using
       (tendsto_nat_floor_mul_div_atTop (Real.sqrt_nonneg 2)).comp hroot
 
-private lemma sumset_upper (B : Finset ℕ) : (B+B).card ≤ (B.card+1).choose 2 := by
+theorem sumset_upper (B : Finset ℕ) : (B+B).card ≤ (B.card+1).choose 2 := by
   rw [← card_sym2]
   have h : B+B ⊆ B.sym2.image ordinarySum := by
     intro x hx
@@ -92,16 +101,17 @@ private lemma sumset_upper (B : Finset ℕ) : (B+B).card ≤ (B.card+1).choose 2
     exact mem_image.mpr ⟨Sym2.mk a b,mk_mem_sym2_iff.mpr ⟨ha,hb⟩,rfl⟩
   exact (card_le_card h).trans card_image_le
 
-private lemma pair_scales :
-    Tendsto (fun N => ((budget N).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) ∧
-    Tendsto (fun N => ((budget N+1).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) := by
-  have h := budget_scale.2
-  have hs : Tendsto (fun N => (budget N : ℝ)^2/(N : ℝ)) atTop (𝓝 2) := by
+/-- The unordered pair counts on either diagonal convention have the same scale. -/
+theorem pair_scales_of_size {k : ℕ → ℕ}
+    (h : Tendsto (fun N => (k N : ℝ)/Real.sqrt N) atTop (𝓝 (Real.sqrt 2))) :
+    Tendsto (fun N => ((k N).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) ∧
+    Tendsto (fun N => ((k N+1).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) := by
+  have hs : Tendsto (fun N => (k N : ℝ)^2/(N : ℝ)) atTop (𝓝 2) := by
     simpa [div_pow,Real.sq_sqrt (by norm_num : (0:ℝ)≤2),Real.sq_sqrt (Nat.cast_nonneg _)] using h.pow 2
-  have hl : Tendsto (fun N => (budget N : ℝ)/(N : ℝ)) atTop (𝓝 0) := by
+  have hl : Tendsto (fun N => (k N : ℝ)/(N : ℝ)) atTop (𝓝 0) := by
     have ht := h.div_atTop (Real.tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop)
     refine ht.congr (fun n => ?_)
-    change (budget n : ℝ)/Real.sqrt n/Real.sqrt n=_
+    change (k n : ℝ)/Real.sqrt n/Real.sqrt n=_
     rw [div_div,← sq,Real.sq_sqrt (Nat.cast_nonneg n)]
   constructor
   · have hv := (hs.sub hl).div_const 2
@@ -140,7 +150,7 @@ theorem green_implies_erdos840 (hGreen : OrdinaryLimit) :
       rw [div_pow, Real.sq_sqrt (Nat.cast_nonneg n)]
       field_simp
     have hden : Tendsto (fun n => ((B n+B n).card : ℝ)/(n : ℝ)) atTop (𝓝 1) := by
-      apply tendsto_of_tendsto_of_tendsto_of_le_of_le hlow pair_scales.2
+      apply tendsto_of_tendsto_of_tendsto_of_le_of_le hlow (pair_scales_of_size budget_scale.2).2
       · intro n
         apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg n)
         exact Nat.cast_le.mpr (hsum n)
@@ -152,9 +162,15 @@ theorem green_implies_erdos840 (hGreen : OrdinaryLimit) :
     have he₂ : (fun n => ((B n).card.choose 2 : ℝ)) ~[atTop] (fun n : ℕ => (n : ℝ)) := by
       apply isEquivalent_of_tendsto_one
       change Tendsto (fun n => ((B n).card.choose 2 : ℝ)/(n : ℝ)) atTop (𝓝 1)
-      simpa only [hcard] using pair_scales.1
+      simpa only [hcard] using (pair_scales_of_size budget_scale.2).1
     exact he₁.trans he₂.symm
 
+#print axioms intervalCopy_spec
+#print axioms order_le_choose
+#print axioms budget_fits
+#print axioms budget_scale
+#print axioms sumset_upper
+#print axioms pair_scales_of_size
 #print axioms finite_transfer
 #print axioms green_implies_erdos840
 

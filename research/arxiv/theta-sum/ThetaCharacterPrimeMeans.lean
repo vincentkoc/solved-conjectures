@@ -11,12 +11,14 @@ private lemma char_bound (p : ℕ) : |(chi p : ℝ)| ≤ 1 := by
   unfold chi
   split_ifs <;> norm_num
 
-private lemma twisted_approx {ε : ℝ} (he : 0 < ε) :
-    ∃ T V : ℕ, 3 ≤ T ∧ 2 ≤ V ∧ ∀ᶠ X : ℕ in atTop,
+/-- Every sufficiently large pair of successive cutoffs approximates the
+prime character mean. The cutoffs tend to infinity in the stated order. -/
+theorem twisted_approx_eventually {ε : ℝ} (he : 0 < ε) :
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
       |primeMean (fun p => (chi p : ℝ)*scaledOff p) X -
        primeMean (fun p => (chi p : ℝ)*model T V p) X| ≤ ε := by
-  obtain ⟨T,V,hT,hV,H⟩ := prime_model_absolute he
-  refine ⟨T,V,hT,hV,?_⟩
+  filter_upwards [prime_model_absolute_eventually he] with T hT
+  filter_upwards [hT] with V H
   have hπ : Tendsto (fun N : ℕ => (N.primeCounting : ℝ)) atTop atTop :=
     tendsto_natCast_atTop_atTop.comp Nat.tendsto_primeCounting
   filter_upwards [H,hπ.eventually_gt_atTop 0] with X hX hx
@@ -24,6 +26,14 @@ private lemma twisted_approx {ε : ℝ} (he : 0 < ε) :
   apply (abs_sum_le_sum_abs _ _).trans ((sum_le_sum (fun p _ => ?_)).trans hX)
   rw [← mul_sub,abs_mul]
   exact mul_le_of_le_one_left (abs_nonneg _) (char_bound p)
+
+private lemma twisted_approx {ε : ℝ} (he : 0 < ε) :
+    ∃ T V : ℕ, 3 ≤ T ∧ 2 ≤ V ∧ ∀ᶠ X : ℕ in atTop,
+      |primeMean (fun p => (chi p : ℝ)*scaledOff p) X -
+       primeMean (fun p => (chi p : ℝ)*model T V p) X| ≤ ε := by
+  obtain ⟨T,hT,H⟩ := ((eventually_ge_atTop 3).and (twisted_approx_eventually he)).exists
+  obtain ⟨V,hV,h⟩ := ((eventually_ge_atTop 2).and H).exists
+  exact ⟨T,V,hT,hV,h⟩
 
 private lemma model_character_limit (hAP : ProgressionMangoldt) {T V : ℕ} (hT : 3 ≤ T) :
     ∃ L : ℝ, 4/15*commonWeight (2*V^52) 3 ≤ L ∧
@@ -121,7 +131,8 @@ private lemma chi_prime_mean (hAP : ProgressionMangoldt) :
     norm_num [sum_range_succ,Nat.Coprime,chi]
   simpa only [hz] using periodic_prime_mean hAP hper
 
-private lemma residual_twist {L : ℝ} (hAP : ProgressionMangoldt)
+/-- Convert a twisted off-diagonal mean to a mean of the original residual. -/
+theorem residual_twist {L : ℝ} (hAP : ProgressionMangoldt)
     (hL : Tendsto (primeMean (fun p => (chi p : ℝ)*scaledOff p)) atTop (𝓝 L)) :
     Tendsto (primeMean (fun p => (chi p : ℝ)*residual p)) atTop (𝓝 (8/Real.pi^2*L)) := by
   let g (p : ℕ) := diagonalConstant*(chi p : ℝ)+(8/Real.pi^2)*((chi p : ℝ)*scaledOff p)
@@ -398,4 +409,7 @@ theorem S_prime_class_statistics (hAP : ProgressionMangoldt) :
   exact (variance_recentering residual diagonalConstant hx).symm
 
 #print axioms S_prime_class_statistics
+#print axioms twisted_approx_eventually
+#print axioms residual_twist
+
 end Arxiv.«2501.03234».ThetaCharacterPrimeMeans

@@ -183,7 +183,8 @@ theorem wave_transform {d w : ℕ} [NeZero d] (hd : Odd d) (h3 : 3∣d) (hw : Od
   rw [hC u]
   ring
 
-private noncomputable def bareTerm (j : ℕ) : ℝ :=
+/-- Reciprocal numerator in the odd part of the character modulo three. -/
+noncomputable def bareTerm (j : ℕ) : ℝ :=
   if j%6=1 then (j:ℝ)⁻¹ else if j%6=5 then -(j:ℝ)⁻¹ else 0
 
 private lemma bare_block (k : ℕ) {r : ℕ} (hr : r≤6) :
@@ -219,25 +220,33 @@ private noncomputable def sifted (s : Finset ℕ) (j : ℕ) : ℝ :=
 private noncomputable def siftedPrefix (s : Finset ℕ) (K : ℕ) : ℝ :=
   ∑ j∈range (K+1),sifted s j
 
-private lemma bare_mul {p : ℕ} (hp : p%6=5) (i : ℕ) :
-    bareTerm (p*i)= -(p:ℝ)⁻¹*bareTerm i := by
-  have hi := Nat.mod_lt i (by decide : 0<6)
-  unfold bareTerm
-  rw [Nat.mul_mod,hp,Nat.cast_mul,mul_inv_rev]
-  interval_cases i%6 <;> norm_num <;> ring
+private lemma bare_eq (j : ℕ) :
+    bareTerm j=if j%2=1 then (chi j:ℝ)/j else 0 := by
+  have h₂ := Nat.mod_mod_of_dvd j (by decide : 2∣6)
+  have h₃ := Nat.mod_mod_of_dvd j (by decide : 3∣6)
+  have h := Nat.mod_lt j (by decide : 0<6)
+  unfold bareTerm chi
+  rw [← h₂,← h₃]
+  interval_cases j%6 <;> norm_num [div_eq_mul_inv]
 
-private lemma prefix_insert {p : ℕ} (hp : Nat.Prime p) (hp6 : p%6=5) {s : Finset ℕ}
+private lemma bare_mul_odd {p : ℕ} (hp : Odd p) (i : ℕ) :
+    bareTerm (p*i) = ((chi p : ℝ)/p)*bareTerm i := by
+  simp only [bare_eq, Nat.mul_mod, Nat.odd_iff.mp hp, one_mul, Nat.mod_mod,
+    chi_mul,Int.cast_mul,Nat.cast_mul]
+  split_ifs <;> ring
+
+private lemma prefix_insert_odd {p : ℕ} (hp : Nat.Prime p) (ho : Odd p) {s : Finset ℕ}
     (hn : p∉s) (hs : ∀ a∈s,Nat.Prime a) (K : ℕ) :
-    siftedPrefix (insert p s) K=siftedPrefix s K+(p:ℝ)⁻¹*siftedPrefix s (K/p) := by
+    siftedPrefix (insert p s) K=siftedPrefix s K-((chi p:ℝ)/p)*siftedPrefix s (K/p) := by
   classical
-  have H (i : ℕ) : sifted s (p*i)= -(p:ℝ)⁻¹*sifted s i := by
+  have H (i : ℕ) : sifted s (p*i)= ((chi p:ℝ)/p)*sifted s i := by
     have hg : (∀ a∈s, ¬a∣p*i) ↔ (∀ a∈s, ¬a∣i) := by
       constructor
       · intro h a ha hai; exact h a ha (hai.trans (dvd_mul_left i p))
       · intro h a ha
         have hc : a.Coprime p := (Nat.coprime_primes (hs a ha) hp).mpr (fun e => hn (e ▸ ha))
         exact fun hai => h a ha (hc.dvd_mul_left.mp hai)
-    simp only [sifted,hg,bare_mul hp6]; split_ifs <;> simp
+    simp only [sifted,hg,bare_mul_odd ho]; split_ifs <;> simp
   have ht (j : ℕ) : sifted (insert p s) j=sifted s j-(if p∣j then sifted s j else 0) := by
     simp only [sifted,forall_mem_insert]; by_cases h : p∣j <;> simp [h]
   have he : (∑ j∈(range (K+1)).filter (fun j => p∣j),sifted s j) =
@@ -252,7 +261,7 @@ private lemma prefix_insert {p : ℕ} (hp : Nat.Prime p) (hp6 : p%6=5) {s : Fins
       exact ⟨i,mem_range.mpr (Nat.lt_succ_of_le hc),rfl⟩
     · intros; rfl
   unfold siftedPrefix
-  simp_rw [ht]; rw [sum_sub_distrib,← sum_filter,he]; simp_rw [H]; rw [← mul_sum]; ring
+  simp_rw [ht]; rw [sum_sub_distrib,← sum_filter,he]; simp_rw [H]; rw [← mul_sum]
 
 private theorem prefix_nonneg (s : Finset ℕ) (hs : ∀ p∈s,Nat.Prime p ∧ p%6=5) (K : ℕ) :
     0 ≤ siftedPrefix s K := by
@@ -266,17 +275,11 @@ private theorem prefix_nonneg (s : Finset ℕ) (hs : ∀ p∈s,Nat.Prime p ∧ p
   | @insert p s hp ih =>
     have hs' (a) (ha : a∈s) := hs a (mem_insert_of_mem ha)
     obtain ⟨hpr,hp6⟩ := hs p (mem_insert_self ..)
-    rw [prefix_insert hpr hp6 hp (fun a ha => (hs' a ha).1)]
+    have ho : Odd p := Nat.odd_iff.mpr (by omega)
+    have hc : chi p = -1 := by simp [chi,show p%3=2 by omega]
+    rw [prefix_insert_odd hpr ho hp (fun a ha => (hs' a ha).1),hc]
+    simp only [Int.cast_neg,Int.cast_one,neg_div,one_div,neg_mul,sub_neg_eq_add]
     exact add_nonneg (ih hs' K) (mul_nonneg (by positivity) (ih hs' (K/p)))
-
-private lemma bare_eq (j : ℕ) :
-    bareTerm j=if j%2=1 then (chi j:ℝ)/j else 0 := by
-  have h₂ := Nat.mod_mod_of_dvd j (by decide : 2∣6)
-  have h₃ := Nat.mod_mod_of_dvd j (by decide : 3∣6)
-  have h := Nat.mod_lt j (by decide : 0<6)
-  unfold bareTerm chi
-  rw [← h₂,← h₃]
-  interval_cases j%6 <;> norm_num [div_eq_mul_inv]
 
 private lemma sifted_eq {d : ℕ} [NeZero d] (j : ℕ) :
     sifted (d.primeFactors.erase 3) j =
@@ -326,6 +329,45 @@ private theorem row_transform_aux {d : ℕ} [NeZero d] (hd : Odd d) (h3 : 3∣d)
   unfold siftedPrefix
   rw [sum_range_succ']
   simp [sifted,bareTerm]
+
+open Filter
+open scoped Topology
+
+private theorem sifted_limit {b : ℝ}
+    (hb : Tendsto (fun n => ∑ j∈range n,bareTerm j) atTop (𝓝 b))
+    (s : Finset ℕ) (hs : ∀ p∈s,Nat.Prime p ∧ Odd p) :
+    Tendsto (siftedPrefix s) atTop (𝓝 (b*∏ p∈s,(1-(chi p:ℝ)/p))) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [prod_empty,mul_one]
+    apply (hb.comp (tendsto_add_atTop_nat 1)).congr'
+    exact Eventually.of_forall fun n => by simp [siftedPrefix,sifted]
+  | @insert p s hps ih =>
+    have hs' (a) (ha : a∈s) := hs a (mem_insert_of_mem ha)
+    have hp := hs p (mem_insert_self ..)
+    have H := ih hs'
+    have H' := H.comp (Nat.tendsto_div_const_atTop hp.1.ne_zero)
+    have result := H.sub (H'.const_mul ((chi p : ℝ)/p))
+    rw [prod_insert hps]
+    convert result.congr' (Eventually.of_forall fun K =>
+      (prefix_insert_odd hp.1 hp.2 hps (fun a h => (hs' a h).1) K).symm) using 1
+    congr 1
+    ring
+
+/-- Full numerator-window limit of the modulo-three transform at a fixed
+odd denominator divisible by three. -/
+theorem row_transform_limit {b : ℝ}
+    (hb : Tendsto (fun n => ∑ j∈range n,bareTerm j) atTop (𝓝 b))
+    {d : ℕ} [NeZero d] (hd : Odd d) (h3 : 3 ∣ d) :
+    Tendsto (fun K => ∑ u : (ZMod d)ˣ,(chi (u:ZMod d).val:ℝ)*ThetaRowCorrelations.row d K (u:ZMod d).val)
+      atTop (𝓝 (((2*∏ p∈d.primeFactors.erase 3,(1-chi p):ℤ):ℝ) *
+        (b*∏ p∈d.primeFactors.erase 3,(1-(chi p:ℝ)/p)))) := by
+  have hs (p) (hp : p∈d.primeFactors.erase 3) : p.Prime ∧ Odd p :=
+    ⟨Nat.prime_of_mem_primeFactors (mem_erase.mp hp).2,
+      hd.of_dvd_nat (Nat.dvd_of_mem_primeFactors (mem_erase.mp hp).2)⟩
+  exact ((sifted_limit hb _ hs).const_mul _).congr' (Eventually.of_forall fun K =>
+    (row_transform_aux hd h3 K).symm)
 
 /-- The signed character transform of a whole reciprocal row separates into a
 denominator product and an explicit primitive numerator sum. -/
@@ -377,3 +419,5 @@ end Arxiv.«2501.03234».ThetaCharacterThree
 #print axioms Arxiv.«2501.03234».ThetaCharacterThree.row_transform_nonneg
 #print axioms Arxiv.«2501.03234».ThetaCharacterThree.wave_transform
 #print axioms Arxiv.«2501.03234».ThetaCharacterThree.parity_transform
+
+#print axioms Arxiv.«2501.03234».ThetaCharacterThree.row_transform_limit

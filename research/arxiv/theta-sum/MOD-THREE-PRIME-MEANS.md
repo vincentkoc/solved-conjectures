@@ -18,7 +18,7 @@ The variance over all primes has a finite, strictly positive limit. If $\overlin
   =\lim_{X\to\infty}\frac{1}{\pi(X)}\sum_{p\le X}(R(p)-B)^2
   = V \ge C^2 \ge \left(\frac{968}{375\pi^2}\right)^2 > 0.0684.
 \]
-This gives a limit and an explicit lower bound for the second moment previously bounded above. The numerical values of $C$ and $V$ are still undetermined by this proof. The signs concern the **mean residual after subtracting the half-log term**. The pointwise conjecture $S(p)>0$ at every odd prime remains open. [Limiting variance](ThetaCharacterPrimeMeans.lean) · [Earlier finite upper bound](PRIME-VARIANCE.md)
+This gives a limit and an explicit lower bound for the second moment previously bounded above. The [subsequent Euler product](EXACT-MOD-THREE-BIAS.md) evaluates $C$. The exact value of $V$ remains open. The signs concern the **mean residual after subtracting the half-log term**. The pointwise conjecture $S(p)>0$ at every odd prime remains open. [Limiting variance](ThetaCharacterPrimeMeans.lean) · [Earlier finite upper bound](PRIME-VARIANCE.md)
 
 ## How the character enters
 
