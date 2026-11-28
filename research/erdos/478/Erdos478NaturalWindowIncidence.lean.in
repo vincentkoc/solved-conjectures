@@ -1,0 +1,23 @@
+import Erdos478CriticalWindowImage
+import Erdos478MeanExceptionalWindows
+import Erdos478NaturalDensity
+
+/-! # Ordinary prime mean of the number of noninjective factorial windows -/
+
+namespace Erdos478.WindowAverage
+open Finset Filter Topology GapDensity
+
+/-- Each rational prime through X has equal weight. The span is fixed before
+the prime cutoff grows, and the summand counts positive starting positions. -/
+theorem ordinary_exceptional_count (H : ℕ) :
+    Tendsto (fun X => (∑ p ∈ Nat.primesLE X,((exceptionalStarts p H 1).card:ℝ))/(Nat.primeCounting X:ℝ))
+      atTop (𝓝 (H.choose 2:ℕ)) := by
+  rw [show (fun X => (∑ p ∈ Nat.primesLE X,((exceptionalStarts p H 1).card:ℝ))/(Nat.primeCounting X:ℝ))=
+      (fun X => (countingAverage degree_one_prime_ideal_theorem).avg X (fun p => ((exceptionalStarts p H 1).card:ℝ))) by
+    funext X
+    rw [div_eq_inv_mul]
+    rfl]
+  exact exceptional_count_mean _ H
+
+#print axioms ordinary_exceptional_count
+end Erdos478.WindowAverage
