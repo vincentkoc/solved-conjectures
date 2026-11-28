@@ -7,12 +7,12 @@ namespace Arxiv.«2501.03234».ThetaMaximalWindow
 open Finset
 noncomputable section
 
-/-- Each exceptional starting integer can choose its own positive window length.
-Scanning from the left gives the weak-type bound with constant one. -/
-theorem count (f : ℕ → ℝ) (hf : ∀ p, 0≤f p) {c : ℝ} (hc : 0≤c)
-    {s : Finset ℕ} {L U : ℕ} (hL : ∀ n∈s, L≤n)
-    (h : ∀ n∈s, ∃ H : ℕ, 0<H ∧ n+H≤U ∧ c*H≤∑ p∈Ioc n (n+H), f p) :
-    c*s.card≤∑ p∈Ioc L U, f p := by
+/-- The charged set of eligible starts may be sparse. The witness pays only
+for the eligible starting points in the half-open interval that it removes. -/
+theorem cover (f : ℕ → ℝ) (hf : ∀ p,0≤f p) {c : ℝ} (hc : 0≤c)
+    {s A : Finset ℕ} {L U : ℕ} (hL : ∀ n∈s,L≤n) (hsA : s⊆A)
+    (h : ∀ n∈s, ∃ H : ℕ, 0<H ∧ n+H≤U ∧ c*(A∩Ico n (n+H)).card≤∑ p∈Ioc n (n+H),f p) :
+    c*s.card≤∑ p∈Ioc L U,f p := by
   classical
   induction s using Finset.strongInductionOn generalizing L with | _ s ih =>
   by_cases hs : s.Nonempty
@@ -23,15 +23,15 @@ theorem count (f : ℕ → ℝ) (hf : ∀ p, 0≤f p) {c : ℝ} (hc : 0≤c)
     have ht : t⊂s := (ssubset_iff_of_subset (filter_subset ..)).mpr
       ⟨n,hn,fun hh => by have := (mem_filter.mp hh).2; omega⟩
     have hrest := ih t ht (L:=n+H) (fun j hj => (mem_filter.mp hj).2)
-      (fun j hj => h j (mem_filter.mp hj).1)
-    have hb : s.filter (fun j => ¬n+H≤j) ⊆ Ico n (n+H) := by
+      (fun j hj => hsA (mem_filter.mp hj).1) (fun j hj => h j (mem_filter.mp hj).1)
+    have hb : s.filter (fun j => ¬n+H≤j) ⊆ A∩Ico n (n+H) := by
       intro j hj
       obtain ⟨hj,hj'⟩ := mem_filter.mp hj
-      exact mem_Ico.mpr ⟨s.min'_le _ hj,lt_of_not_ge hj'⟩
+      exact mem_inter.mpr ⟨hsA hj,mem_Ico.mpr ⟨s.min'_le _ hj,lt_of_not_ge hj'⟩⟩
     have hb' := card_le_card hb
-    simp only [Nat.card_Ico,Nat.add_sub_cancel_left] at hb'
     have hpartition := card_filter_add_card_filter_not (s:=s) (fun j => n+H≤j)
-    have hcard : s.card≤H+t.card := by change _≤H+(s.filter _).card; omega
+    have hcard : s.card≤(A∩Ico n (n+H)).card+t.card := by
+      change _≤_+(s.filter _).card; omega
     have hd : Disjoint (Ioc n (n+H)) (Ioc (n+H) U) := disjoint_left.mpr (by
       intro j h1 h2; exact (not_lt_of_ge (mem_Ioc.mp h1).2) (mem_Ioc.mp h2).1)
     have hu : Ioc n (n+H) ∪ Ioc (n+H) U ⊆ Ioc L U := by
@@ -40,12 +40,25 @@ theorem count (f : ℕ → ℝ) (hf : ∀ p, 0≤f p) {c : ℝ} (hc : 0≤c)
       · exact mem_Ioc.mpr ⟨(hL n hn).trans_lt (mem_Ioc.mp h1).1,(mem_Ioc.mp h1).2.trans hU⟩
       · exact mem_Ioc.mpr ⟨((hL n hn).trans (Nat.le_add_right ..)).trans_lt (mem_Ioc.mp h2).1,(mem_Ioc.mp h2).2⟩
     calc
-      c*s.card ≤ c*(H+t.card:ℕ) := mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) hc
-      _ = c*H+c*t.card := by push_cast;ring
+      c*s.card ≤ c*((A∩Ico n (n+H)).card+t.card:ℕ) := mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) hc
+      _ = c*(A∩Ico n (n+H)).card+c*t.card := by push_cast;ring
       _ ≤ _ := (add_le_add hcost hrest).trans (by
         rw [←sum_union hd]; exact sum_le_sum_of_subset_of_nonneg hu (fun p _ _ => hf p))
   · rw [not_nonempty_iff_eq_empty.mp hs]
     simpa using sum_nonneg (s:=Ioc L U) (fun p _ => hf p)
+
+/-- Each exceptional starting integer can choose its own positive window length.
+Scanning from the left gives the weak-type bound with constant one. -/
+theorem count (f : ℕ → ℝ) (hf : ∀ p, 0≤f p) {c : ℝ} (hc : 0≤c)
+    {s : Finset ℕ} {L U : ℕ} (hL : ∀ n∈s, L≤n)
+    (h : ∀ n∈s, ∃ H : ℕ, 0<H ∧ n+H≤U ∧ c*H≤∑ p∈Ioc n (n+H), f p) :
+    c*s.card≤∑ p∈Ioc L U, f p := by
+  apply cover f hf hc hL (show s⊆s from fun _ hx => hx)
+  intro n hn
+  obtain ⟨H,hH,hU,hh⟩ := h n hn
+  refine ⟨H,hH,hU,le_trans (mul_le_mul_of_nonneg_left ?_ hc) hh⟩
+  have hcard := card_le_card (inter_subset_right (s₁:=s) (s₂:=Ico n (n+H)))
+  simpa only [Nat.card_Ico,Nat.add_sub_cancel_left] using (Nat.cast_le (α:=ℝ)).mpr hcard
 
 #print axioms count
 
