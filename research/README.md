@@ -122,7 +122,7 @@ runner="$PWD/scripts/replay-research"
 
 The runner discovers every `.lean` file under `research/`, resolves its imports with Lean, and compiles notebook dependencies first. Use a unique module filename for each proof. Each file must print its theorem’s axioms. The runner checks the reports against `propext`, `Classical.choice` and `Quot.sound`, then runs `leanchecker` on one notebook module at a time so each process releases its memory before the next starts. Compiled notebook files are temporary.
 
-Pass one or more bare module names to replay those proofs and their transitive imports. Shared modules are checked once.
+Pass one or more bare module names to replay those proofs and their transitive imports. Shared modules are checked once. A qualified notebook import such as `research.arxiv.«1104.1579».CunninghamBrunSieve` uses a temporary import-only module that points to the same checked proof as its bare name.
 
 ```bash
 (cd "${FC:?set FC to the Formal Conjectures checkout}" && lake env python3 "$runner" Green52Complements)

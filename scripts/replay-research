@@ -48,31 +48,66 @@ def replay_kernel(sources, env):
         subprocess.run(["leanchecker", "-v", source.stem], env=env, check=True)
 
 
+def qualified_imports(resolved, sources, env):
+    # The pinned Lean compiler emits import names and source paths in header order.
+    headers = json.loads(subprocess.check_output(
+        ["lean", "--deps-json", "--stdin"], input="\n".join(map(str, resolved)),
+        env=env, text=True,
+    ))["imports"]
+    if len(headers) != len(resolved):
+        raise SystemExit("Lean returned an incomplete import list.")
+    aliases = set()
+    for (source, paths), header in zip(resolved.items(), headers):
+        if header["errors"]:
+            raise SystemExit(f"{source.name}: {header['errors']}")
+        imports = header["result"]["imports"]
+        if len(imports) != len(paths):
+            raise SystemExit(f"{source.name}: Lean import names and source paths disagree.")
+        for item, path in zip(imports, paths):
+            if path in sources and item["module"].startswith("research."):
+                aliases.add(path)
+    return aliases
+
+
+def compile_alias(source, out, env):
+    # Both import spellings must lead back to a single copy of the declarations.
+    relative = source.relative_to(RESEARCH.parent)
+    alias = out / relative
+    alias.parent.mkdir(parents=True, exist_ok=True)
+    alias.write_text(
+        f"import «{source.stem}»\n\n/-! Re-export the checked notebook proof under its qualified name. -/\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["lean", "-o", alias.with_suffix(".olean"), relative], cwd=out, env=env, check=True)
+
+
 def dependency_order(selected, sources, upstream, env):
     graph = TopologicalSorter()
     targets = set()
-    visited = set()
+    resolved = {}
     pending = list(reversed(selected))
     while pending:
         source = pending.pop()
-        if source in visited:
+        if source in resolved:
             continue
-        visited.add(source)
         deps = subprocess.check_output(["lean", "--src-deps", source], env=env, text=True)
-        paths = {Path(line).resolve() for line in deps.splitlines()}
+        resolved[source] = [Path(line).resolve() for line in deps.splitlines()]
+        paths = set(resolved[source])
         local = sorted(paths & sources)
         graph.add(source, *local)
         pending.extend(reversed(local))
         for path in paths - sources:
             if path.is_relative_to(upstream) and not path.is_relative_to(upstream / ".lake"):
                 targets.add(str(path.relative_to(upstream)) + ":olean")
-    return list(graph.static_order()), sorted(targets)
+    return list(graph.static_order()), sorted(targets), qualified_imports(resolved, sources, env)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("modules", metavar="MODULE", nargs="*",
-                        help="bare notebook module name (default: replay the whole notebook)")
+    parser.add_argument(
+        "modules", metavar="MODULE", nargs="*",
+        help="bare notebook module name (default: replay the whole notebook)",
+    )
     args = parser.parse_args()
     upstream = Path.cwd().resolve()
     if not (upstream / "FormalConjectures").is_dir() or not os.environ.get("LEAN_PATH"):
@@ -89,8 +124,8 @@ def main():
     selected = [by_name[name] for name in args.modules] if args.modules else files
     roots = sorted({str(f.parent) for f in files})
     env = os.environ.copy()
-    env["LEAN_SRC_PATH"] = os.pathsep.join([*roots, env["LEAN_SRC_PATH"]])
-    order, targets = dependency_order(selected, set(files), upstream, env)
+    env["LEAN_SRC_PATH"] = os.pathsep.join([str(RESEARCH.parent), *roots, env["LEAN_SRC_PATH"]])
+    order, targets, aliases = dependency_order(selected, set(files), upstream, env)
     if targets:
         subprocess.run(["lake", "build", *targets], check=True)
 
@@ -100,6 +135,8 @@ def main():
         for source in order:
             print(f"Checking {source.relative_to(RESEARCH)}", flush=True)
             compile_proof(source, out, env)
+            if source in aliases:
+                compile_alias(source, out, env)
         replay_kernel(order, env)
     print(f"Replayed {len(order)} notebook modules.")
 
