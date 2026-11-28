@@ -10,7 +10,7 @@ open ThetaPrimeMeanSquare ThetaReciprocalInversion ThetaFactorialSequence ThetaI
 open scoped Topology
 noncomputable section
 
-private theorem budget {m r Y V : ℕ} (hm2 : 2≤ m) (hr : r< m) (hc : r.Coprime m)
+theorem budget {m r Y V : ℕ} (hm2 : 2≤ m) (hr : r< m) (hc : r.Coprime m)
     (hY : m≤ Y) {E : ℝ}
     (hBad : ∀ D : Finset ℕ, (∀ d∈D, 0< d ∧ d≤ Y ∧ ¬d∣m) →
       (1080*Z)*∑ d∈D,logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) ≤ E) :
@@ -144,6 +144,7 @@ theorem growing {q r : ℕ} (hq : 0< q) (hr : r< q) (hc : r.Coprime q) :
   change _≤ (∑ d∈m.divisors,ThetaCompatibleCapture.value A' K n d)-D
   linarith only [hg,he,hsq,hlin,hlg]
 
+#print axioms budget
 #print axioms growing
 
 end

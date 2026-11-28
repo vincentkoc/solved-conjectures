@@ -66,17 +66,14 @@ theorem rectangle {m : ℕ} (D G S : Finset ℕ)
        _ ≤ ∑ k∈G×ˢS,v k := sum_le_sum_of_subset_of_nonneg hsub (fun k _ _ => mul_nonneg (logWeight_nonneg _) (by dsimp [tailWeight]; positivity))
        _ = _ := by rw [sum_product,mul_sum,sum_comm]; simp only [v,sum_mul]
 
-/-- All omitted denominators are charged either to a large quotient or to a
-divisor saturated by a prime power. Both bounds are uniform in the row cutoff. -/
-theorem omitted {T A Y : ℕ} (hT : 0< T) (D : Finset ℕ)
-    (hD : ∀ d∈D,0< d ∧ d≤ Y ∧ ¬d∣T.factorial^A) :
-    let m := T.factorial^A
+/-- Large quotients pay the tail beyond T. For a smaller nontrivial quotient,
+a prime dividing it places the gcd in the prescribed saturated divisor set. -/
+theorem omitted_cover {m T Y : ℕ} (hm : 0 < m) (hT : 0<T) (D G : Finset ℕ)
+    (hD : ∀ d∈D,0 < d ∧ d≤Y ∧ ¬d∣m)
+    (hG : ∀ d∈D, ∀ p : ℕ, p.Prime → p≤T → p∣d/(m.gcd d) → m.gcd d∈G) :
     ∑ d∈D, logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) ≤
-      logMass m*(zetaBound/(T:ℝ)^(1/16:ℝ))+
-      (T*((logMass m+A*Real.log T*mass m)/(2:ℝ)^A))*zetaBound := by
+      logMass m*(zetaBound/(T:ℝ)^(1/16:ℝ))+(∑ g∈G,logWeight g)*zetaBound := by
   classical
-  let m := T.factorial^A
-  have hm : 0< m := pow_pos (Nat.factorial_pos _) _
   let s (d : ℕ) := d/(m.gcd d)
   have hpos {d : ℕ} (hd : d∈D) : 0< s d := Nat.div_pos (Nat.le_of_dvd (hD d hd).1 (Nat.gcd_dvd_right _ _)) (Nat.gcd_pos_of_pos_left _ hm)
   have hu {d : ℕ} (hd : d∈D) : s d≤ Y := (Nat.div_le_self ..).trans (hD d hd).2.1
@@ -85,7 +82,7 @@ theorem omitted {T A Y : ℕ} (hT : 0< T) (D : Finset ℕ)
   have hb := rectangle (m:=m) big m.divisors (Icc T Y) (by
     intro d hd; obtain ⟨h,h'⟩ := mem_filter.mp hd
     exact ⟨Nat.mem_divisors.mpr ⟨Nat.gcd_dvd_left ..,hm.ne'⟩,mem_Icc.mpr ⟨h',hu h⟩⟩)
-  have hs := rectangle (m:=m) small (rare m T A) (Icc 1 Y) (by
+  have hs := rectangle (m:=m) small G (Icc 1 Y) (by
     intro d hd; obtain ⟨h,h'⟩ := mem_filter.mp hd
     have hs1 : s d≠1 := by
       intro he
@@ -97,18 +94,32 @@ theorem omitted {T A Y : ℕ} (hT : 0< T) (D : Finset ℕ)
     have hp := Nat.minFac_prime hs1
     have hpd := Nat.minFac_dvd (s d)
     have hpT : p≤ T := (Nat.le_of_dvd (hpos h) hpd).trans (by omega)
-    exact ⟨mem_biUnion.mpr ⟨p,mem_Icc.mpr ⟨hp.two_le,hpT⟩,
-      mem_filter.mpr ⟨Nat.mem_divisors.mpr ⟨Nat.gcd_dvd_left ..,hm.ne'⟩,saturated hp hpT hpd⟩⟩,mem_Icc.mpr ⟨hpos h,hu h⟩⟩)
+    exact ⟨hG _ h p hp hpT hpd,mem_Icc.mpr ⟨hpos h,hu h⟩⟩)
   have hbig := tail hT (Icc T Y) (fun _ h => (mem_Icc.mp h).1)
   have hsmall := tail (Q:=1) (by decide) (Icc 1 Y) (fun _ h => (mem_Icc.mp h).1)
   norm_num only [Nat.cast_one,Real.one_rpow,div_one] at hsmall
   change _ ≤ logMass m*_+_
   rw [←sum_filter_add_sum_filter_not D (T≤ s ·)]
   exact add_le_add (hb.trans (mul_le_mul_of_nonneg_left hbig (sum_nonneg fun i _ => logWeight_nonneg i)))
-    (hs.trans (mul_le_mul (rare_mass m T A) hsmall (sum_nonneg fun i _ => by dsimp [tailWeight]; positivity)
-      (by have hlog : 0≤ logMass m := sum_nonneg fun i _ => logWeight_nonneg i
-          have := Real.log_nonneg (by exact_mod_cast hT : (1:ℝ)≤ T)
-          positivity [mass_nonneg m])))
+    (hs.trans (mul_le_mul_of_nonneg_left hsmall (sum_nonneg fun i _ => logWeight_nonneg i)))
+
+/-- All omitted denominators are charged either to a large quotient or to a
+divisor saturated by a prime power. Both bounds are uniform in the row cutoff. -/
+theorem omitted {T A Y : ℕ} (hT : 0< T) (D : Finset ℕ)
+    (hD : ∀ d∈D,0< d ∧ d≤ Y ∧ ¬d∣T.factorial^A) :
+    let m := T.factorial^A
+    ∑ d∈D, logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) ≤
+      logMass m*(zetaBound/(T:ℝ)^(1/16:ℝ))+
+      (T*((logMass m+A*Real.log T*mass m)/(2:ℝ)^A))*zetaBound := by
+  let m := T.factorial^A
+  have hm : 0 < m := pow_pos (Nat.factorial_pos _) _
+  have h := omitted_cover hm hT D (rare m T A) hD (fun d _ p hp hpT hpd =>
+    mem_biUnion.mpr ⟨p,mem_Icc.mpr ⟨hp.two_le,hpT⟩,
+      mem_filter.mpr ⟨Nat.mem_divisors.mpr ⟨Nat.gcd_dvd_left ..,hm.ne'⟩,saturated hp hpT hpd⟩⟩)
+  exact h.trans (add_le_add_right (mul_le_mul_of_nonneg_right (rare_mass m T A)
+    (tsum_nonneg fun _ => by positivity : 0≤zetaBound)) _)
+
+#print axioms omitted_cover
 #print axioms rare_mass
 #print axioms omitted
 end
