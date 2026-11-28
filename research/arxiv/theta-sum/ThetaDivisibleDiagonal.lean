@@ -1,5 +1,6 @@
 import ThetaReciprocalCutoff
 import Mathlib.NumberTheory.ZetaValues
+import Mathlib.Analysis.Normed.Group.Tannery
 
 /-! The harmonic contribution from exact multiples in the full cotangent sum. -/
 
@@ -183,7 +184,7 @@ private lemma odd_sum (n : ℕ) : ∑ k ∈ range n, (2*(k:ℝ)+1) = (n:ℝ)^2 :
   | zero => simp
   | succ n ih => rw [sum_range_succ,ih]; push_cast; ring
 
-private lemma row_linearization {p u : ℕ} (hu : 0<u) (hul : u<p) :
+theorem row_linearization {p u : ℕ} (hu : 0<u) (hul : u<p) :
     |weight p u * (∑ k ∈ range (multiplierCount p u), weight p (u*(2*k+1))) -
       (2*p/Real.pi)^2 * ((u:ℝ)^2)⁻¹ * oddHarmonic (multiplierCount p u)| ≤
       ((p:ℝ)/u)^2 := by
@@ -352,7 +353,36 @@ theorem divisibleDiagonal_oddHarmonic : ∃ C : ℝ, 0<C ∧ ∀ p : ℕ, 1<p �
     exact mul_le_mul_of_nonneg_left hh (Nat.cast_nonneg p)
   exact (abs_sub_le _ _ _).trans ((add_le_add (h p (by omega)) hμ).trans_eq (by ring))
 
+/-- Summing pointwise centered odd-harmonic limits against the odd-square
+weights is justified by the same summable majorant as the logarithmic bound. -/
+theorem harmonic_diagonal_limit {L : ℕ → ℝ}
+    (hL : ∀ j : ℕ, Filter.Tendsto (fun p : ℕ => oddHarmonic (multiplierCount p (2*j+1))-Real.log p/2)
+      Filter.atTop (nhds (L j))) :
+    Filter.Tendsto (fun p : ℕ => harmonicDiagonal p-(Real.pi^2/16)*Real.log p)
+      Filter.atTop (nhds (∑' j : ℕ, ((2*(j:ℝ)+1)^2)⁻¹*L j)) := by
+  let f (p j : ℕ) := rowTerm p j-((2*(j:ℝ)+1)^2)⁻¹*(Real.log p/2)
+  have h (j : ℕ) : Filter.Tendsto (fun p => f p j) Filter.atTop (nhds (((2*(j:ℝ)+1)^2)⁻¹*L j)) := by
+    apply ((hL j).const_mul _).congr'
+    filter_upwards [Filter.eventually_ge_atTop (2*j+2)] with p hp
+    have hj : j<p/2 := by omega
+    dsimp [f,rowTerm]; rw [if_pos hj]; ring
+  have hb : ∀ᶠ p : ℕ in Filter.atTop, ∀ j, ‖f p j‖ ≤ majorant j := by
+    filter_upwards [Filter.eventually_ge_atTop 1] with p hp j
+    exact row_estimate hp j
+  have H := tendsto_tsum_of_dominated_convergence majorant_summable h hb
+  apply H.congr'; apply Filter.Eventually.of_forall; intro p
+  have hf : HasSum (rowTerm p) (harmonicDiagonal p) := by
+    have hh := hasSum_sum_of_ne_finset_zero (L:=.unconditional ℕ) (s:=range (p/2)) (f:=rowTerm p)
+      (by intro j hj; simp only [mem_range] at hj; simp [rowTerm,hj])
+    convert hh using 1
+    apply sum_congr rfl; intro j hj; simp [rowTerm,mem_range.mp hj]
+  have he := (hf.sub (odd_reciprocal_square.mul_right (Real.log p/2))).tsum_eq
+  change (∑' j,f p j)=_
+  convert he using 1; ring
+
 end Arxiv.«2501.03234».ThetaDivisibleDiagonal
+#print axioms Arxiv.«2501.03234».ThetaDivisibleDiagonal.harmonic_diagonal_limit
+#print axioms Arxiv.«2501.03234».ThetaDivisibleDiagonal.row_linearization
 #print axioms Arxiv.«2501.03234».ThetaDivisibleDiagonal.oddHarmonic_log
 #print axioms Arxiv.«2501.03234».ThetaDivisibleDiagonal.odd_reciprocal_square
 #print axioms Arxiv.«2501.03234».ThetaDivisibleDiagonal.multiplier_mem

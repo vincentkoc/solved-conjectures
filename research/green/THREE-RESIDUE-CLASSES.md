@@ -1,0 +1,23 @@
+# Green 33 · a missing residue class modulo four
+
+Let `A` be a two-basis of the cyclic group of order `4m`. If one of the four residue classes modulo four is empty, then **`(|A|+1)² ≥ 9m`**. If every residue has a representation by two distinct elements, then **`|A|² ≥ 9m`**. Consequently any limit of `|A|/√(4m)` along such ordinary bases with `m → ∞` is at least **3/2**. The missing class may vary with the order. The statement applies to every positive cofactor, including even ones. [Lean proof](Green33BinarySeedLifts.lean)
+
+Green's pinned declaration uses ordinary coverage `A + A = Finset.univ` and asks for infinitely many positive orders approaching √2. The additional hypothesis here is a missing class modulo four. This rules out that whole construction class at √2. Unrestricted existence remains open. The construction at coefficient `18/√130` on all sufficiently large multiples of 130 remains the notebook's best upper bound. [Pinned declaration](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/33.lean) · [Order-130 construction](ALL-SEED-MULTIPLES.md)
+
+## Counting the three classes
+
+Translate the origin so that the classes have sizes `a,b,c,0`. Encode a member of class `i` by `4x+i` with `x` modulo `m`. The rows of sums congruent to 1 and 3 require `ab ≥ m` and `bc ≥ m`. Row 0 comes from self-sums of the first and third classes, with a carry of one for the third. In a strict cover it needs `m ≤ binom(a,2)+binom(c,2)`. This implies `max(a,c) ≥ √m`, while `b+min(a,c) ≥ 2√m` by the mixed rows. Allowing equal summands gives `max(a,c)+1 ≥ √m`. The finite and limit forms are `missing_class_bounds` and `missing_class_limit`. [Lean proof](Green33BinarySeedLifts.lean)
+
+## A band of forbidden orders
+
+Suppose `m = t(t+1)−d`, where `d > 0` and `2d(d+1)+d < t+1`. Then every strict cover missing a class has **at least `3(t+1)` labels**, regardless of its distribution on the other classes. For `d=1` this conclusion holds for every `t ≥ 3`. For example, the orders 44, 76, 116 and 164 need at least 12, 15, 18 and 21 labels, respectively, under these hypotheses. The results are `surplus_band` and `one_surplus_orders`. [Lean proof](Green33BinarySeedLifts.lean)
+
+In this band, `t² < m`. A budget of `3t+2` forces the profile `(t+1,t,t+1,0)` by the three row counts. Each mixed row then has exactly `d` excess pairs. The two outer classes together can lose at most `d` strict self-sums to collisions, since the two self-sum rows must cover row 0. The reflection bound below gives `t+1 ≤ 2d(d+1)+d`. At `d=1`, the cofactor is odd, so doubling is injective. Both outer classes have at least four elements, each loses at least one sum, and their total loss exceeds one. The positive-surplus argument leaves `d=0` open. [Lean proof](Green33BinarySeedLifts.lean)
+
+## Reflections in a mixed sum cover
+
+For a finite abelian group `G`, let `B+C=G` and `|B||C|=|G|+d`, with `d>0`. The theorem `reflection_centers` gives a set of at most `d(d+1)/2` centers such that every `c∈C` has a partner `t−c∈C` at one of those centers. For `d=1` the factor has a single reflection symmetry, as in Shinohara's one-overlapped factorizations. [Shinohara's statement](https://infoshako.sk.tsukuba.ac.jp/~hachi/COS/cos2011/abst/shinohara.pdf) · [Sakuma and Shinohara, *On circulant thin Lehman matrices*](https://doi.org/10.1007/s10801-014-0514-9)
+
+Write `r₊` and `r₋` for the ordered mixed sum and difference counts. Both have the same mass and second moment. Since the surplus of `r₊` over one totals `d`, at most `d(d+1)/2` differences repeat. Fix a repeated sum `s`. For `c∈C`, the identity `Σₐ∈C r₊(s−c+a) = Σₐ∈C r₋(s−c−a)` makes the left side larger than `|C|`, so some difference `s−c−a` repeats. Subtracting the repeated differences from `s` gives the desired centers. If the equation `2c=t` has at most `τ` solutions in `C` for each `t`, and `L` is the number of unordered distinct pairs minus the number of distinct sums they produce, `mixed_loss` gives `2|C| ≤ (τ+2)d(d+1)+4L`. [Lean proof](Green33BinarySeedLifts.lean)
+
+The Lean 4.33.1 replay rebuilds the four notebook dependencies and this module from source. All nine public theorems print only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the formalization. [Notebook replay](../README.md#replay) · [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/1589) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/3613) · [Left to Solve](https://lefttosolve.com/api/problems/Green33.green_33) · [Open Math Agents search](https://github.com/GuillaumeBAUD-coder/open-math-agents/issues?q=%22Green33%22+%22residue+class%22)

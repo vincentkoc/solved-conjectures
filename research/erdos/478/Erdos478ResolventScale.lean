@@ -10,16 +10,16 @@ gap length.
 
 namespace Erdos478.EffectiveResolvent
 
-private theorem add_bound {a b i j : ℕ} (ha : a ≤ 2^i) (hb : b ≤ 2^j) :
+theorem add_bound {a b i j : ℕ} (ha : a ≤ 2^i) (hb : b ≤ 2^j) :
     a+b ≤ 2^(i+j+1) := by
   rw [pow_succ,Nat.mul_two]
   exact Nat.add_le_add (ha.trans (Nat.pow_le_pow_right (by decide) (by omega)))
     (hb.trans (Nat.pow_le_pow_right (by decide) (by omega)))
 
-private theorem mul_bound {a b i j : ℕ} (ha : a ≤ 2^i) (hb : b ≤ 2^j) :
+theorem mul_bound {a b i j : ℕ} (ha : a ≤ 2^i) (hb : b ≤ 2^j) :
     a*b ≤ 2^(i+j) := by rw [pow_add]; exact Nat.mul_le_mul ha hb
 
-private theorem pow_bound {a i n m : ℕ} (ha : a ≤ 2^i) (hn : n≤m) :
+theorem pow_bound {a i n m : ℕ} (ha : a ≤ 2^i) (hn : n≤m) :
     a^n ≤ 2^(i*m) := by
   rw [pow_mul]
   exact (Nat.pow_le_pow_left ha _).trans (Nat.pow_le_pow_right (by positivity) hn)

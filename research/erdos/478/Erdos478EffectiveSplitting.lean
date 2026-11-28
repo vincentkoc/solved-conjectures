@@ -18,7 +18,8 @@ def tagBound (n U : ℕ) := n*U*(n*n.factorial^2+1)^n
 def exceptionalBound (n U : ℕ) := (2*U)^(n^2)*(2*tagBound n U)^(n.factorial^2)
 def splitBound (n U : ℕ) := schurBound n.factorial (tagBound n U) (exceptionalBound n U)
 
-private theorem separable_at_good_prime (f : ℤ[X]) (hd : f.natDegree ≠ 0) (p : ℕ) [Fact p.Prime]
+/-- Avoiding the derivative resultant preserves separability after reduction. -/
+theorem separable_at_good_prime (f : ℤ[X]) (hd : f.natDegree ≠ 0) (p : ℕ) [Fact p.Prime]
     (he : ¬p ∣ (bad f).natAbs) : (f.map (Int.castRingHom (ZMod p))).Separable := by
   let φ := Int.castRingHom (ZMod p)
   have hφ : φ (bad f) ≠ 0 := fun h => he (Int.ofNat_dvd_left.mp ((CharP.intCast_eq_zero_iff _ p _).mp h))
@@ -75,5 +76,6 @@ theorem bounded_splitting_prime (f : ℤ[X]) (hm : f.Monic) {n U : ℕ} (hn : f.
   dsimp [splitBound,schurBound]
   gcongr
 
+#print axioms separable_at_good_prime
 #print axioms bounded_splitting_prime
 end Erdos478.EffectiveResolvent

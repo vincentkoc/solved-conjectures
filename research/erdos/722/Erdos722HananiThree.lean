@@ -28,7 +28,8 @@ private theorem good_fourth (a b c : V) : good H (four a b c (fourth hH a b c)) 
 private theorem force {a b c w : V} (hw : good H (four a b c w)) : fourth hH a b c = w :=
   (QuadrupleProduct.unique_fourth hH a b c).unique (good_fourth hH a b c) hw
 
-private noncomputable def sourceRule : Rule V where
+/-- The symmetric completion operation of a Steiner quadruple system. -/
+noncomputable def sourceRule : Rule V where
   complete := fourth hH
   swap₁ a b c := by
     apply force hH

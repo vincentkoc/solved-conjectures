@@ -77,12 +77,13 @@ private lemma transfer {q r : ℕ} [NeZero q] {s c ε : ℝ} {F : ℕ → ℝ}
   rw [div_mul_eq_mul_div,div_le_iff₀ hM]
   linarith only [hh.1,hh.2,hu]
 
-private lemma scaled_excursions {r : ℕ} {s c : ℝ}
-    (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<4/15) :
+private lemma scaled_excursions {r : ℕ} {s c a₀ : ℝ}
+    (hweight : ∀ V : ℕ, 2≤V → a₀≤commonWeight (2*V^52) 3)
+    (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<4*a₀/15) :
     ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
       ((ThetaPrimeDensity.primeSet (fun p => p%24=r ∧ c<s*scaledOff p) X).card:ℝ) := by
   classical
-  let ε := (1/30-c/8)/4
+  let ε := (a₀/30-c/8)/4
   have hε : 0<ε := by dsimp [ε]; linarith
   obtain ⟨T,V,hT,hV,herr⟩ := prime_model_absolute hε
   let t := (Icc 2 T).filter Odd
@@ -95,8 +96,7 @@ private lemma scaled_excursions {r : ℕ} {s c : ℝ}
   let a := commonWeight (2*V^52)
   let K := coneWindow (coneWidth V)
   have hper : OnMod (8*M) (model T V) := onMod_lift (Nat.dvd_mul_left M 8) (low_onMod hdM K a)
-  have hV' : 3≤2*V^52 := by have := Nat.pow_le_pow_left hV 52; omega
-  have h₃ : 1≤a 3 := commonWeight_three hV'
+  have h₃ : a₀≤a 3 := hweight V hV
   obtain ⟨hp,hn⟩ := low_class_bias hM hT hdM K (by dsimp [K,coneWindow,coneWidth]; omega)
     a (fun d _ => (commonWeight_bounds _ d).1)
   change a 3/30≤unitMean (8*M) (fun n => if n%24=1 then model T V n else 0) at hp
@@ -115,15 +115,16 @@ private lemma scaled_excursions {r : ℕ} {s c : ℝ}
   intro p hp
   simpa only [ThetaPrimeDensity.primeSet,mem_filter] using hp
 
-private lemma original_excursions {r : ℕ} {s c : ℝ}
-    (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<32/(15*Real.pi^2)) :
+private lemma original_excursions {r : ℕ} {s c a₀ : ℝ}
+    (hweight : ∀ V : ℕ, 2≤V → a₀≤commonWeight (2*V^52) 3)
+    (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<32*a₀/(15*Real.pi^2)) :
     ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
       ((ThetaPrimeDensity.primeSet (fun p => p%24=r ∧ c*p<s*((S p:ℝ)-divisibleDiagonal p)) X).card:ℝ) := by
   have hπ : 0<Real.pi^2 := sq_pos_of_pos Real.pi_pos
-  have hc' : c*(Real.pi^2/8)<4/15 := by
+  have hc' : c*(Real.pi^2/8)<4*a₀/15 := by
     rw [lt_div_iff₀ (by positivity)] at hc
     linarith only [hc]
-  obtain ⟨δ,hδ,H⟩ := scaled_excursions hrs hc'
+  obtain ⟨δ,hδ,H⟩ := scaled_excursions hweight hrs hc'
   refine ⟨δ,hδ,H.mono (fun X hX => hX.trans ?_)⟩
   apply Nat.cast_le.mpr; apply card_le_card
   classical
@@ -140,6 +141,20 @@ private lemma original_excursions {r : ℕ} {s c : ℝ}
   rw [show s*(Real.pi^2/8*(offDiagonal p/p))=(s*offDiagonal p/p)*(Real.pi^2/8) by ring] at hh
   exact (lt_div_iff₀ hpos).mp ((mul_lt_mul_iff_left₀ (by positivity : 0<Real.pi^2/8)).mp hh)
 
+/-- Any uniform lower bound for the denominator-three weight transfers to
+opposite signed excursions on sets of positive upper prime density. -/
+theorem S_prime_excursion_densities_of_weight {a₀ c : ℝ}
+    (hweight : ∀ V : ℕ, 2≤V → a₀≤commonWeight (2*V^52) 3) (hc : c<32*a₀/(15*Real.pi^2)) :
+    (∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
+      ((ThetaPrimeDensity.primeSet (fun p => p%24=1 ∧ c*p<(S p:ℝ)-divisibleDiagonal p) X).card:ℝ)) ∧
+    (∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
+      ((ThetaPrimeDensity.primeSet (fun p => p%24=17 ∧ (S p:ℝ)-divisibleDiagonal p< -(c*p)) X).card:ℝ)) := by
+  constructor
+  · simpa only [one_mul] using original_excursions hweight (Or.inl ⟨rfl,rfl⟩) hc
+  · have he (p : ℕ) : c*p< -((S p:ℝ)-divisibleDiagonal p) ↔ (S p:ℝ)-divisibleDiagonal p< -(c*p) := by
+      constructor <;> intro h <;> linarith
+    simpa only [neg_one_mul,he] using original_excursions hweight (Or.inr ⟨rfl,rfl⟩) hc
+
 /-- For every c below 32/(15π²), each signed excursion of the original
 theta sum about its divisible diagonal has positive upper density relative
 to all primes. The two progressions both lie in 1 modulo 8. -/
@@ -148,11 +163,12 @@ theorem S_prime_excursion_densities {c : ℝ} (hc : c<32/(15*Real.pi^2)) :
       ((ThetaPrimeDensity.primeSet (fun p => p%24=1 ∧ c*p<(S p:ℝ)-divisibleDiagonal p) X).card:ℝ)) ∧
     (∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
       ((ThetaPrimeDensity.primeSet (fun p => p%24=17 ∧ (S p:ℝ)-divisibleDiagonal p< -(c*p)) X).card:ℝ)) := by
-  constructor
-  · simpa only [one_mul] using original_excursions (Or.inl ⟨rfl,rfl⟩) hc
-  · have he (p : ℕ) : c*p< -((S p:ℝ)-divisibleDiagonal p) ↔ (S p:ℝ)-divisibleDiagonal p< -(c*p) := by
-      constructor <;> intro h <;> linarith
-    simpa only [neg_one_mul,he] using original_excursions (Or.inr ⟨rfl,rfl⟩) hc
+  apply S_prime_excursion_densities_of_weight (a₀:=1)
+  · intro V hV
+    apply commonWeight_three
+    have := Nat.pow_le_pow_left hV 52; omega
+  · simpa only [mul_one] using hc
 
 end Arxiv.«2501.03234».ThetaOffDiagonalSigns
+#print axioms Arxiv.«2501.03234».ThetaOffDiagonalSigns.S_prime_excursion_densities_of_weight
 #print axioms Arxiv.«2501.03234».ThetaOffDiagonalSigns.S_prime_excursion_densities

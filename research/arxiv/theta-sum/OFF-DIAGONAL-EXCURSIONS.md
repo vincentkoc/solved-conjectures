@@ -9,6 +9,8 @@ Write $D(p)$ for the exact cotangent contribution of odd pairs $(u,v)$ with $u\m
 
 Precisely, for each row there exists $\delta>0$ such that its prime count through $X$ is at least $\delta\pi(X)$ for arbitrarily large $X$. The endpoints and $\delta$ may differ between the rows. Both progressions lie in $1\bmod 8$. The Lean statement admits every real $c<32/(15\pi^2)$. [Original-sum theorem](ThetaOffDiagonalSigns.lean) · [Exact diagonal](ThetaDivisibleDiagonal.lean)
 
+The subsequent [second-order theorem](SECOND-ORDER-DIAGONAL.md) computes the linear coefficient of the diagonal and transfers the excursions to the explicit center $p\log p/2$.
+
 ## Transfer from finite windows
 
 Put $R(p)=(\pi^2/8)(S(p)-D(p))/p$ at odd primes. For each $\eta>0$ there is a single periodic reciprocal-row model $F$, with both truncation parameters fixed, for which
