@@ -184,7 +184,7 @@ theorem of_witness [Fintype G] {A : Finset G} (h : Witness A) :
 /-- Linear span of the pair sums, the direction space of a nonempty binary configuration. -/
 def directions (A : Finset G) : Submodule F G := Submodule.span F (↑(A+A):Set G)
 
-private theorem translated_double (A : Finset G) (t : G) :
+theorem translated_double (A : Finset G) (t : G) :
     A.image (fun x => t+x)+A.image (fun x => t+x)=A+A := by
   ext y
   constructor
@@ -290,6 +290,7 @@ end Green51PairedTypes
 #print axioms Green51PairedTypes.rank_large
 #print axioms Green51PairedTypes.rank_small
 #print axioms Green51PairedTypes.of_witness
+#print axioms Green51PairedTypes.translated_double
 #print axioms Green51PairedTypes.directions_large
 #print axioms Green51PairedTypes.directions_small
 #print axioms Green51PairedTypes.copy_rank
