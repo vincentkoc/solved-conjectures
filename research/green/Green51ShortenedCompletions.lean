@@ -13,7 +13,8 @@ local notation "V" => Cube 11
 /-- Sixteen distinct labels with zero sum. -/
 def sixteens (A:Finset V) : Finset (Finset V) := (A.powersetCard 16).filter fun T=>syndrome T=0
 
-private theorem sixteen_count {A:Finset V} (D:Presentation A) :
+/-- Weight-sixteen words select the sixteen-label zero sums bijectively. -/
+theorem sixteen_count {A:Finset V} (D:Presentation A) :
     Green51ShortenedProfiles.multiplicity D.P.ker 16=(sixteens A).card := by
   classical
   apply card_bij (fun c _=>selected A c.val)
@@ -55,9 +56,10 @@ linear three-space. -/
 noncomputable def completions (A:Finset V) : Finset (Finset V) :=
   univ.filter fun B=>A⊆B ∧ B.card=24 ∧ ¬FlatAt B 0
 
-private theorem flag_count {A:Finset V}
-    (one:∀v∈holes A,(completions (insert v A)).card=1) :
-    (completions A).card*(24-A.card)=(holes A).card := by
+set_option maxRecDepth 2048 in
+/-- Count incidences between possible next labels and 24-label completions. -/
+theorem completion_flags (A:Finset V) :
+    (completions A).card*(24-A.card)=∑v∈holes A,(completions (insert v A)).card := by
   classical
   have row (B) (hb:B∈completions A) : ((holes A).filter (·∈B)).card=24-A.card := by
     obtain ⟨sub,sz,good⟩:=(mem_filter.mp hb).2
@@ -69,16 +71,23 @@ private theorem flag_count {A:Finset V}
       · rintro ⟨h,ha⟩
         exact ⟨⟨ha,fun bad=>good (Green51ElevenColumns.flat_mono (insert_subset h sub) bad)⟩,h⟩
     rw [eq,card_sdiff_of_subset sub,sz]
-  have col (v) (hv:v∈holes A) : ((completions A).filter (v∈·)).card=1 := by
+  have col (v) : ((completions A).filter (v∈·)).card=(completions (insert v A)).card := by
     have eq:(completions A).filter (v∈·)=completions (insert v A) := by
       ext B;simp only [completions,mem_filter,mem_univ,true_and,insert_subset_iff];tauto
-    rw [eq];exact one v hv
+    rw [eq]
   calc
     _ = ∑ _B∈completions A,(24-A.card) := by simp
     _ = ∑ B∈completions A,∑ v∈holes A,if v∈B then (1:ℕ) else 0 := by
       apply sum_congr rfl;intro B hb;rw [sum_boole,row B hb];rfl
     _ = ∑ v∈holes A,∑ B∈completions A,if v∈B then (1:ℕ) else 0 := sum_comm
-    _ = ∑ _v∈holes A,1 := by apply sum_congr rfl;intro v hv;rw [sum_boole,col v hv];rfl
+    _ = _ := by apply sum_congr rfl;intro v _;simpa only [sum_boole,Nat.cast_id] using col v
+
+private theorem flag_count {A:Finset V}
+    (one:∀v∈holes A,(completions (insert v A)).card=1) :
+    (completions A).card*(24-A.card)=(holes A).card := by
+  rw [completion_flags]
+  calc
+    _ = ∑ _v∈holes A,1 := sum_congr rfl one
     _ = _ := by simp
 
 /-- Every set of size 19 through 24 has one extremal completion. At size 18
@@ -130,3 +139,6 @@ end Green51ShortenedCompletions
 #print axioms Green51ShortenedCompletions.extension_counts
 #print axioms Green51ShortenedCompletions.completion_count
 #print axioms Green51ShortenedCompletions.unique_completion
+
+#print axioms Green51ShortenedCompletions.sixteen_count
+#print axioms Green51ShortenedCompletions.completion_flags
