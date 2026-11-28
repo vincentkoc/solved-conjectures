@@ -1,0 +1,26 @@
+# Prime-free segments of Cunningham orbits
+
+Fix any function H from natural numbers to natural numbers with H(n)/log n tending to zero. **A set of primes of relative density one has both of the following properties.** No smaller prime reaches p after any positive number of steps of either recurrence x ↦ 2x±1. Starting at p, neither recurrence reaches a prime in its first H(p) steps. For example, one can take H(p)=⌊√log p⌋. Every path uses a fixed sign, and the intermediate values may be composite. [Lean theorem](CunninghamOrbitIsolation.lean) · [Jones’s recurrences](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/1104.1579/CunninghamChain.lean)
+
+The denominator for relative density is π(N), the number of primes at most N. There are two unconditional quantitative bounds with absolute implied constants.
+
+- The number of primes p≤N with another prime within H positive steps in either direction and for either sign is O(HN/log² N), uniformly in the integer H≥0 for all sufficiently large N.
+- The number of primes p≤N with any prime ancestor is O(N/log² N), with no bound on the number of steps. For H(p)≥1 the forward exclusion also gives Jones’s exact length one for both signs. Infinitude at all prescribed exact lengths remains open. [Previous exact-length sieve](SelbergCounts.md) · [Jones, §1](https://arxiv.org/abs/1104.1579)
+
+## Averaging the two-residue sieve
+
+For odd primes q, the two forbidden seed residues for offsets 0 and j coincide precisely when the multiplicative order of 2 modulo q divides j. Discard such sieving primes, along with 2 and 3. At the remaining primes the two residues are distinct for both signs. The notebook’s Selberg bound now accepts arbitrary finite sets of iterate indices and an explicit set of discarded primes. Its previous consecutive-index estimate follows by taking the indices 0 through k−1. [Finite iterate sieve](CunninghamSelbergSieve.lean) · [Bordignon and Simpson Lee, upper-bound sieves for polynomial values](https://arxiv.org/abs/2211.11012)
+
+Discarding a colliding prime q costs at most the Euler factor (1−1/q)⁻². Insert these primes in increasing order. The product of the factors at smaller primes is O(log² q), hence O(q¹⁄⁸). The additional cost at q is therefore O(q⁻⁷⁄⁸). Among offsets 1 through H it occurs exactly ⌊H/d⌋ times, where d is the order of 2 modulo q. The sum of q⁻⁷⁄⁸/d over odd primes is bounded. When q≤d⁴ its summand is at most q⁻⁹⁄⁸. When q>d⁴ the summand is at most d⁻³, and at most d primes have order d since they all divide 2ᵈ−1. Thus the product loss has bounded average, uniformly in H and in the set of sieving primes. This use of multiplicative order is related to the estimates in the Romanoff problem for sums of a prime and a power of two. [Order-weight proof](CunninghamOrbitIsolation.lean) · [Erdős, *On integers of the form 2ᵏ+p and some related problems*](https://www.renyi.hu/~p_erdos/1950-07.pdf)
+
+## Removing the backward cutoff
+
+If a prime r reaches p≤N in i+1 steps, then 2ⁱr≤N for either sign. Use the forward pair estimate with seed cutoff Mᵢ=⌊N/2ⁱ⌋+K, where K=⌊N¹⁄⁴⌋+1. Every relevant offset is eventually at most K, and log N≤4 log Mᵢ. The individual pair bound costs a factor i+1, since the sum through that offset bounds its last term. Summing the seed cutoffs with these weights uses Σ(i+1)/2ⁱ=4 and K³≤8N. This gives the claimed O(N/log² N) for all prime ancestors combined. Chebyshev’s lower bound for π(N) converts the counts to relative proportions. Taking the running maximum of H through N handles nonmonotone radii. [Counting and density proofs](CunninghamOrbitIsolation.lean)
+
+## Scope and replay
+
+The main declaration is `CunninghamChain.OrbitIsolation.density_one_clean_orbits`. The uniform two-direction bound is `exceptional_primes_bound` and the unrestricted backward bound is `unbounded_ancestor_count` in the same namespace. The upstream predicates require every interior term to be prime and the stopping term to be nonprime. Here only the two endpoints of a counted pair must be prime. The proof uses the pinned recurrences and assumes neither Dickson nor Bateman–Horn. [Canonical declarations](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/1104.1579/CunninghamChain.lean)
+
+Lean 4.33.1 compiled the two pinned source files and four notebook modules in a fresh directory. Each notebook module passed a separate kernel replay. All 24 axiom reports used only `propext`, `Classical.choice` and `Quot.sound`. [Replay instructions](../../README.md#replay)
+
+Searches of open and closed DeepMind and OMA issues and PRs and 4,346 LTS solved records found the canonical chain question, its statement PRs, a length-one reduction, and Romanoff records about the additive set p+2ᵏ. None of those records gave the orbit-density result above. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/4755) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/4770) · [OMA reduction](https://github.com/lefttosolve2/open-math-agents/pull/8693) · [Romanoff variant](https://github.com/lefttosolve2/open-math-agents/pull/2066) · [LTS solved records](https://lefttosolve.com/api/solved)
