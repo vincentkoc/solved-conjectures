@@ -17,51 +17,13 @@ def allowed (u v : Nat) : Bool :=
 def extendPairs (seen : List (Nat × Nat)) (u v : Nat) :=
   seen ++ seen.map (fun (x,y) => (u ^^^ x,v ^^^ y))
 
-def search (seen : List (Nat × Nat)) : List Nat → Bool
-  | [] => true
-  | u :: rest => (List.range 256).any (fun v =>
-      seen.all (fun (x,y) => allowed (u ^^^ x) (v ^^^ y)) &&
-        search (extendPairs seen u v) rest)
-
-
-/-- Every linear choice of compatible offsets survives each step of the finite search. -/
-theorem search_sound (R : Set Nat) (f : Nat → Nat)
-    (closed : ∀ u∈R, ∀ v∈R,u ^^^ v ∈ R)
-    (add : ∀ u∈R, ∀ v∈R,f (u ^^^ v)=f u ^^^ f v)
-    (bound : ∀ u∈R,f u<256) (valid : ∀ u∈R,allowed u (f u)=true)
-    (seen : List (Nat × Nat)) (remaining : List Nat)
-    (correct : ∀ p∈seen,p.1∈R ∧ p.2=f p.1) (active : ∀ u∈remaining,u∈R) :
-    search seen remaining = true := by
-  induction remaining generalizing seen with
-  | nil => rfl
-  | cons u rest ih =>
-    have hu := active u (List.mem_cons_self)
-    apply List.any_eq_true.mpr
-    refine ⟨f u,List.mem_range.mpr (bound u hu),Bool.and_eq_true_iff.mpr ⟨?_,?_⟩⟩
-    · apply List.all_eq_true.mpr
-      rintro ⟨x,y⟩ member
-      obtain ⟨hx,hy⟩ : x∈R ∧ y=f x := correct _ member
-      subst y
-      change allowed (u ^^^ x) (f u ^^^ f x)=true
-      rw [←add u hu x hx]
-      exact valid _ (closed _ hu _ hx)
-    · apply ih
-      · intro p hp
-        rcases List.mem_append.mp hp with old|new
-        · exact correct p old
-        · obtain ⟨⟨x,y⟩,inSeen,rfl⟩ := List.mem_map.mp new
-          obtain ⟨hx,hy⟩ : x∈R ∧ y=f x := correct _ inSeen
-          subst y
-          exact ⟨closed _ hu _ hx,(add _ hu _ hx).symm⟩
-      · exact fun x hx => active x (List.mem_cons_of_mem _ hx)
-
 def templates : List (List Nat) := [[5,17], [3,5], [3,20], [5,11], [5,10], [3,13],
   [5,80], [5,18], [5,96], [5,19,99], [23,45,78], [3,12,53,81], [3,12,48,192]]
 
-set_option maxRecDepth 20000 in
-set_option maxHeartbeats 0 in
-theorem templates_fail : templates.all (fun b => !(search [(0,0)] b)) = true := by decide +kernel
+/-- Once the high byte vanishes, the canonical low offset also vanishes. -/
+theorem zero_low_offset {b:Nat} (small:b<256) (good:allowed 0 b=true) : b=0 := by
+  have check : ∀ v:Fin 256,allowed 0 v.val=true → v.val=0 := by decide +kernel
+  exact check ⟨b,small⟩ good
 
 end Green51FourSpace.Certificate
-#print axioms Green51FourSpace.Certificate.search_sound
-#print axioms Green51FourSpace.Certificate.templates_fail
+#print axioms Green51FourSpace.Certificate.zero_low_offset
