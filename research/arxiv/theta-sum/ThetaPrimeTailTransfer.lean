@@ -78,19 +78,24 @@ private lemma model_cauchy (T n : ℕ) : CauchySeq (fun N => model T N n) := by
 
 /-- A single fixed scale approximates all sufficiently large windows through
 denominator T, simultaneously on every residue and every prime. -/
-theorem freeze_model (T : ℕ) {ε : ℝ} (hε : 0<ε) :
-    ∃ V : ℕ, 2≤V ∧ ∀ᶠ N : ℕ in atTop, ∀ n : ℕ, |model T N n-model T V n| ≤ ε := by
+private theorem freeze_model_eventually (T : ℕ) {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ V : ℕ in atTop, ∀ᶠ N : ℕ in atTop, ∀ n : ℕ, |model T N n-model T V n| ≤ ε := by
   let P := T.factorial
   have hmod (N) : OnMod P (model T N) := low_onMod
     (fun d hd _ => Nat.dvd_factorial (by have := (mem_Icc.mp hd).1; omega) (mem_Icc.mp hd).2) _ _
   have h (j : ℕ) : ∀ᶠ b : ℕ in atTop, ∀ N≥b, ∀ V≥b, |model T N j-model T V j|≤ε := by
     obtain ⟨b,hb⟩ := Metric.cauchySeq_iff.mp (model_cauchy T j) ε hε
     exact eventually_atTop.mpr ⟨b,fun B hB N hN V hV => (hb N (hB.trans hN) V (hB.trans hV)).le⟩
-  obtain ⟨V,hV,hA⟩ := ((eventually_ge_atTop 2).and ((eventually_all_finset (range P)).mpr (fun j _ => h j))).exists
-  refine ⟨V,hV,?_⟩; filter_upwards [eventually_ge_atTop V] with N hN
+  filter_upwards [(eventually_all_finset (range P)).mpr (fun j _ => h j)] with V hA
+  filter_upwards [eventually_ge_atTop V] with N hN
   intro n
   rw [← hmod N n,← hmod V n]
   exact hA _ (mem_range.mpr (Nat.mod_lt n (Nat.factorial_pos _))) N hN V le_rfl
+
+/-- A frozen window that works uniformly on the period. -/
+theorem freeze_model (T : ℕ) {ε : ℝ} (hε : 0<ε) :
+    ∃ V : ℕ, 2≤V ∧ ∀ᶠ N : ℕ in atTop, ∀ n : ℕ, |model T N n-model T V n| ≤ ε :=
+  ((eventually_ge_atTop 2).and (freeze_model_eventually T hε)).exists
 
 open ThetaDivisibleDiagonal ThetaDenominatorTails ThetaPrimeDensity
 
@@ -213,17 +218,17 @@ private lemma log_decay {r : ℝ} (hr : 0<r) :
   (isLittleO_log_rpow_atTop hr).tendsto_div_nhds_zero.comp tendsto_natCast_atTop_atTop
 
 private lemma choose_tail {U Z ε : ℝ} (hε : 0<ε) :
-    ∃ T : ℕ, 3≤T ∧ U*(Z/denominatorWeight T)^2≤ε := by
+    ∀ᶠ T : ℕ in atTop, 3≤T ∧ U*(Z/denominatorWeight T)^2≤ε := by
   have ht : Tendsto (fun T : ℕ => denominatorWeight T) atTop atTop :=
     (tendsto_rpow_atTop (by norm_num : (0:ℝ)<1/16)).comp tendsto_natCast_atTop_atTop
   have hzero : Tendsto (fun T : ℕ => Z/denominatorWeight T) atTop (nhds 0) := by
     simpa [div_eq_mul_inv] using (tendsto_inv_atTop_zero.comp ht).const_mul Z
   have hlim := (hzero.pow 2).const_mul U
   simp only [ne_eq,OfNat.ofNat_ne_zero,not_false_eq_true,zero_pow,mul_zero] at hlim
-  exact ((eventually_ge_atTop 3).and (hlim.eventually_le_const hε)).exists
+  exact (eventually_ge_atTop 3).and (hlim.eventually_le_const hε)
 
 private lemma scale_approximation {ε : ℝ} (hε : 0<ε) :
-    ∃ T V : ℕ, 3≤T ∧ 2≤V ∧ ∀ᶠ N : ℕ in atTop,
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ N : ℕ in atTop,
       ∑ p∈Nat.primesLE (N^64),(scaledOff p-model T V p)^2 ≤ ε*(N:ℝ)^64/Real.log N := by
   obtain ⟨U,hU,hm⟩ := ThetaSievedWindows.tail_prime_band
   obtain ⟨W,hW,hu⟩ := cut_variance
@@ -234,13 +239,13 @@ private lemma scale_approximation {ε : ℝ} (hε : 0<ε) :
   let δ := Real.sqrt η
   have hδ : 0<δ := Real.sqrt_pos.mpr hη
   have hsδ : δ^2=η := Real.sq_sqrt hη.le
-  obtain ⟨T,hT,hcut⟩ := choose_tail (U:=U) (Z:=Z) hη
-  obtain ⟨V,hV,hfreeze⟩ := freeze_model T hδ
+  filter_upwards [choose_tail (U:=U) (Z:=Z) hη] with T htail
+  obtain ⟨hT,hcut⟩ := htail
+  filter_upwards [freeze_model_eventually T hδ] with V hfreeze
   obtain ⟨D,hD,hs⟩ := small_error_bound T V
   have hhigh := (log_decay (by norm_num : (0:ℝ)<1/64)).const_mul W
   have hsmall := (log_decay (by norm_num : (0:ℝ)<4)).const_mul (D^2)
   rw [mul_zero] at hhigh hsmall
-  refine ⟨T,V,hT,hV,?_⟩
   filter_upwards [eventually_ge_atTop T,hfreeze,cone_error_vanishes hδ,
     hhigh.eventually_le_const hη,hsmall.eventually_le_const hη] with N hTN hf hcone hh hsmall
   have hN : 2≤N := by omega
@@ -338,15 +343,15 @@ private lemma from_scales (f : ℕ → ℝ) (hf : ∀ n, 0≤f n) {η : ℝ} (h�
 
 /-- The scaled full off-diagonal is approximated in mean square over actual
 primes by one periodic window fixed before X tends to infinity. -/
-theorem prime_model_approximation {ε : ℝ} (hε : 0<ε) :
-    ∃ T V : ℕ, 3≤T ∧ 2≤V ∧ ∀ᶠ X : ℕ in atTop,
+theorem prime_model_approximation_eventually {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
       ∑ p∈Nat.primesLE X,(scaledOff p-model T V p)^2≤ε*Nat.primeCounting X := by
   let b := Real.log 2/2
   have hb : 0<b := by dsimp [b]; positivity
   let η := ε*b/(64*2^64)
   have hη : 0<η := by dsimp [η]; positivity
-  obtain ⟨T,V,hT,hV,h⟩ := scale_approximation hη
-  refine ⟨T,V,hT,hV,?_⟩
+  filter_upwards [scale_approximation hη] with T hT
+  filter_upwards [hT] with V h
   filter_upwards [from_scales _ (fun _ => sq_nonneg _) hη.le h,prime_count_lower,eventually_ge_atTop 2]
     with X H hcount hX
   apply H.trans; rw [div_le_iff₀ (Real.log_pos (by exact_mod_cast hX))]
@@ -354,20 +359,39 @@ theorem prime_model_approximation {ε : ℝ} (hε : 0<ε) :
   rw [hh]; change b*(X:ℝ)≤Nat.primeCounting X*Real.log X at hcount
   linarith only [mul_le_mul_of_nonneg_left hcount hε.le]
 
+/-- One fixed periodic model attains an arbitrary prime mean-square tolerance. -/
+theorem prime_model_approximation {ε : ℝ} (hε : 0<ε) :
+    ∃ T V : ℕ, 3≤T ∧ 2≤V ∧ ∀ᶠ X : ℕ in atTop,
+      ∑ p∈Nat.primesLE X,(scaledOff p-model T V p)^2≤ε*Nat.primeCounting X := by
+  obtain ⟨T,hT,H⟩ := ((eventually_ge_atTop 3).and (prime_model_approximation_eventually hε)).exists
+  obtain ⟨V,hV,h⟩ := ((eventually_ge_atTop 2).and H).exists
+  exact ⟨T,V,hT,hV,h⟩
+
 /-- The finite model can also be frozen with arbitrarily small mean
 absolute discrepancy. The normalization counts primes up to X. -/
-theorem prime_model_absolute {ε : ℝ} (hε : 0<ε) :
-    ∃ T V : ℕ, 3≤T ∧ 2≤V ∧ ∀ᶠ X : ℕ in atTop,
+theorem prime_model_absolute_eventually {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
       ∑ p∈Nat.primesLE X,|scaledOff p-model T V p|≤ε*Nat.primeCounting X := by
-  obtain ⟨T,V,hT,hV,H⟩ := prime_model_approximation (sq_pos_of_pos hε)
-  refine ⟨T,V,hT,hV,?_⟩; filter_upwards [H] with X h
+  filter_upwards [prime_model_approximation_eventually (sq_pos_of_pos hε)] with T hT
+  filter_upwards [hT] with V H
+  filter_upwards [H] with X h
   have hcs := sum_mul_sq_le_sq_mul_sq (Nat.primesLE X) (fun _ => (1:ℝ)) (fun p => |scaledOff p-model T V p|)
   simp only [one_mul,one_pow,sum_const,nsmul_eq_mul,mul_one,sq_abs,Nat.primesLE_card_eq_primeCounting] at hcs
   have hs := hcs.trans (mul_le_mul_of_nonneg_left h (Nat.cast_nonneg _))
   have hpos : 0≤ε*Nat.primeCounting X := by positivity
   nlinarith only [hs,hpos,sq_nonneg ((∑ p∈Nat.primesLE X,|scaledOff p-model T V p|)-ε*Nat.primeCounting X)]
 
+/-- One fixed periodic model attains an arbitrary prime mean absolute tolerance. -/
+theorem prime_model_absolute {ε : ℝ} (hε : 0<ε) :
+    ∃ T V : ℕ, 3≤T ∧ 2≤V ∧ ∀ᶠ X : ℕ in atTop,
+      ∑ p∈Nat.primesLE X,|scaledOff p-model T V p|≤ε*Nat.primeCounting X := by
+  obtain ⟨T,hT,H⟩ := ((eventually_ge_atTop 3).and (prime_model_absolute_eventually hε)).exists
+  obtain ⟨V,hV,h⟩ := ((eventually_ge_atTop 2).and H).exists
+  exact ⟨T,V,hT,hV,h⟩
+
 end Arxiv.«2501.03234».ThetaPrimeTailTransfer
+#print axioms Arxiv.«2501.03234».ThetaPrimeTailTransfer.prime_model_approximation_eventually
+#print axioms Arxiv.«2501.03234».ThetaPrimeTailTransfer.prime_model_absolute_eventually
 #print axioms Arxiv.«2501.03234».ThetaPrimeTailTransfer.prime_model_approximation
 #print axioms Arxiv.«2501.03234».ThetaPrimeTailTransfer.prime_model_absolute
 #print axioms Arxiv.«2501.03234».ThetaPrimeTailTransfer.freeze_model

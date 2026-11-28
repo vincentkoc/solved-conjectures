@@ -116,6 +116,33 @@ private lemma mean_low (P T : ℕ) [NeZero P] (K : ℕ → ℕ) (a h : ℕ → �
   simp_rw [show ∀ x y z : ℝ,x*(y*z)=y*(x*z) by intros; ring,← mul_sum]
   ring
 
+/-- The twist vanishes off the odd multiples of three. On those multiples
+the character mean descends to the denominator's own unit group. -/
+theorem twisted_low_exact {P T : ℕ} [NeZero P] (hP : 3 ∣ P)
+    (hdP : ∀ d∈Icc 2 T, Odd d → d∣P) (K : ℕ → ℕ) (a : ℕ → ℝ) :
+    unitMean P (fun n => (chi n:ℝ)*low T K a n) =
+      ∑ d∈Icc 2 T, if h : Odd d ∧ 3 ∣ d then
+        letI : NeZero d := ⟨h.1.pos.ne'⟩
+        (a d/d)*unitMean d (fun n => (chi n:ℝ)*row d (K d) n)
+      else 0 := by
+  rw [mean_low]
+  apply sum_congr rfl
+  intro d hd
+  by_cases ho : Odd d
+  · let : NeZero d := ⟨ho.pos.ne'⟩
+    have hdiv := hdP d hd ho
+    by_cases h3 : 3 ∣ d
+    · rw [dif_pos ⟨ho,h3⟩]
+      exact congrArg ((a d/d)*·) (three_divides_mean hdiv h3 (K d))
+    · rw [dif_neg (fun h => h3 h.2)]
+      have hc := (show Nat.Prime 3 by decide).coprime_iff_not_dvd.mpr h3
+      change (a d/d)*unitMean P (fun n => twist n*row d (K d) n)=0
+      rw [unitMean_lift (hc.mul_dvd_of_dvd_of_dvd hP hdiv) (product_onMod (Nat.dvd_mul_right 3 d)
+        (Nat.dvd_mul_left d 3) twist_onMod (row_onMod d (K d))),unitMean_mul hc twist_onMod
+        (row_onMod d (K d)),twist_zero,zero_mul,mul_zero]
+  · rw [dif_neg (fun h => ho h.1)]
+    simp [even_row ho,unitMean]
+
 /-- In a complete common period, the quadratic twist of every nonnegative
 finite theta window retains the contribution of its denominator-three row. -/
 theorem twisted_low_lower {P T : ℕ} [NeZero P] (hT : 3≤T)
@@ -365,3 +392,5 @@ end Arxiv.«2501.03234».ThetaConditionalRows
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.unitMean_mul
 
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.low_mean_zero
+
+#print axioms Arxiv.«2501.03234».ThetaConditionalRows.twisted_low_exact
