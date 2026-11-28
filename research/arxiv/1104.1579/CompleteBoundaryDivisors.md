@@ -1,0 +1,22 @@
+# Common divisors at the ends of a complete Cunningham chain
+
+Fix a length k≥1 and either sign in the recurrence x ↦ 2x±1. Start at a composite integer a≥2. Suppose the next k terms are prime and the following term c is composite. The gcd of a and c divides M=2^(k+1)−1. Every prime q in that gcd has multiplicative order exactly k+1 for base two modulo q. **Under Dickson’s conjecture these conditions are sufficient**: every divisor g of M supported on such primes occurs as the exact gcd for infinitely many predecessors a, for each sign. The value g=1 is allowed at every length. [Lean proof](CunninghamCompleteBoundaries.lean) · [Jones, §1](https://arxiv.org/abs/1104.1579) · [Löh, complete chains](https://doi.org/10.1090/S0025-5718-1989-0979939-8)
+
+The pinned predicates `IsFirstKindChainOfLength` and `IsSecondKindChainOfLength` require a prime prefix and a nonprime stopping term. `CompleteAfter` uses those predicates at seed 2a±1 and also requires the predecessor to be composite. Since the seed is injective in a, infinitely many such predecessors give infinitely many distinct chains. Chains with no positive integer predecessor or with predecessor 1 lie outside the statement. The sufficiency theorem takes the full pinned Dickson declaration as an explicit hypothesis. Unconditional infinitude at all positive lengths remains open. [Pinned Cunningham declarations](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/1104.1579/CunninghamChain.lean) · [Pinned Dickson declaration](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Paper/PrimeTuples.lean)
+
+## Necessity and examples
+
+For any positive divisor q of a, the j-th iterate is ±(2ʲ−1) modulo q. This gives the identity gcd(a,c)=gcd(a,M), with all prime multiplicities intact. If a prime q divides both ends, its first return must occur at step k+1. At an earlier return the interior prime would be divisible by q, although it exceeds a≥q.
+
+- At length five the two ends are always coprime. The only prime divisors of 2⁶−1=63 are 3 and 7, whose orders are 2 and 3. This exclusion is unconditional.
+- Repeated factors can occur. The prime 1093 has order 364 and 1093² divides 2³⁶⁴−1. Under Dickson, infinitely many complete chains of length 363 have gcd exactly 1093² for each sign. The example verifies both finite calculations in Lean.
+
+## Realizing the exact gcd
+
+Write the predecessor as a=2gv, making it composite for sufficiently large v. Require v to be a unit modulo every prime p dividing M. Then gcd(a,M)=g because M is odd and g divides M. At p dividing g the order condition protects the entire interior. At the remaining p dividing M, choose v so that a is the fixed point of the recurrence modulo p. This fixed point is −1 for the plus sign and 1 for the minus sign.
+
+Choose a further prime Q>2^(k+1). Modulo Q the last iterate vanishes at a unique predecessor residue. At that residue none of the interior iterates vanishes, since the powers 2¹ through 2^(k+1) are distinct modulo Q. The Chinese remainder theorem combines this choice with the conditions on v. For primes outside the resulting stride, the predecessor can again be placed at the fixed point. Dickson now supplies infinitely many prime interiors in the chosen progression, with Q forcing the right boundary to be composite as soon as it exceeds Q.
+
+The main declaration is `CunninghamChain.CompleteBoundary.infinite_complete_gcd_iff`. The unconditional declarations include `boundary_gcd`, `boundary_prime_order` and `five_boundaries_coprime`. The length-363 example is `squared_boundary_at_length_363`. Lean 4.33.1 compiled both pinned source files and the notebook module from fresh output. Independent kernel replay passed, and all seven axiom reports used only `propext`, `Classical.choice` and `Quot.sound`. [Notebook replay](../../README.md#replay)
+
+Searches of open and closed DeepMind and OMA issues and PRs, and of 4,309 LTS solved records, found the canonical chain question and its statement PRs. None of the returned records formalized a classification of the two boundary divisors. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/4755) · [Merged statement](https://github.com/google-deepmind/formal-conjectures/pull/4770) · [OMA length-one reduction](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/8693) · [LTS solved records](https://lefttosolve.com/api/solved)
