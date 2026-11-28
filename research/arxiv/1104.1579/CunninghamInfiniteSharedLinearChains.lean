@@ -9,15 +9,18 @@ namespace CunninghamChain.LinearRoots
 open Polynomial CoefficientEnergy
 
 set_option maxRecDepth 4096 in
-/-- For every prime raised to an odd exponent with coefficient at least 615, both signs
-give irreducible rational polynomials at every index from the same seed a(X−1). -/
-theorem infinite_shared_odd_power_chains {p : ℕ} (hp : p.Prime) (r : ℕ)
-    (ha : 615 ≤ p^(2*r+1)) (k : Bool) (n : ℕ) :
-    Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
-  let a := p^(2*r+1)
+/-- A multiplier with small tail energy rules out any nonconstant unit-leading
+factor. The other input forces such a factor in every integral splitting. -/
+theorem balanced_irreducible_of_factor_energy {a : ℕ} (ha : 4 ≤ a) (k : Bool) (n : ℕ)
+    (leading : n ≠ 0 → ∀ A B : ℤ[X], polynomialTerm k (C (a:ℤ)*X+C (-(a:ℤ))) n=A*B →
+      IsUnit A.leadingCoeff ∨ IsUnit B.leadingCoeff)
+    (weight : n ≠ 0 → ∃ W : ℤ[X], W ≠ 0 ∧
+      let H := polynomialTerm k (C (a:ℤ)*X+C (-(a:ℤ))) n * W
+      4*energy H H.natDegree < H.leadingCoeff^2) :
+    Irreducible (term k a (-(a:ℤ)) n) := by
   let seed : ℤ[X] := C (a:ℤ)*X+C (-(a:ℤ))
   let T := polynomialTerm k seed n
-  have a0 : (a:ℤ)≠0 := by exact_mod_cast pow_ne_zero (2*r+1) hp.ne_zero
+  have a0 : (a:ℤ)≠0 := by omega
   have ds : seed.natDegree=1 := natDegree_linear a0
   have dt : T.natDegree=1+n := (polynomialTerm_shape k seed (by omega) n).1.trans (by rw [ds])
   have tn : T≠0 := by intro h; simp [h] at dt; omega
@@ -44,19 +47,28 @@ theorem infinite_shared_odd_power_chains {p : ℕ} (hp : p.Prime) (r : ℕ)
     · rw [eq_C_of_natDegree_eq_zero hA]
       exact isUnit_C.mpr hconst
     have hB : B≠0 := by rintro rfl; simp [hab] at tn
-    have kn : multiplier≠0 := by intro he; have := multiplier_shape.2; simp [he] at this
-    let W : ℤ[X] := (X-1)*multiplier
-    have wn : W≠0 := mul_ne_zero (by simpa using X_sub_C_ne_zero (1:ℤ)) kn
-    have small := balanced_tail_energy k ha n
+    obtain ⟨W,wn,small⟩ := weight zero
     change 4*energy (T*W) (T*W).natDegree < (T*W).leadingCoeff^2 at small
     rw [hab,mul_assoc] at small
     have symm := reciprocal_of_small_tail A (B*W) (mul_ne_zero hB wn) hu hconst small
-    exact False.elim (no_reciprocal_unit_factor (a:=a) (by dsimp [a]; omega) k
+    exact False.elim (no_reciprocal_unit_factor (a:=a) ha k
       (by omega : 0<n) (by omega : 0<A.natDegree) hu hconst ⟨B,hab⟩ symm)
   intro A B hab
-  rcases odd_prime_power_factor_leading hp r k zero A B hab with h|h
+  rcases leading zero A B hab with h|h
   · exact Or.inl (factor A B hab h)
   · exact Or.inr (factor B A (hab.trans (mul_comm _ _)) h)
+
+/-- For every prime raised to an odd exponent with coefficient at least 615, both signs
+give irreducible rational polynomials at every index from the same seed a(X−1). -/
+theorem infinite_shared_odd_power_chains {p : ℕ} (hp : p.Prime) (r : ℕ)
+    (ha : 615 ≤ p^(2*r+1)) (k : Bool) (n : ℕ) :
+    Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
+  apply balanced_irreducible_of_factor_energy (by omega) k n
+  · exact fun hn A B => odd_prime_power_factor_leading hp r k hn A B
+  · intro _
+    have kn : multiplier≠0 := by intro he; have := multiplier_shape.2; simp [he] at this
+    exact ⟨(X-1)*multiplier,mul_ne_zero (by simpa using X_sub_C_ne_zero (1:ℤ)) kn,
+      balanced_tail_energy k ha n⟩
 
 /-- A concrete common seed is 2048(X−1), with 2048=2^11. -/
 theorem both_infinite_at_2048 (k : Bool) (n : ℕ) :
@@ -96,6 +108,7 @@ theorem infinite_shared_seed_necessary {a b : ℤ} (ha : 0<a)
   exact exclude true 7 6 (by decide) (by decide)
     ((higher_cyclotomic_iff (a:=1) (b:= -1) (k:=true) (by decide) 7 6 (by decide)).mpr (by decide))
 
+#print axioms balanced_irreducible_of_factor_energy
 #print axioms infinite_shared_seed_necessary
 #print axioms infinite_shared_odd_power_chains
 #print axioms both_infinite_at_2048
