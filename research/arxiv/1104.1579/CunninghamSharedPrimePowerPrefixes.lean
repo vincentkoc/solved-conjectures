@@ -1,0 +1,76 @@
+import CunninghamOddPowerFactorCriterion
+import CunninghamSharedLinearPrefixes
+
+/-! Common irreducible prefixes with the prime base fixed in advance. -/
+
+namespace CunninghamChain.LinearRoots
+open Polynomial
+
+private lemma high_coefficients (k : Bool) (a : ℤ) (i : ℕ) :
+    let f := polynomialTerm k (C a*X + C (-a)) (i+1)
+    f.coeff (i+2) = a ∧ f.coeff (i+1) = -a ∧ f.coeff i = sign k := by
+  let seed : ℤ[X] := C a*X + C (-a)
+  have step (t j : ℕ) : (polynomialTerm k seed (t+1)).coeff (j+1) =
+      (polynomialTerm k seed t).coeff j := by
+    rw [polynomialTerm,coeff_add,coeff_X_mul,coeff_C]
+    simp
+  change (polynomialTerm k seed (i+1)).coeff (i+2) = _ ∧ _
+  induction i with
+  | zero =>
+    refine ⟨(step 0 1).trans ?_,(step 0 0).trans ?_,?_⟩
+    · simp only [polynomialTerm,seed,coeff_add,coeff_mul_X,coeff_C]; simp
+    · simp only [polynomialTerm,seed,coeff_add,coeff_mul_X_zero,coeff_C]; simp
+    · rw [polynomialTerm,coeff_add,coeff_X_mul_zero,coeff_C_zero,zero_add]; rfl
+  | succ i ih =>
+    exact ⟨(step _ _).trans ih.1,(step _ _).trans ih.2.1,(step _ _).trans ih.2.2⟩
+
+/-- For every fixed prime p, the same bounds as for a prime coefficient hold at all its
+odd powers. Both signs start at p^(2r+1)(X−1). -/
+theorem shared_odd_prime_power_prefix {p : ℕ} (hp : p.Prime) (r s : ℕ)
+    (hsize : 2*16^s < p^(2*r+1)) (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s) :
+    Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
+  let a := p^(2*r+1)
+  apply shared_seed_prefix_of_unit_leading_factor (p:=a) s hsize k n hn
+  intro hn0 A B hab
+  obtain ⟨i,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn0
+  let seed : ℤ[X] := C (a:ℤ)*X+C (-(a:ℤ))
+  let f := polynomialTerm k seed (i+1)
+  have ha : (a:ℤ)≠0 := by exact_mod_cast (pow_ne_zero (2*r+1) hp.ne_zero)
+  have ds : seed.natDegree=1 := natDegree_linear ha
+  have df : f.natDegree=i+2 := by
+    have h := (polynomialTerm_shape k seed (by omega) (i+1)).1
+    change f.natDegree=_ at h
+    omega
+  have hf : f.reverse=A.reverse*B.reverse := by rw [show f=A*B from hab,reverse_mul_of_domain]
+  obtain ⟨h₀,h₁,h₂⟩ := high_coefficients k (a:ℤ) i
+  have rev (j : ℕ) (hj : j ≤ i+2) : f.reverse.coeff j=f.coeff (i+2-j) := by
+    rw [coeff_reverse,df,revAt_le hj]
+  have e₀ : (A.reverse*B.reverse).coeff 0 = (a:ℤ) := by
+    rw [←hf,rev 0 (by omega),Nat.sub_zero]; exact h₀
+  have e₁ : (A.reverse*B.reverse).coeff 1 = -(a:ℤ) := by
+    rw [←hf,rev _ (by omega),show i+2-1=i+1 by omega]; exact h₁
+  have e₂ : (A.reverse*B.reverse).coeff 2 = sign k := by
+    rw [←hf,rev _ (by omega),show i+2-2=i by omega]; exact h₂
+  have hu := unit_constant_of_odd_power (r:=r) hp A.reverse B.reverse
+    (by simp [e₀,a]) (by simp [e₀,e₁]) (by
+      rw [e₂]; cases k <;> simpa [sign] using (Nat.prime_iff_prime_int.mp hp).not_dvd_one)
+  simpa using hu
+
+/-- Fix even the prime base in advance. Every sufficiently large odd exponent then gives
+a common irreducible prefix of any prescribed finite length. -/
+theorem fixed_prime_eventually_shared_prefix {p : ℕ} (hp : p.Prime) (L : ℕ) :
+    ∃ R, ∀ r≥R, ∀ k : Bool, ∀ n≤L,
+      Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
+  let s := L+1
+  refine ⟨2*16^s,?_⟩
+  intro r hr k n hn
+  have hpwr : 2*r+1 < p^(2*r+1) := Nat.lt_pow_self hp.one_lt
+  apply shared_odd_prime_power_prefix hp r s (by omega) k n
+  have one : 1≤4^s := Nat.one_le_pow _ _ (by decide)
+  have hL : L≤4*s^2 := by dsimp [s]; nlinarith [Nat.zero_le (L^2)]
+  exact hn.trans (hL.trans (Nat.le_mul_of_pos_right _ (by omega)))
+
+#print axioms shared_odd_prime_power_prefix
+#print axioms fixed_prime_eventually_shared_prefix
+
+end CunninghamChain.LinearRoots

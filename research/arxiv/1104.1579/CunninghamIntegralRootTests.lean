@@ -1,7 +1,7 @@
 import CunninghamPolynomialLengths
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
-/-! An integral polynomial test on the roots of a polynomial with prime leading coefficient. -/
+/-! An integral polynomial test on the roots of a polynomial with constrained leading coefficients. -/
 
 namespace CunninghamChain
 open Polynomial
@@ -20,8 +20,9 @@ private lemma norm_root_test_product {s : Multiset ℂ} (hne : s ≠ 0)
 
 /-- An integral test polynomial cannot take values of absolute value strictly between
 zero and one at every root of a nonconstant factor with unit leading coefficient. -/
-theorem irreducible_of_prime_leading_root_test (f g : ℤ[X]) (hd : 0<f.natDegree)
-    (hu : IsUnit (f.coeff 0)) (hp : Irreducible f.leadingCoeff)
+theorem irreducible_of_unit_leading_factor_root_test (f g : ℤ[X]) (hd : 0<f.natDegree)
+    (hu : IsUnit (f.coeff 0))
+    (hsplit : ∀ a b : ℤ[X], f=a*b → IsUnit a.leadingCoeff ∨ IsUnit b.leadingCoeff)
     (hroot : ∀ z : ℂ, (f.map (Int.castRingHom ℂ)).IsRoot z →
       0<‖(g.map (Int.castRingHom ℂ)).eval z‖ ∧ ‖(g.map (Int.castRingHom ℂ)).eval z‖<1) :
     Irreducible (f.map (Int.castRingHom ℚ)) := by
@@ -68,12 +69,22 @@ theorem irreducible_of_prime_leading_root_test (f g : ℤ[X]) (hd : 0<f.natDegre
     have h1 : |R| < (1 : ℤ) := by exact_mod_cast hsmall
     omega
   intro a b hab
-  have hl := congrArg leadingCoeff hab
-  rw [leadingCoeff_mul] at hl
-  rcases hp.isUnit_or_isUnit hl with ha|hb
+  rcases hsplit a b hab with ha|hb
   · exact Or.inl (factor a b hab ha)
   · exact Or.inr (factor b a (hab.trans (mul_comm _ _)) hb)
 
+/-- An irreducible leading coefficient forces the unit-leading factor required by the root test. -/
+theorem irreducible_of_prime_leading_root_test (f g : ℤ[X]) (hd : 0<f.natDegree)
+    (hu : IsUnit (f.coeff 0)) (hp : Irreducible f.leadingCoeff)
+    (hroot : ∀ z : ℂ, (f.map (Int.castRingHom ℂ)).IsRoot z →
+      0<‖(g.map (Int.castRingHom ℂ)).eval z‖ ∧ ‖(g.map (Int.castRingHom ℂ)).eval z‖<1) :
+    Irreducible (f.map (Int.castRingHom ℚ)) := by
+  apply irreducible_of_unit_leading_factor_root_test f g hd hu _ hroot
+  intro a b hab
+  apply hp.isUnit_or_isUnit
+  rw [hab,leadingCoeff_mul]
+
+#print axioms irreducible_of_unit_leading_factor_root_test
 #print axioms irreducible_of_prime_leading_root_test
 
 end CunninghamChain
