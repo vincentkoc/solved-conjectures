@@ -129,10 +129,11 @@ private lemma unit_sum_nat {n : ℕ} [NeZero n] (f : ℕ → ℤ) :
       ZMod.val_natCast_of_lt (mem_range.mp hlt)]⟩
   · intros; rfl
 
-private lemma raw_fiber {q m : ℕ} [NeZero q] [NeZero (q*m)] (b : unitsMod q) :
-    (∑ x : unitsMod (q*m), if reduceUnit q m x = b then (-1:ℤ)^(x : ZMod (q*m)).val else 0) =
+/-- Sum an arbitrary integer weight over a fixed reduced residue fiber. -/
+theorem sum_unit_fiber {q m : ℕ} [NeZero q] [NeZero (q*m)] (b : (ZMod q)ˣ) (f : ℕ → ℤ) :
+    (∑ x : (ZMod (q*m))ˣ, if reduceUnit q m x = b then f (x : ZMod (q*m)).val else 0) =
     ∑ i ∈ range m, if ((b : ZMod q).val+q*i).Coprime m
-      then (-1:ℤ)^((b : ZMod q).val+q*i) else 0 := by
+      then f ((b : ZMod q).val+q*i) else 0 := by
   let r := (b : ZMod q).val
   have hr : r<q := ZMod.val_lt _
   have hb : r.Coprime q := ZMod.val_coe_unit_coprime _
@@ -143,9 +144,9 @@ private lemma raw_fiber {q m : ℕ} [NeZero q] [NeZero (q*m)] (b : unitsMod q) :
     · intro H; apply_fun (fun j : ℕ => (j : ZMod q)) at H
       simpa only [ZMod.natCast_mod,ZMod.natCast_zmod_val,r] using H
   simp_rw [htest]
-  rw [unit_sum_nat (fun j => if j%q=r then (-1:ℤ)^j else 0),sum_filter]
-  have hs (j : ℕ) : (if j.Coprime (q*m) then (if j%q=r then (-1:ℤ)^j else 0) else 0) =
-      (if j%q=r then (if j.Coprime (q*m) then (-1:ℤ)^j else 0) else 0) := by
+  rw [unit_sum_nat (fun j => if j%q=r then f j else 0),sum_filter]
+  have hs (j : ℕ) : (if j.Coprime (q*m) then (if j%q=r then f j else 0) else 0) =
+      (if j%q=r then (if j.Coprime (q*m) then f j else 0) else 0) := by
     split_ifs <;> rfl
   simp_rw [hs]; rw [← sum_filter,sum_one_class _ (NeZero.pos _) (Nat.dvd_mul_right q m) hr,
     Nat.mul_div_cancel_left _ (NeZero.pos q)]
@@ -174,7 +175,7 @@ theorem reciprocal_unit_fiber {q m : ℕ} [NeZero q] [NeZero (q*m)] (hm : m%2=1)
     have hh := h (v/x)
     rw [show v/(v/x)=x by exact inv x] at hh
     simp only [hh]
-  rw [H,raw_fiber]
+  rw [H,sum_unit_fiber _ (fun j => (-1:ℤ)^j)]
   exact coprime_fiber_bound hm hq (ZMod.val_coe_unit_coprime b)
 
 private lemma neg_residue_sign {p t u v : ℕ} (hu : u%2=1) (hv : 0<v) (hvu : v<u)
@@ -348,3 +349,4 @@ end Arxiv.«2501.03234».ThetaReciprocalFibers
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.integer_parseval
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.reciprocalCoeff_energy
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.reciprocalSign_cancel
+#print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.sum_unit_fiber
