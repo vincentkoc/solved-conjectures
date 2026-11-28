@@ -60,7 +60,8 @@ private theorem ref_exists (s : ℕ) (hs : 0<s) :
   obtain ⟨C,m,len,_⟩ := missing_circuit (s := s) (r := 0) hs A (gap.trans_le ha) avoid count.ge
   exact ⟨C,_,m,len⟩
 
-private theorem spanning_reference (s : ℕ) (hs : 0<s) :
+/-- A binary cube of the indicated dimension has a spanning odd circuit. -/
+theorem spanning_reference (s : ℕ) (hs : 0<s) :
     ∃ B : Finset (Fin (2*(s+1)) → F), ShortestOddCircuit B B ∧ B.card=2*s+3 ∧
       Submodule.span F (B : Set (Fin (2*(s+1)) → F)) = ⊤ := by
   obtain ⟨C,E,m,len⟩ := ref_exists s hs
@@ -81,3 +82,5 @@ theorem count_circuit_frames (G : Type*) [AddCommGroup G] [Module F G] [Fintype 
     _ = _ := card_surjections_cube G _ small
 end Green51GirthFrame
 #print axioms Green51GirthFrame.count_circuit_frames
+
+#print axioms Green51GirthFrame.spanning_reference

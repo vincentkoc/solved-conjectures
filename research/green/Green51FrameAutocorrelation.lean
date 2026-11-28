@@ -26,7 +26,9 @@ theorem lag_shift (D : Finset G) (a t : G) :
   rw [eq,card_map]
 
 omit [Fintype G] in
-private theorem lag_lower {D U : Finset G} (inside : D ⊆ U)
+/-- Two copies of a mask inside the same carrier overlap in at least their total size
+minus the carrier size. -/
+theorem lag_lower {D U : Finset G} (inside : D ⊆ U)
     (t : G) (stable : ∀ x ∈ D, x+t ∈ U) : 2*D.card ≤ U.card+lag D t := by
   classical
   let E := D.map (Equiv.addRight t).toEmbedding
@@ -104,5 +106,6 @@ theorem recover_period {C E D : Finset G} (m : ShortestOddCircuit E C)
 
 end Green51OriginRecovery
 #print axioms Green51OriginRecovery.lag_shift
+#print axioms Green51OriginRecovery.lag_lower
 #print axioms Green51OriginRecovery.outer_lag
 #print axioms Green51OriginRecovery.recover_period
