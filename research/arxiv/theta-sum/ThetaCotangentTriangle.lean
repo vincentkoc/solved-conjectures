@@ -125,7 +125,7 @@ theorem quotient_prefix_lower {p u : ℕ} [Fact p.Prime] (hp : p%2=1) (hu : u%2=
   rw [sum_congr rfl he]
   exact wave_prefix hc hu n
 
-private lemma weighted_prefix_lower (w g : ℕ → ℝ) {n : ℕ} {D : ℝ} (hD : 0≤D) (hw₀ : 0≤w 0)
+theorem weighted_prefix_lower (w g : ℕ → ℝ) {n : ℕ} {D : ℝ} (hD : 0≤D) (hw₀ : 0≤w 0)
     (hw : ∀ i<n, 0≤w i) (hm : ∀ i, i+1<n → w (i+1)≤w i)
     (hg : ∀ k≤n, -D ≤ ∑ i ∈ range k, g i) :
     -D * w 0 ≤ ∑ i ∈ range n, w i * g i := by
@@ -162,10 +162,10 @@ private lemma angle_mem {p u : ℕ} (hu : 0<u) (hul : u<p) :
   · rw [angle, div_lt_iff₀ (by positivity)]
     nlinarith [mul_lt_mul_of_pos_left huu Real.pi_pos]
 
-private lemma weight_pos {p u : ℕ} (hu : 0<u) (hul : u<p) : 0<weight p u :=
+theorem weight_pos {p u : ℕ} (hu : 0<u) (hul : u<p) : 0<weight p u :=
   inv_pos.mpr (Real.tan_pos_of_pos_of_lt_pi_div_two (angle_mem hu hul).1 (angle_mem hu hul).2)
 
-private lemma weight_antitone {p u v : ℕ} (hu : 0<u) (hv : v<p) (huv : u≤v) :
+theorem weight_antitone {p u v : ℕ} (hu : 0<u) (hv : v<p) (huv : u≤v) :
     weight p v ≤ weight p u := by
   have ha := angle_mem hu (lt_of_le_of_lt huv hv)
   have hb := angle_mem (hu.trans_le huv) hv
@@ -176,7 +176,7 @@ private lemma weight_antitone {p u v : ℕ} (hu : 0<u) (hv : v<p) (huv : u≤v) 
       unfold angle; gcongr)
   exact inv_anti₀ (Real.tan_pos_of_pos_of_lt_pi_div_two ha.1 ha.2) htan
 
-private lemma weight_upper {p u : ℕ} (hu : 0<u) (hul : u<p) :
+theorem weight_upper {p u : ℕ} (hu : 0<u) (hul : u<p) :
     weight p u ≤ 2*p/(Real.pi*u) := by
   have ha := angle_mem hu hul
   have h := inv_anti₀ ha.1 (Real.le_tan ha.1.le ha.2)
@@ -311,7 +311,7 @@ open ThetaRationalRows (row)
 
 variable {p : ℕ} [Fact p.Prime]
 
-private noncomputable def coeff (t : ZMod p) : ℂ :=
+noncomputable def coeff (t : ZMod p) : ℂ :=
   ∑ x : U p, (sign x : ℂ) * ZMod.stdAddChar ((x : ZMod p)*t)
 
 private lemma coeff_neg (hp : p%2=1) (t : ZMod p) : coeff (-t) = -coeff t := by
@@ -522,7 +522,7 @@ private lemma odd_transform (hp : p%2=1) :
   push_cast
   linear_combination h/2
 
-private lemma sum_odd_indices (hp : p%2=1) {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
+theorem sum_odd_indices (hp : p%2=1) {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
     ∑ a ∈ oddReps p, f (rep a) = ∑ j ∈ range (p/2), f (2*j+1) := by
   apply sum_bij (fun (a : U p) _ => rep a/2)
   · intro a ha
