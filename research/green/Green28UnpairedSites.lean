@@ -65,7 +65,8 @@ private theorem last_offset_le {A B : Set ℤ} {u v : ℤ → Prop} (rect : Rect
   have := amax.2 hx
   omega
 
-private theorem sum_coeff (P Q : PMF ℤ) (z : ℤ) (pf : P.support.Finite) :
+/-- The actual output probability as a finite sum over the first support. -/
+theorem sum_coeff (P Q : PMF ℤ) (z : ℤ) (pf : P.support.Finite) :
     (indepSum P Q z).toReal = ∑ x ∈ pf.toFinset, (P x).toReal*(Q (z-x)).toReal := by
   have conv : indepSum P Q z = ∑' x, P x * Q (z-x) := by
     change (P.bind fun x => Q.bind fun y => PMF.pure (x+y)) z = _
@@ -345,6 +346,7 @@ theorem one_unpaired_alternative {P Q : PMF ℤ} (sum : IsUniformOnSupport (inde
 
 #print axioms indepSum_comm
 #print axioms width_of_extremes
+#print axioms sum_coeff
 #print axioms maximal_rectangle
 #print axioms one_unpaired_alternative
 #print axioms alignment_alternative
