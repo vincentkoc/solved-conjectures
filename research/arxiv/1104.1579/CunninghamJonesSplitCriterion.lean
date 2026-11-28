@@ -11,6 +11,15 @@ def SplitObstruction (m u v : ℕ) : Prop :=
   ∃ k p : ℕ, 2^(k+1) ∣ m-1 ∧ 2 < p ∧ p ∣ v ∧ Odd u ∧
     (u:ZMod (2^(k+1))) ≠ 1 ∧ (u:ZMod p)^2 = -1
 
+private theorem factor_square_power {m j u v : ℕ} {A B : ℤ[X]} (hj : 0 < j)
+    (hA : A.Monic) (hAB : A*B=jonesSumPolynomial m j)
+    (ha : A.coeff 0=(u:ℤ)) (hb : B.coeff 0=(v:ℤ)) (hv : 1<v) :
+    ((u:ZMod v)^2)^j=1 := by
+  have h := congrArg (fun x : ZMod v => x^2) (jones_factor_complementary_modulus hj hv hA hAB hb)
+  simp only [mul_pow, ← pow_mul, ha, Int.cast_natCast, one_pow] at h
+  rw [Nat.mul_comm (A.natDegree*j) 2,pow_mul,neg_one_sq,one_pow,one_mul] at h
+  simpa only [← pow_mul,Nat.mul_comm 2 j] using h
+
 private theorem no_factorization {m j u v : ℕ} {A B : ℤ[X]} (hm : 3 ≤ m) (hj : 0 < j)
     (hA : A.Monic) (hdeg : 0 < A.natDegree) (hAB : A*B=jonesSumPolynomial m j)
     (ha : A.coeff 0=(u:ℤ)) (hb : B.coeff 0=(v:ℤ)) (hv : 1<v)
@@ -19,15 +28,12 @@ private theorem no_factorization {m j u v : ℕ} {A B : ℤ[X]} (hm : 3 ≤ m) (
   apply incompatible_parities hk hp hpv hu hne hs (j:=j)
   · have h := (jones_factor_constant_congruence hm hj hA hdeg (hAB ▸ dvd_mul_right ..)).2
     simpa [ha] using h
-  · have h := congrArg (fun x : ZMod v => x^2) (jones_factor_complementary_modulus hj hv hA hAB hb)
-    simp only [mul_pow, ← pow_mul, ha, Int.cast_natCast, one_pow] at h
-    rw [Nat.mul_comm (A.natDegree*j) 2,pow_mul,neg_one_sq,one_pow,one_mul] at h
-    simpa only [← pow_mul,Nat.mul_comm 2 j] using h
+  · exact factor_square_power hj hA hAB ha hb hv
 
-/-- When every nontrivial splitting of m has an obstruction in at least one
+/-- When every nontrivial coprime splitting of m has an obstruction in at least one
 orientation, every positive-degree geometric sum with constant m is irreducible. -/
-theorem irreducible_all_degrees_of_splits {m : ℕ} (hm : 3 ≤ m)
-    (cert : ∀ u v : ℕ, 1<u → 1<v → u*v=m →
+theorem irreducible_all_degrees_of_coprime_splits {m : ℕ} (hm : 3 ≤ m)
+    (cert : ∀ u v : ℕ, 1<u → 1<v → u*v=m → u.Coprime v →
       SplitObstruction m u v ∨ SplitObstruction m v u)
     {j : ℕ} (hj : 0<j) : Irreducible ((jonesSumPolynomial m j).map (Int.castRingHom ℚ)) := by
   obtain ⟨hdeg,hmon⟩ := jonesSumPolynomial_shape m j
@@ -52,10 +58,22 @@ theorem irreducible_all_degrees_of_splits {m : ℕ} (hm : 3 ≤ m)
     simpa [jonesSumPolynomial,mul_coeff_zero,finsetSum_coeff,coeff_X_pow] using
       congrArg (fun P : ℤ[X] => P.coeff 0) hAB
   rw [au,bv] at hab
-  rcases cert u v (by omega) (by omega) (by exact_mod_cast hab) with h|h
+  have sq := factor_square_power hj hA hAB au bv (by omega)
+  have cop : u.Coprime v := (ZMod.isUnit_iff_coprime ..).mp
+    (isOfFinOrder_iff_pow_eq_one.mpr ⟨2*j,by omega,by simpa [pow_mul] using sq⟩).isUnit
+  rcases cert u v (by omega) (by omega) (by exact_mod_cast hab) cop with h|h
   · exact no_factorization hm hj hA (by omega) hAB au bv (by omega) h
   · exact no_factorization hm hj hB (by omega) (mul_comm A B ▸ hAB) bv au (by omega) h
 
+/-- When every nontrivial splitting of m has an obstruction in at least one
+orientation, every positive-degree geometric sum with constant m is irreducible. -/
+theorem irreducible_all_degrees_of_splits {m : ℕ} (hm : 3 ≤ m)
+    (cert : ∀ u v : ℕ, 1<u → 1<v → u*v=m →
+      SplitObstruction m u v ∨ SplitObstruction m v u)
+    {j : ℕ} (hj : 0<j) : Irreducible ((jonesSumPolynomial m j).map (Int.castRingHom ℚ)) :=
+  irreducible_all_degrees_of_coprime_splits hm (fun u v hu hv eq _ => cert u v hu hv eq) hj
+
+#print axioms irreducible_all_degrees_of_coprime_splits
 #print axioms irreducible_all_degrees_of_splits
 
 end CunninghamChain.JonesSplitParity
