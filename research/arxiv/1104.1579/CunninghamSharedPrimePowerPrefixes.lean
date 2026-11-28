@@ -24,14 +24,13 @@ private lemma high_coefficients (k : Bool) (a : ℤ) (i : ℕ) :
   | succ i ih =>
     exact ⟨(step _ _).trans ih.1,(step _ _).trans ih.2.1,(step _ _).trans ih.2.2⟩
 
-/-- For every fixed prime p, the same bounds as for a prime coefficient hold at all its
-odd powers. Both signs start at p^(2r+1)(X−1). -/
-theorem shared_odd_prime_power_prefix {p : ℕ} (hp : p.Prime) (r s : ℕ)
-    (hsize : 2*16^s < p^(2*r+1)) (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s) :
-    Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
+/-- Any integral factorization of a positive iterate at an odd prime-power coefficient
+has a factor with unit leading coefficient. -/
+theorem odd_prime_power_factor_leading {p : ℕ} (hp : p.Prime) (r : ℕ) (k : Bool)
+    {n : ℕ} (hn0 : n≠0) (A B : ℤ[X])
+    (hab : polynomialTerm k (C ((p^(2*r+1):ℕ):ℤ)*X+C (-(p^(2*r+1):ℕ):ℤ)) n=A*B) :
+    IsUnit A.leadingCoeff ∨ IsUnit B.leadingCoeff := by
   let a := p^(2*r+1)
-  apply shared_seed_prefix_of_unit_leading_factor (p:=a) s hsize k n hn
-  intro hn0 A B hab
   obtain ⟨i,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn0
   let seed : ℤ[X] := C (a:ℤ)*X+C (-(a:ℤ))
   let f := polynomialTerm k seed (i+1)
@@ -56,6 +55,14 @@ theorem shared_odd_prime_power_prefix {p : ℕ} (hp : p.Prime) (r s : ℕ)
       rw [e₂]; cases k <;> simpa [sign] using (Nat.prime_iff_prime_int.mp hp).not_dvd_one)
   simpa using hu
 
+/-- For every fixed prime p, the same bounds as for a prime coefficient hold at all its
+odd powers. Both signs start at p^(2r+1)(X−1). -/
+theorem shared_odd_prime_power_prefix {p : ℕ} (hp : p.Prime) (r s : ℕ)
+    (hsize : 2*16^s < p^(2*r+1)) (k : Bool) (n : ℕ) (hn : n≤4*s^2*4^s) :
+    Irreducible (term k (p^(2*r+1):ℕ) (-(p^(2*r+1):ℕ):ℤ) n) := by
+  apply shared_seed_prefix_of_unit_leading_factor s hsize k n hn
+  exact fun hn0 A B hab => odd_prime_power_factor_leading hp r k hn0 A B hab
+
 /-- Fix even the prime base in advance. Every sufficiently large odd exponent then gives
 a common irreducible prefix of any prescribed finite length. -/
 theorem fixed_prime_eventually_shared_prefix {p : ℕ} (hp : p.Prime) (L : ℕ) :
@@ -70,6 +77,7 @@ theorem fixed_prime_eventually_shared_prefix {p : ℕ} (hp : p.Prime) (L : ℕ) 
   have hL : L≤4*s^2 := by dsimp [s]; nlinarith [Nat.zero_le (L^2)]
   exact hn.trans (hL.trans (Nat.le_mul_of_pos_right _ (by omega)))
 
+#print axioms odd_prime_power_factor_leading
 #print axioms shared_odd_prime_power_prefix
 #print axioms fixed_prime_eventually_shared_prefix
 
