@@ -1,6 +1,7 @@
 import Mathlib
 import research.arxiv.«2211.10788».LucasFibonacciExcludedPrimes
 import research.arxiv.«2211.10788».NeighboringLucasFibonacciPrimes
+import research.arxiv.«2211.10788».LucasFibonacciSmoothBlocks
 
 /-! Quadratic nonresidue prime divisors on progressions of Hosoya upper indices. -/
 
@@ -101,28 +102,34 @@ private lemma signed_return (m : ℕ) [NeZero m] (s : ℤ) :
     congrArg (fun v : ZMod m × ZMod m => 2*v.1+(v.1+v.2)) he
 
 private lemma nonsquare_prime_factor (c : ℕ) (hc : ¬IsSquare (c : ZMod 11)) :
-    ∃ q : ℕ, q.Prime ∧ q ∣ c ∧ ¬IsSquare (q : ZMod 11) := by
-  induction c using Nat.recOnMul with
-  | zero => exact (hc ⟨0, by decide⟩).elim
-  | one => exact (hc ⟨1, by decide⟩).elim
-  | prime p hp => exact ⟨p,hp,dvd_rfl,hc⟩
-  | mul a b ia ib =>
-    by_cases ha : IsSquare (a : ZMod 11)
-    · have hb : ¬IsSquare (b : ZMod 11) := fun h => hc (by simpa only [Nat.cast_mul] using ha.mul h)
-      obtain ⟨q,hq,hd,hn⟩ := ib hb
-      exact ⟨q,hq,hd.trans (dvd_mul_left ..),hn⟩
-    · obtain ⟨q,hq,hd,hn⟩ := ia ha
-      exact ⟨q,hq,hd.trans (dvd_mul_right ..),hn⟩
+    ∃ q : ℕ, q.Prime ∧ Odd (c.factorization q) ∧ ¬IsSquare (q : ZMod 11) := by
+  have hc0 : c ≠ 0 := by rintro rfl; exact hc ⟨0, by decide⟩
+  by_contra! h
+  apply hc
+  rw [← Nat.prod_factorization_pow_eq_self hc0]
+  simp only [Finsupp.prod,Nat.cast_prod,Nat.cast_pow]
+  apply Finset.isSquare_prod
+  intro q hq
+  have hp : q.Prime := Nat.prime_of_mem_primeFactors (by simpa [Nat.support_factorization] using hq)
+  rcases (c.factorization q).even_or_odd with he|ho
+  · obtain ⟨a,ha⟩ := he
+    exact ⟨(q:ZMod 11)^a, by rw [ha,pow_add]⟩
+  · exact (h q hp ho).pow _
+
+private lemma dvd_of_odd_val {q N : ℕ} (h : Odd (N.factorization q)) : q ∣ N := by
+  by_contra hn
+  rw [Nat.factorization_eq_zero_of_not_dvd hn] at h
+  simp at h
 
 /-- Transport a negative even-index term into the chosen progression. Dividing
 out its absolute value leaves a cofactor congruent to −1 modulo 11·B!. -/
 private lemma fresh_even_divisor (r d B : ℕ) (hd : 0 < d) :
     ∃ t q : ℕ, B < q ∧ q.Prime ∧ ¬IsSquare (q : ZMod 11) ∧
-      q ∣ lucasFibonacciSum (2*(r+d*t)) := by
+      Odd ((lucasFibonacciSum (2*(r+d*t))).factorization q) := by
   obtain ⟨d,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hd.ne'
   let a := d*(r+1)
   let u := lowerNeighborAtAddTwo (2*a)
-  let L := 11*B.factorial
+  let L := 11*(max B u).factorial
   have hu : 0 < u := by
     dsimp [u,lowerNeighborAtAddTwo]
     have := Nat.fib_pos.mpr (show 0 < 2*a+2 by omega)
@@ -150,32 +157,60 @@ private lemma fresh_even_divisor (r d B : ℕ) (hd : 0 < d) :
   have hc1 : c+1 = L*j := Nat.eq_of_mul_eq_mul_left hu (by
     calc u*(c+1) = lucasFibonacciSum n+u := by rw [hc]; ring
          _ = u*(L*j) := hj.trans (Nat.mul_assoc ..))
-  have h11 : 11 ∣ c+1 := ⟨B.factorial*j, by rw [hc1]; dsimp [L]; ring⟩
+  have h11 : 11 ∣ c+1 := ⟨(max B u).factorial*j, by rw [hc1]; dsimp [L]; ring⟩
   have hmod := (ZMod.natCast_eq_zero_iff ..).mpr h11
   have hnr : ¬IsSquare (c : ZMod 11) := by
     push_cast at hmod
     rw [eq_neg_of_add_eq_zero_left hmod]
     decide
-  obtain ⟨q,hq,hqc,hbad⟩ := nonsquare_prime_factor c hnr
-  refine ⟨t,q,?_,hq,hbad,hqc.trans (hc ▸ dvd_mul_left ..)⟩
-  by_contra! hle
-  have hqL : q ∣ L := (Nat.dvd_factorial hq.pos hle).trans (dvd_mul_left ..)
-  have hq1 : q ∣ c+1 := hc1 ▸ hqL.trans (dvd_mul_right ..)
-  exact hq.not_dvd_one ((Nat.dvd_add_right hqc).mp hq1)
+  obtain ⟨q,hq,hodd,hbad⟩ := nonsquare_prime_factor c hnr
+  have hqc := dvd_of_odd_val hodd
+  have hlarge : max B u < q := by
+    by_contra! hle
+    have hqL : q ∣ L := (Nat.dvd_factorial hq.pos hle).trans (dvd_mul_left ..)
+    have hq1 : q ∣ c+1 := hc1 ▸ hqL.trans (dvd_mul_right ..)
+    exact hq.not_dvd_one ((Nat.dvd_add_right hqc).mp hq1)
+  refine ⟨t,q,by omega,hq,hbad,?_⟩
+  change Odd ((lucasFibonacciSum n).factorization q)
+  have hc0 : c ≠ 0 := by rintro rfl; exact hnr ⟨0, by decide⟩
+  rw [hc,Nat.factorization_mul hu.ne' hc0,Finsupp.add_apply,
+    Nat.factorization_eq_zero_of_not_dvd (Nat.not_dvd_of_pos_of_lt hu (by omega)),zero_add]
+  exact hodd
 
-private lemma preserve_hit {q n : ℕ} (hq : q.Prime) (hdiv : q ∣ lucasFibonacciSum n) :
-    ∃ T > 0, ∀ j, q ∣ lucasFibonacciSum (n+j*T) := by
-  let : NeZero q := ⟨hq.ne_zero⟩
-  obtain ⟨T,hT,ht⟩ := signed_return q n
-  refine ⟨T,hT,fun j => (ZMod.natCast_eq_zero_iff ..).mp ?_⟩
+private lemma upper_positive (n : ℕ) : 0 < lucasFibonacciSum n := by
+  have := Nat.fib_pos.mpr (by omega : 0 < n+2)
+  unfold lucasFibonacciSum
+  omega
+
+/-- Returning modulo the next prime power preserves the exact valuation. -/
+private lemma preserve_valuation {q : ℕ} (n : ℕ) (hq : q.Prime) :
+    ∃ T > 0, ∀ j, (lucasFibonacciSum (n+j*T)).factorization q =
+      (lucasFibonacciSum n).factorization q := by
+  let v := (lucasFibonacciSum n).factorization q
+  let m := q^(v+1)
+  let : NeZero m := ⟨pow_ne_zero _ hq.ne_zero⟩
+  obtain ⟨T,hT,ht⟩ := signed_return m n
+  refine ⟨T,hT,fun j => ?_⟩
   have h := ht j
   rw [← Nat.cast_add,signed_nat,signed_nat] at h
-  simpa using h.trans (by simpa using (ZMod.natCast_eq_zero_iff ..).mpr hdiv)
+  have hmod : lucasFibonacciSum (n+j*T) ≡ lucasFibonacciSum n [MOD m] :=
+    (ZMod.natCast_eq_natCast_iff ..).mp (by simpa using h)
+  have transfer (b : ℕ) (hb : b ≤ v+1) :
+      b ≤ (lucasFibonacciSum (n+j*T)).factorization q ↔ b ≤ v := by
+    rw [← hq.pow_dvd_iff_le_factorization (upper_positive _).ne',
+      ← hq.pow_dvd_iff_le_factorization (upper_positive n).ne']
+    have hc := hmod.of_dvd (show q^b ∣ m from pow_dvd_pow q hb)
+    simp only [← Nat.modEq_zero_iff_dvd]
+    exact ⟨fun he => hc.symm.trans he, fun he => hc.trans he⟩
+  have hlo := (transfer v (by omega)).mpr le_rfl
+  have hhi := (transfer (v+1) le_rfl).not.mpr (by omega)
+  change _ = v
+  omega
 
 private lemma even_family {k : ℕ} (r d : Fin k → ℕ) (hd : ∀ i, 0 < d i) (B : ℕ) :
     ∃ s e : ℕ, 0 < e ∧ ∃ p : Fin k → ℕ, Function.Injective p ∧
       ∀ i, B < p i ∧ (p i).Prime ∧ ¬IsSquare (p i : ZMod 11) ∧
-        ∀ j, p i ∣ lucasFibonacciSum (2*(r i+d i*(s+e*j))) := by
+        ∃ v : ℕ, Odd v ∧ ∀ j, (lucasFibonacciSum (2*(r i+d i*(s+e*j)))).factorization (p i) = v := by
   induction k with
   | zero => exact ⟨0,1,by decide,Fin.elim0,fun i => i.elim0,fun i => i.elim0⟩
   | succ k ih =>
@@ -184,11 +219,9 @@ private lemma even_family {k : ℕ} (r d : Fin k → ℕ) (hd : ∀ i, 0 < d i) 
     obtain ⟨t,q,hbig,hq,hnr,hhit⟩ :=
       fresh_even_divisor (r 0+d 0*s) (d 0*e) C (Nat.mul_pos (hd 0) he)
     let s' := s+e*t
-    have hhit' : q ∣ lucasFibonacciSum (2*(r 0+d 0*s')) := by
-      convert hhit using 2
-      dsimp [s']
-      ring
-    obtain ⟨T,hT,hper⟩ := preserve_hit hq hhit'
+    have hhit' : Odd ((lucasFibonacciSum (2*(r 0+d 0*s'))).factorization q) := by
+      simpa only [show r 0+d 0*s' = r 0+d 0*s+d 0*e*t by dsimp [s']; ring] using hhit
+    obtain ⟨T,hT,hper⟩ := preserve_valuation (2*(r 0+d 0*s')) hq
     have fresh (i : Fin k) : p i < q := by
       have := single_le_sum (s := univ) (f := p) (fun i _ => Nat.zero_le _) (mem_univ i)
       dsimp [C] at hbig
@@ -202,15 +235,15 @@ private lemma even_family {k : ℕ} (r d : Fin k → ℕ) (hd : ∀ i, 0 < d i) 
       · simpa using fun h => hinj h
     · refine Fin.cases ?_ (fun i => ?_)
       · refine ⟨by dsimp [C] at hbig; simpa using (show B < q by omega),
-          hq,hnr,fun j => ?_⟩
+          hq,hnr,_,hhit',fun j => ?_⟩
         simpa only [Fin.cons_zero, show 2*(r 0+d 0*(s'+e*T*j)) =
           2*(r 0+d 0*s')+(2*d 0*e*j)*T by ring] using hper (2*d 0*e*j)
-      · obtain ⟨hB,hp,hn,hj⟩ := hold i
-        refine ⟨hB,hp,hn,fun j => ?_⟩
+      · obtain ⟨hB,hp,hn,v,hv,hj⟩ := hold i
+        refine ⟨hB,hp,hn,v,hv,fun j => ?_⟩
         simpa only [Fin.cons_succ,show s'+e*T*j = s+e*(t+T*j) by dsimp [s']; ring] using hj (t+T*j)
 
-/-- A finite family of positive-step affine indices can carry distinct, arbitrarily
-large nonsquare-mod-11 prime divisors throughout a common parameter progression
+/-- A finite family of positive-step affine indices can have distinct arbitrarily
+large primes, nonsquare modulo 11, occurring to fixed odd valuations on a common progression
 exactly when the indices can all be even at a common parameter. Repetitions of
 an index form request several distinct prime divisors of the same term. -/
 theorem nonresidue_divisor_patterns_iff {k : ℕ} (r d : Fin k → ℕ)
@@ -218,21 +251,21 @@ theorem nonresidue_divisor_patterns_iff {k : ℕ} (r d : Fin k → ℕ)
     (∃ t : ℕ, ∀ i, Even (r i+d i*t)) ↔
     ∃ s e : ℕ, 0 < e ∧ ∃ p : Fin k → ℕ, Function.Injective p ∧
       ∀ i, B < p i ∧ (p i).Prime ∧ p i % 4 = 3 ∧ ¬IsSquare (p i : ZMod 11) ∧
-        ∀ j, p i ∣ lucasFibonacciSum (r i+d i*(s+e*j)) := by
+        ∃ v : ℕ, Odd v ∧ ∀ j, (lucasFibonacciSum (r i+d i*(s+e*j))).factorization (p i) = v := by
   constructor
   · rintro ⟨t,h⟩
     choose a ha using h
     obtain ⟨s,e,he,p,hinj,hp⟩ := even_family a d hd (max B 2)
     refine ⟨t+2*s,2*e,by omega,p,hinj,fun i => ?_⟩
-    obtain ⟨hB,hprime,hnr,hdiv⟩ := hp i
-    have h4 := (nonresidue_prime_index hprime (by omega) hnr (hdiv 0)).2
-    refine ⟨by omega,hprime,h4,hnr,fun j => ?_⟩
-    convert hdiv j using 2
-    linear_combination ha i
+    obtain ⟨hB,hprime,hnr,v,hv,hval⟩ := hp i
+    have h4 := (nonresidue_prime_index hprime (by omega) hnr (dvd_of_odd_val ((hval 0).symm ▸ hv))).2
+    refine ⟨by omega,hprime,h4,hnr,v,hv,fun j => ?_⟩
+    rw [show r i+d i*(t+2*s+2*e*j) = 2*(a i+d i*(s+e*j)) by linear_combination ha i]
+    exact hval j
   · rintro ⟨s,e,_,p,_,hp⟩
     refine ⟨s,fun i => ?_⟩
-    obtain ⟨_,hq,h4,hnr,hdiv⟩ := hp i
-    simpa using (nonresidue_prime_index hq (by omega) hnr (hdiv 0)).1
+    obtain ⟨_,hq,h4,hnr,v,hv,hval⟩ := hp i
+    simpa using (nonresidue_prime_index hq (by omega) hnr (dvd_of_odd_val ((hval 0).symm ▸ hv))).1
 
 /-- The nonsquare-mod-11 prime divisors on a progression are unbounded exactly
 when the progression meets an even index. Each prime in the set divides a
@@ -251,17 +284,72 @@ theorem infinite_nonvalue_prime_divisors_iff (r d : ℕ) (hd : 0 < d) :
     obtain ⟨s,e,_,p,_,hp⟩ :=
       (nonresidue_divisor_patterns_iff (fun _ : Fin 1 => r) (fun _ => d) (fun _ => hd) B).mp
         ⟨t,fun _ => ht⟩
-    obtain ⟨hB,hq,h4,hnr,hdiv⟩ := hp 0
+    obtain ⟨hB,hq,h4,hnr,v,hv,hval⟩ := hp 0
     have absent (n : ℕ) : lucasFibonacciSum n ≠ p 0 := fun he =>
       hnr (he ▸ upper_square_mod_eleven n)
-    have hs : p 0 ∣ lucasFibonacciSum (r+d*s) := by simpa using hdiv 0
+    have hs : p 0 ∣ lucasFibonacciSum (r+d*s) := by
+      simpa using dvd_of_odd_val ((hval 0).symm ▸ hv)
     refine ⟨p 0,⟨hq,h4,hnr,absent,s,fun hprime => ?_,hs⟩,hB⟩
     exact absent _ ((hprime.eq_one_or_self_of_dvd _ hs).resolve_left hq.ne_one).symm
 
-#print axioms nonresidue_divisor_patterns_iff
-#print axioms infinite_nonvalue_prime_divisors_iff
+private lemma large_prime_cannot_hit_two_shifts {q : ℕ} (hq : q.Prime)
+    (s a b H : ℕ) (ha : a < b) (hb : b ≤ H) (hlarge : Nat.fib H < q)
+    (h₁ : q ∣ lucasFibonacciSum (s+a)) (h₂ : q ∣ lucasFibonacciSum (s+b)) : False := by
+  let : NeZero q := ⟨hq.ne_zero⟩
+  have hh : q ∣ Nat.fib (b-a) := common_divisor_lucasFibonacciSum_dvd_fib h₁ (by
+    simpa only [show s+a+(b-a) = s+b by omega] using h₂)
+  have hbound := Nat.le_of_dvd (Nat.fib_pos.mpr (by omega)) hh
+  exact hlarge.not_ge (hbound.trans (Nat.fib_mono (by omega)))
+
+/-- For distinct fixed shifts with a simultaneous even parameter, one subprogression
+makes every nonempty subset product nonsquare at every step. An arbitrarily large
+nonresidue prime with odd valuation witnesses each failed square condition. -/
+theorem shifted_upper_products_nonsquare {k : ℕ} (r d B : ℕ) (hd : 0 < d)
+    (h : Fin k → ℕ) (hdist : Function.Injective h)
+    (heven : ∃ t : ℕ, ∀ i, Even (r+h i+d*t)) :
+    ∃ s e : ℕ, 0 < e ∧ ∀ (j : ℕ) (S : Finset (Fin k)), S.Nonempty →
+      let N := ∏ i ∈ S, lucasFibonacciSum (r+h i+d*(s+e*j))
+      ¬ IsSquare N ∧ ∃ q : ℕ, B < q ∧ q.Prime ∧ ¬IsSquare (q : ZMod 11) ∧
+        Odd (N.factorization q) := by
+  let H := ∑ i, h i
+  have hh (i : Fin k) : h i ≤ H := single_le_sum (fun i _ => Nat.zero_le (h i)) (mem_univ i)
+  obtain ⟨s,e,he,p,_,hp⟩ :=
+    (nonresidue_divisor_patterns_iff (fun i => r+h i) (fun _ => d) (fun _ => hd)
+      (max B (Nat.fib H))).mp heven
+  refine ⟨s,e,he,fun j S hS => ?_⟩
+  obtain ⟨i,hi⟩ := hS
+  obtain ⟨hbig,hq,_,hnr,v,hodd,hval⟩ := hp i
+  let a (l : Fin k) := lucasFibonacciSum (r+h l+d*(s+e*j))
+  change ¬IsSquare (∏ l ∈ S, a l) ∧ _
+  have hpriv (l : Fin k) (hl : l ≠ i) : ¬p i ∣ a l := by
+    intro hdv
+    let b := r+d*(s+e*j)
+    have h₁ : p i ∣ lucasFibonacciSum (b+h i) := by
+      simpa only [b,add_right_comm] using dvd_of_odd_val ((hval j).symm ▸ hodd)
+    have h₂ : p i ∣ lucasFibonacciSum (b+h l) := by
+      simpa only [a,b,add_right_comm] using hdv
+    have hne : h l ≠ h i := fun hli => hl (hdist hli)
+    rcases lt_or_gt_of_ne hne with hlt|hgt
+    · exact large_prime_cannot_hit_two_shifts hq b _ _ H hlt (hh i) (by omega) h₂ h₁
+    · exact large_prime_cannot_hit_two_shifts hq b _ _ H hgt (hh l) (by omega) h₁ h₂
+  have hprodval : (∏ l ∈ S, a l).factorization (p i) = v := by
+    rw [Nat.factorization_prod (fun l _ => (upper_positive _).ne')]
+    simp only [Finsupp.finsetSum_apply]
+    rw [sum_eq_single_of_mem i hi (fun l _ hl => Nat.factorization_eq_zero_of_not_dvd (hpriv l hl))]
+    exact hval j
+  have hP : Odd ((∏ l ∈ S, a l).factorization (p i)) := hprodval ▸ hodd
+  refine ⟨?_,p i,by omega,hq,hnr,hP⟩
+  rintro ⟨x,hx⟩
+  have hpos : 0 < ∏ l ∈ S, a l := prod_pos (fun l _ => upper_positive _)
+  have hx0 : x ≠ 0 := by rintro rfl; simp [hx] at hpos
+  rw [hx,Nat.factorization_mul hx0 hx0,Finsupp.add_apply] at hP
+  obtain ⟨m,hm⟩ := hP
+  omega
 
 #print axioms upper_square_mod_eleven
 #print axioms nonresidue_prime_index
+#print axioms nonresidue_divisor_patterns_iff
+#print axioms infinite_nonvalue_prime_divisors_iff
+#print axioms shifted_upper_products_nonsquare
 
 end Arxiv.«2211.10788»
