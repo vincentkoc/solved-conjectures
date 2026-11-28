@@ -69,7 +69,7 @@ theorem valuation {m p : ℕ} (hp : p.Prime) :
        _ = mass m*∑ i∈range e, ((p:ℝ)^(i+1))⁻¹ := by simp only [mul_sum,div_eq_mul_inv]
        _ ≤ _ := by rw [div_eq_mul_one_div]; exact mul_le_mul_of_nonneg_left (power_sum hp e) (sum_nonneg fun _ _ => by positivity)
 
-private theorem log_nonneg_nat (g : ℕ) : 0≤log (g:ℝ) := by
+theorem log_nonneg_nat (g : ℕ) : 0≤log (g:ℝ) := by
   rcases g with _|g
   · simp
   · apply Real.log_nonneg; exact_mod_cast (Nat.succ_pos g)
@@ -90,10 +90,8 @@ theorem log_mass_multiple {m t : ℕ} (ht : 0<t) :
   conv_lhs => rw [htg,Real.log_mul (by positivity) (by positivity)]
   field_simp; ring
 
-/-- The logarithmic moment costs only two logarithms of the largest prime divisor. -/
-theorem smooth {m T : ℕ} (hm : 0<m)
-    (hs : ∀ p∈m.primeFactors,p≤T) :
-    logMass m ≤ mass m*(1+2*log T*(1+log T)) := by
+theorem logMass_eq (m : ℕ) (hm : 0 < m) :
+    logMass m=mass m+∑ p∈m.primeFactors,(∑ g∈m.divisors,(g.factorization p:ℝ)/g)*log p := by
   classical
   have v (g : ℕ) (hg : g∈m.divisors) : log (g:ℝ)=∑ p∈m.primeFactors,(g.factorization p:ℝ)*log p := by
     rw [Real.log_nat_eq_sum_factorization,Finsupp.sum]
@@ -103,13 +101,19 @@ theorem smooth {m T : ℕ} (hm : 0<m)
       have hn : p∉g.factorization.support := (mem_sdiff.mp hp).2
       simp [Finsupp.notMem_support_iff.mp hn]
     · intros; rfl
+  have hx (g : ℕ) (hg : g∈m.divisors) : (1+log g)/g = (g:ℝ)⁻¹ + ∑ p∈m.primeFactors,(g.factorization p:ℝ)/g*log p := by
+    rw [add_div,one_div,v g hg,sum_div]; congr 1
+    apply sum_congr rfl; intros; ring
+  rw [logMass,sum_congr rfl hx,sum_add_distrib,sum_comm (s:=m.divisors) (t:=m.primeFactors)]
+  simp only [mass,sum_mul]
+
+/-- The logarithmic moment costs only two logarithms of the largest prime divisor. -/
+theorem smooth {m T : ℕ} (hm : 0<m)
+    (hs : ∀ p∈m.primeFactors,p≤T) :
+    logMass m ≤ mass m*(1+2*log T*(1+log T)) := by
+  classical
   have hD : 0≤mass m := sum_nonneg fun _ _ => by positivity
-  have hex : logMass m=mass m+∑ p∈m.primeFactors,(∑ g∈m.divisors,(g.factorization p:ℝ)/g)*log p := by
-    have hx (g : ℕ) (hg : g∈m.divisors) : (1+log g)/g = (g:ℝ)⁻¹ + ∑ p∈m.primeFactors,(g.factorization p:ℝ)/g*log p := by
-      rw [add_div,one_div,v g hg,sum_div]; congr 1
-      apply sum_congr rfl; intros; ring
-    rw [logMass,sum_congr rfl hx,sum_add_distrib,sum_comm (s:=m.divisors) (t:=m.primeFactors)]
-    simp only [mass,sum_mul]
+  have hex := logMass_eq m hm
   have hpr (p : ℕ) (hp : p∈m.primeFactors) : (1:ℝ)/(p-1:ℝ) ≤ 2/p := by
     have h : (2:ℝ)≤p := by exact_mod_cast (Nat.prime_of_mem_primeFactors hp).two_le
     rw [div_le_div_iff₀ (by linarith) (by linarith)]; linarith
