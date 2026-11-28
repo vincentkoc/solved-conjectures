@@ -71,7 +71,8 @@ private lemma translate_norm (h : G) (u : EuclideanSpace ℝ G) : ‖translate h
   rw [EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq]
   exact Fintype.sum_equiv (Equiv.subRight h) _ _ fun _ => rfl
 
-private lemma table_cap (f : G → ℝ) (u : EuclideanSpace ℝ G) :
+/-- The sum of the absolute profile values bounds the operator norm of its circulant. -/
+theorem table_cap (f : G → ℝ) (u : EuclideanSpace ℝ G) :
     ‖(table f).toEuclideanLin u‖ ≤ (∑ i, |f i|) * ‖u‖ := by
   have conv : (table f).toEuclideanLin u = ∑ h, f h • translate h u := by
     ext i
@@ -117,7 +118,8 @@ private lemma gram (A : Finset G) :
   exact (recenter _).trans ((correlation A (a-b)).trans (recenter _).symm)
 
 omit [AddCommGroup G] in
-private lemma gram_norm {R D : Matrix G G ℝ} (same : R.transpose * R = D.transpose * D)
+/-- Equal Gram matrices give equal image norms for each vector. -/
+theorem gram_norm {R D : Matrix G G ℝ} (same : R.transpose * R = D.transpose * D)
     (u : EuclideanSpace ℝ G) : ‖R.toEuclideanLin u‖ = ‖D.toEuclideanLin u‖ := by
   have quadratic (B : Matrix G G ℝ) :
       ‖B.toEuclideanLin u‖^2 =
@@ -271,6 +273,8 @@ theorem green_low_rank_residual (full : ∀ i, (A i)+(A i)=univ)
 
 end Limits
 
+#print axioms gram_norm
+#print axioms table_cap
 #print axioms trace_rank_bound
 #print axioms finite_rank_bound
 #print axioms low_rank_residual

@@ -212,7 +212,8 @@ variable {ι : Type*} {l : Filter ι} (M : ι → ℕ+) (A : (i : ι) → Finset
     (cover : Tendsto (fun i => (((A i)+(A i)).card:ℝ)/(M i:ℝ)) l (𝓝 1))
 
 include big size cover in
-private theorem deviation_vanish : Tendsto (fun i => deviation (A i)/(M i:ℝ)) l (𝓝 0) := by
+/-- The ordered sum counts approach two in normalized total absolute deviation. -/
+theorem deviation_vanish : Tendsto (fun i => deviation (A i)/(M i:ℝ)) l (𝓝 0) := by
   obtain ⟨hc,hc2⟩ := card_limits M (fun i => (A i).card) big size
   have h := (((hc2.add (tendsto_const_nhds (x:=(2:ℝ)))).sub (cover.const_mul 4)).add (hc.const_mul 2))
   norm_num at h
@@ -351,6 +352,7 @@ theorem all_periodic_errors {ι : Type*} {l : Filter ι} (M : ι → ℕ+)
     _ = (t-1)*(B*(M i:ℝ)) := by field_simp
     _ ≤ _ := bound
 
+#print axioms deviation_vanish
 #print axioms shifted_correlation
 #print axioms sum_difference_jumps
 #print axioms jump_lower
