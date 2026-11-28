@@ -1,0 +1,20 @@
+import Erdos478LocalWindowDensity
+import Erdos478NaturalDensity
+
+/-! # Ordinary prime frequency of the sharp minimum factorial image on short intervals -/
+
+namespace Erdos478.LocalSpacing
+open Filter Topology GapSieve GapDensity
+
+theorem sharp_window_density (H : ℕ → ℕ) (hg : Tendsto H atTop atTop)
+    (hc : ∀ᶠ p : ℕ in atTop, (H p+2)^(H p^2)<p) :
+    Tendsto (fun X => fraction X (fun p => SharpSpan p (H p))) atTop (𝓝 1) :=
+  sharp_density_of_pit degree_one_prime_ideal_theorem H hg hc
+
+theorem logarithmic_sharp_density (c : ℝ) (hc : 0<c) (hc2 : c^2≤2) :
+    Tendsto (fun X => fraction X (fun p => SharpSpan p (logSpan c p))) atTop (𝓝 1) :=
+  sharp_window_density _ (logSpan_grows c hc) (logSpan_cut c hc.le hc2)
+
+#print axioms sharp_window_density
+#print axioms logarithmic_sharp_density
+end Erdos478.LocalSpacing
