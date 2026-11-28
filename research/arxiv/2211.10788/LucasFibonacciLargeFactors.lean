@@ -306,7 +306,8 @@ private lemma term_upper (n : ℕ) : lucasFibonacciSum n ≤ 2^(n+3) := by
   rw [pow_add] at h' ⊢
   unfold lucasFibonacciSum; omega
 
-private theorem upper_support_bounds : FibonacciSupportBounds lucasFibonacciSum :=
+/-- The pinned upper-diagonal function has the required growth and common-divisor bounds. -/
+theorem upper_support_bounds : FibonacciSupportBounds lucasFibonacciSum :=
   ⟨two_pow_le_lucasFibonacciSum_sq,term_upper,common_divisor_lucasFibonacciSum_dvd_fib⟩
 
 /-- Product bound for upper terms in a parameter interval. -/
@@ -473,5 +474,7 @@ theorem progression_sub_n_log_n_smooth_density_zero (e : ℕ → ℝ) (he : Tend
 
 #print axioms lucasFibonacciSum_prod_dvd_lcm_mul_fib
 #print axioms lucasFibonacciSum_smooth_interval_bound
+
+#print axioms upper_support_bounds
 
 end Arxiv.«2211.10788»
