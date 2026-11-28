@@ -415,15 +415,16 @@ private theorem degree_three {u : ℝ} (int : IsIntegral ℤ u) (half : 1/2 < u)
     have h₂ : t<(0:ℤ) := by exact_mod_cast (by dsimp [v] at vlt; linarith only [ul,vlt] : (t:ℝ) < 0)
     omega
 
-/-- Green 28 holds when one marginal has at most two positive masses, its low
-mass divided by its top-site mass has degree at most two, and every sum through
-a low site has at most two representations. -/
-theorem uniform_of_two_level_quadratic {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+/-- Any counterexample with two positive mass levels and the local representation
+bound supplies an actual lighter atom with the integral and conjugate constraints. -/
+theorem counterexample_weight {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+    (bad : ¬(IsUniformOnSupport P ∧ IsUniformOnSupport Q))
     (levels : Green28TwoMassLevels.AtMostTwo Q)
-    (localBound : ∀ b, IsGreatest Q.support b → ∀ d ∈ Q.support, Q d < Q b →
-      (minpoly ℚ (weight Q b d)).natDegree ≤ 2 ∧ DoubleAt P Q d) :
-    IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
-  by_contra bad
+    (localBound : ∀ b, IsGreatest Q.support b → ∀ d ∈ Q.support, Q d < Q b → DoubleAt P Q d) :
+    ∃ b, IsGreatest Q.support b ∧ ∃ d ∈ Q.support, Q d < Q b ∧
+      let u := weight Q b d
+      IsIntegral ℤ u ∧ 1/2 < u ∧ u < 1 ∧ (minpoly ℤ u).coeff 0 ∣ 1 ∧
+        ∀ z : ℂ, aeval z (minpoly ℚ u) = 0 → ‖z‖ ≤ 2 ∧ (‖z‖-1)*‖1-z‖ ≤ 1 := by
   obtain ⟨al⟩ := (alignment_alternative flat).resolve_left bad
   let b := al.right.hi
   let d := al.rightLow.lo
@@ -448,9 +449,22 @@ theorem uniform_of_two_level_quadratic {P Q : PMF ℤ} (flat : IsUniformOnSuppor
     · left; simp [weight,eq,bp.ne']
     · right; simp [u,weight,eq]
   obtain ⟨half,unit,escape⟩ := two_level_constraints flat al.left.greatest qb ⟨d,ld.1,rfl⟩ ul dich
-    (fun e he eq => (localBound b qb e he (low e eq)).2)
+    (fun e he eq => localBound b qb e he (low e eq))
+  exact ⟨b,qb,d,ld.1,low d rfl,int,half,ul,unit,escape⟩
+
+/-- Green 28 holds when one marginal has at most two positive masses, its low
+mass divided by its top-site mass has degree at most two, and every sum through
+a low site has at most two representations. -/
+theorem uniform_of_two_level_quadratic {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+    (levels : Green28TwoMassLevels.AtMostTwo Q)
+    (localBound : ∀ b, IsGreatest Q.support b → ∀ d ∈ Q.support, Q d < Q b →
+      (minpoly ℚ (weight Q b d)).natDegree ≤ 2 ∧ DoubleAt P Q d) :
+    IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
+  by_contra bad
+  obtain ⟨b,qb,d,qd,low,int,half,ul,unit,escape⟩ := counterexample_weight flat bad levels
+    (fun b qb d qd low => (localBound b qb d qd low).2)
   have large := degree_three int half ul unit (fun z hz => (escape z hz).2)
-  have small := (localBound b qb d ld.1 (low d rfl)).1
+  have small := (localBound b qb d qd low).1
   omega
 
 #print axioms complementary_cell
@@ -460,5 +474,6 @@ theorem uniform_of_two_level_quadratic {P Q : PMF ℤ} (flat : IsUniformOnSuppor
 #print axioms two_level_transition
 #print axioms conjugate_escape
 #print axioms two_level_constraints
+#print axioms counterexample_weight
 #print axioms uniform_of_two_level_quadratic
 end Green28DoubleFibres
