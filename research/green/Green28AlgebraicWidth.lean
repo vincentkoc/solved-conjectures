@@ -128,7 +128,8 @@ noncomputable def width (P : PMF ℤ) : ℕ := by
     (a.max' ne-a.min' ne).toNat
   else 0
 
-private theorem chart (P : PMF ℤ) (finite : P.support.Finite) :
+/-- A monic model at the actual support endpoints, with positive constant term. -/
+theorem chart (P : PMF ℤ) (finite : P.support.Finite) :
     ∃ (f : ℝ[X]) (a : ℤ) (s : ℝ), Models P f a s ∧ f.Monic ∧ f.natDegree=width P ∧ 0<f.coeff 0 := by
   classical
   let V := finite.toFinset
@@ -175,7 +176,8 @@ private theorem binary_map {f : ℝ[X]} (bin : Binary f) : (mask f.support).map 
   ext j
   rcases bin j with h|h <;> simp [coeff_map,mem_support_iff,h]
 
-private theorem endpoints {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
+/-- Both constant terms equal one in an endpoint-normalized binary product. -/
+theorem endpoints {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
     (fp : ∀ i, 0 ≤ f.coeff i) (gp : ∀ i, 0 ≤ g.coeff i)
     (f0 : 0 < f.coeff 0) (g0 : 0 < g.coeff 0) (bin : Binary (f*g)) :
     f.coeff 0=1 ∧ g.coeff 0=1 := by
