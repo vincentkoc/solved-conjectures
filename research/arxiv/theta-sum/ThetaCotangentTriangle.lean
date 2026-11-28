@@ -567,8 +567,10 @@ theorem S_cotangent (hp : p%2=1) :
 noncomputable def reciprocalSign (p u v : ℕ) : ℤ :=
   if ((v : ZMod u)*(p : ZMod u)⁻¹).val%2=1 then 1 else -1
 
-theorem quotient_eq_reciprocal (hp : p%2=1) {u v : ℕ} (hu : u%2=1) (hv : v%2=1)
-    (hvu : v<u) (hul : u<p) : quotientSign p u v = reciprocalSign p u v := by
+/-- Away from exact multiples, the field quotient sign is given by reciprocity
+at the denominator, on either side of the diagonal. -/
+theorem quotient_eq_reciprocal_of_not_dvd (hp : p%2=1) {u v : ℕ} (hu : u%2=1) (hv : v%2=1)
+    (hnd : ¬u∣v) (hul : u<p) (hvl : v<p) : quotientSign p u v = reciprocalSign p u v := by
   have hc : p.Coprime u := (Fact.out : p.Prime).coprime_iff_not_dvd.mpr
     (fun h => hul.not_ge (Nat.le_of_dvd (by omega) h))
   let : NeZero u := ⟨by omega⟩
@@ -578,14 +580,18 @@ theorem quotient_eq_reciprocal (hp : p%2=1) {u v : ℕ} (hu : u%2=1) (hv : v%2=1
     have hh := congrArg (·*(p:ZMod u)) he
     dsimp [r] at hh
     rw [mul_assoc,mul_comm ((p:ZMod u)⁻¹),ZMod.coe_mul_inv_eq_one p hc,mul_one,zero_mul] at hh
-    have := congrArg ZMod.val hh
-    rw [ZMod.val_natCast_of_lt hvu,ZMod.val_zero] at this; omega
+    exact hnd ((ZMod.natCast_eq_zero_iff v u).mp hh)
   have he : carry hc v = -r := by change -(v:ZMod u)*(p:ZMod u)⁻¹= -_; rw [neg_mul]
   let : NeZero r := ⟨hr⟩
-  rw [sign_eq_carry hc hp hu hv hul (hvu.trans hul),he,ZMod.val_neg_of_ne_zero r]
+  rw [sign_eq_carry hc hp hu hv hul hvl,he,ZMod.val_neg_of_ne_zero r]
   change (if (u-r.val)%2=0 then _ else _) = (if r.val%2=1 then _ else _)
   have := ZMod.val_lt r
   split_ifs <;> omega
+
+theorem quotient_eq_reciprocal (hp : p%2=1) {u v : ℕ} (hu : u%2=1) (hv : v%2=1)
+    (hvu : v<u) (hul : u<p) : quotientSign p u v = reciprocalSign p u v := by
+  exact quotient_eq_reciprocal_of_not_dvd hp hu hv
+    (fun h => hvu.not_ge (Nat.le_of_dvd (by omega) h)) hul (hvu.trans hul)
 
 /-- Complementary triangular sum; each arithmetic sign uses modulus 2j+1. -/
 noncomputable def lowerTriangle (p : ℕ) : ℝ :=
@@ -670,3 +676,4 @@ end Arxiv.«2501.03234».ThetaCotangentTriangle
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.S_sub_lowerTriangle_harmonic
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.S_sub_lowerTriangle_log
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.growth_of_lowerTriangle
+#print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.quotient_eq_reciprocal_of_not_dvd

@@ -436,7 +436,8 @@ theorem cotPrefix_error (hp : p%2=1) {J : ℕ} (hJ : J≤p/2) :
   apply le_of_eq
   field_simp
 
-private noncomputable def linearWeight (p u : ℕ) : ℝ := 2*p/(Real.pi*u)
+/-- Reciprocal approximation to the cotangent weight. -/
+noncomputable def linearWeight (p u : ℕ) : ℝ := 2*p/(Real.pi*u)
 
 private lemma linearWeight_error {p u : ℕ} (hu : 0<u) (hul : u<p) :
     linearWeight p u - weight p u ≤ Real.pi*u/(4*p) := by
@@ -462,7 +463,8 @@ private lemma linearWeight_error {p u : ℕ} (hu : 0<u) (hul : u<p) :
   rw [← sub_div,div_le_iff₀ h₀]
   nlinarith [Real.one_sub_sq_div_two_lt_cos h₀.ne']
 
-private lemma product_error {p u v : ℕ} (hv : 0<v) (hvu : v≤u) (hul : u<p) :
+/-- Uniform pointwise cost of linearizing a product of two cotangent weights. -/
+theorem product_error {p u v : ℕ} (hv : 0<v) (hvu : v≤u) (hul : u<p) :
     |weight p u*weight p v-linearWeight p u*linearWeight p v| ≤ (u:ℝ)/v := by
   have hu := hv.trans_le hvu
   have hvl := hvu.trans_lt hul
@@ -692,3 +694,4 @@ end Arxiv.«2501.03234».ThetaReciprocalCutoff
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.weight_pos
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.weight_upper
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.sum_odd_indices
+#print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.product_error
