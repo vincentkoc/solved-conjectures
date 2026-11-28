@@ -549,36 +549,28 @@ private def cutoff (k : ℕ) := 2^k + 2*k + 2
 private noncomputable def sieveConstant (k : ℕ) : ℝ :=
   6*(∏ q ∈ (cutoff k).primesLE, eulerFactor q)^k
 
-/-- Sieve a finite selection of iterate indices. Distinct powers modulo each
-retained prime give the required number of distinct forbidden seed residues. -/
-theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
-    (hI : I.card = k) (hk : 0 < k) (hz : 1 < z) (hE : E ⊆ z.primesLE)
-    (hreg : ∀ q ∈ z.primesLE \ E,
-      2*k < q ∧ Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) I)
+/-- A finite sieve for arbitrary forbidden residue classes, uniform in their locations. -/
+theorem finite_residue_sieve_bound (E : Finset ℕ) (R : (q : ℕ) → Finset (ZMod q))
+    (A : Finset ℕ) {k z N : ℕ} (hk : 0 < k) (hz : 1 < z) (hE : E ⊆ z.primesLE)
+    (hreg : ∀ q ∈ z.primesLE \ E, 2*k < q ∧ (R q).card=k)
+    (hA : A ⊆ range N) (hsafe : ∀ n ∈ A, ∀ q ∈ z.primesLE \ E, (n:ZMod q) ∉ R q)
     (hy : (z^(4*k))^4 ≤ N) :
-    (((range N).filter fun p => z < p ∧
-      ∀ i ∈ I, ((if b then firstKindTerm else secondKindTerm) p i).Prime).card : ℝ) *
-      (Real.log ((z : ℝ)+1))^k ≤ 6*(∏ q ∈ E, (1-1/(q:ℝ))⁻¹)^k*N := by
+    (A.card : ℝ)*(Real.log ((z:ℝ)+1))^k ≤ 6*(∏ q ∈ E, (1-1/(q:ℝ))⁻¹)^k*N := by
   classical
   let Q := z.primesLE \ E
   let h (q : ℕ) := (k : ℝ)/((q:ℝ)-k)
   let y := z^(4*k)
   let D := smallSubsets Q y
   let G := ∑ T ∈ D, ∏ q ∈ T, h q
-  let A := (range N).filter fun p => z < p ∧ ∀ i ∈ I, (chainTerm b p i).Prime
-  let v (q : ℕ) := twoLevel (chainRoots b I q) (-1) (h q)
+  let v (q : ℕ) := twoLevel (R q) (-1) (h q)
   have hQ {q : ℕ} (hq : q ∈ Q) : q.Prime ∧ 2*k < q ∧ q ≤ z :=
     ⟨Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1, (hreg q hq).1, Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1⟩
   have hv (q : ℕ) (hq : q ∈ Q) := by
     have ⟨hp, hc, _⟩ := hQ hq
     let : NeZero q := ⟨hp.ne_zero⟩
-    exact centered_local (chainRoots b I q) ((chainRoots_card b hp (hreg q hq).2).trans hI) hc
-  have hs := selberg_bound N y Q (fun q hq => (hQ hq).1) v h hv A (filter_subset ..) (by
-    intro n hn q hq
-    have ⟨_, hnz, hprime⟩ := mem_filter.mp hn
-    have ⟨hp, hc, hle⟩ := hQ hq
-    have h2 : 2 < q := by omega
-    exact if_neg (avoids_chainRoots b hp h2 (hle.trans_lt hnz) hprime))
+    exact centered_local (R q) (hreg q hq).2 hc
+  have hs := selberg_bound N y Q (fun q hq => (hQ hq).1) v h hv A hA
+    (fun n hn q hq => if_neg (hsafe n hn q hq))
   have hmass := sieve_mass_lower k z E hk hz hE (fun q hq => by have := (hreg q hq).1; omega)
   have hpos (q : ℕ) (hq : q ∈ Q) : 0 ≤ h q := by
     have hc := (hQ hq).2.1
@@ -601,6 +593,30 @@ theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
   change (A.card : ℝ)*_ ≤ 6*F*N
   nlinarith only [mul_le_mul_of_nonneg_left hmass (Nat.cast_nonneg (α := ℝ) A.card),
     mul_le_mul_of_nonneg_right hAG (show 0 ≤ 2*F by positivity)]
+
+/-- Sieve a finite selection of iterate indices. Distinct powers modulo each
+retained prime give the required number of distinct forbidden seed residues. -/
+theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
+    (hI : I.card = k) (hk : 0 < k) (hz : 1 < z) (hE : E ⊆ z.primesLE)
+    (hreg : ∀ q ∈ z.primesLE \ E,
+      2*k < q ∧ Set.InjOn (fun i : ℕ => (2 : ZMod q)^i) I)
+    (hy : (z^(4*k))^4 ≤ N) :
+    (((range N).filter fun p => z < p ∧
+      ∀ i ∈ I, ((if b then firstKindTerm else secondKindTerm) p i).Prime).card : ℝ) *
+      (Real.log ((z : ℝ)+1))^k ≤ 6*(∏ q ∈ E, (1-1/(q:ℝ))⁻¹)^k*N := by
+  classical
+  apply finite_residue_sieve_bound E (chainRoots b I) _ hk hz hE _ (filter_subset ..) _ hy
+  · intro q hq
+    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
+    exact ⟨(hreg q hq).1,(chainRoots_card b hp (hreg q hq).2).trans hI⟩
+  · intro n hn q hq
+    obtain ⟨_,hnz,hprime⟩ := mem_filter.mp hn
+    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
+    have hc := (hreg q hq).1
+    have hle := Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1
+    exact avoids_chainRoots b hp (by omega) (hle.trans_lt hnz) hprime
+
+#print axioms finite_residue_sieve_bound
 
 private lemma finite_chain_bound (b : Bool) {k z N : ℕ} (hk : 0 < k) (hz : cutoff k ≤ z)
     (hy : (z^(4*k))^4 ≤ N) :
