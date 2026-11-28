@@ -179,7 +179,7 @@ private def uniformClass (q r X : ℕ) : ProbabilityMeasure ↥(classSample q r 
 def progressionLaw (q r : ℕ) (f : ℕ → ℝ) (X : ℕ) : ProbabilityMeasure ℝ :=
   (uniformClass q r X).map (f:=fun p => f p.val) (measurable_of_countable _).aemeasurable
 
-private lemma progression_integral {q r X : ℕ} (h : (primeSet (fun n => n%q=r) X).Nonempty)
+theorem progression_integral {q r X : ℕ} (h : (primeSet (fun n => n%q=r) X).Nonempty)
     (f : ℕ → ℝ) {φ : ℝ → ℝ} (hp : Measurable φ) :
     (∫ x, φ x ∂(progressionLaw q r f X)) = progressionMean q r (fun p => φ (f p)) X := by
   rw [progressionLaw,ProbabilityMeasure.toMeasure_map,integral_map (measurable_of_countable _).aemeasurable

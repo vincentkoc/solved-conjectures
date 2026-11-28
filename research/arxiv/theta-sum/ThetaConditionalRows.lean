@@ -36,7 +36,7 @@ theorem unitMean_lift {d P : ℕ} [NeZero d] [NeZero P] (h : d∣P) {f : ℕ →
     (Nat.cast_ne_zero.mpr (Nat.totient_pos.mpr (NeZero.pos d)).ne')).mpr
   simpa only [he,F,mul_comm] using H
 
-private lemma unitMean_mean (d : ℕ) [NeZero d] (f : ℕ → ℝ) :
+theorem unitMean_mean (d : ℕ) [NeZero d] (f : ℕ → ℝ) :
     unitMean d f = (d:ℝ)/d.totient*mean d (fun n => if n.Coprime d then f n else 0) := by
   rw [unitMean,ThetaReciprocalFibers.unit_sum_nat,sum_filter]
   unfold mean

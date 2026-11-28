@@ -36,7 +36,7 @@ private def w (p : ℕ) : ℝ := ((p:ℝ)-1)⁻¹
 private def a (t : Finset ℕ) : ℝ := ∏ p∈t,w p
 private def d (t : Finset ℕ) : ℕ := ∏ p∈t,p
 
-private theorem totient_product {n : ℕ} (hn : 0<n) : (n:ℝ)/n.totient=∏ p∈n.primeFactors,((p:ℝ)/(p-1)) := by
+theorem totient_product {n : ℕ} (hn : 0<n) : (n:ℝ)/n.totient=∏ p∈n.primeFactors,((p:ℝ)/(p-1)) := by
   have ht : 0<(n.totient:ℝ) := by exact_mod_cast Nat.totient_pos.mpr hn
   let s := n.primeFactors
   have hs (p : ℕ) (hp : p∈s) : 2≤p := (Nat.prime_of_mem_primeFactors hp).two_le

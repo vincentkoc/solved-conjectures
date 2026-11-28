@@ -63,16 +63,16 @@ theorem wave_fiber {q m k : ℕ} (hq : 0<q) (hm : 0 < m) (hk : k<q) (w : ℕ) :
 noncomputable def row (d K n : ℕ) : ℝ :=
   ∑ i ∈ range K, ((i:ℝ)+1)⁻¹*(wave n d (i+1):ℝ)
 
-private theorem wave_of_not_coprime {n d : ℕ} (h : ¬n.Coprime d) (j : ℕ) :
+theorem wave_of_not_coprime {n d : ℕ} (h : ¬n.Coprime d) (j : ℕ) :
     wave n d j=0 := if_neg (fun H => h H.1)
 
-private theorem wave_period (n d j : ℕ) : wave n d (2*d+j)=wave n d j := by
+theorem wave_period (n d j : ℕ) : wave n d (2*d+j)=wave n d j := by
   by_cases hc : n.Coprime d
   · apply Int.cast_injective (α:=ℂ)
     rw [wave_eq hc,wave_eq hc,ThetaDenominatorTails.primitive_period]
   · rw [wave_of_not_coprime hc,wave_of_not_coprime hc]
 
-private theorem wave_reflect {d : ℕ} (hd : 1<d) (n : ℕ) {j : ℕ} (hj : j≤2*d) :
+theorem wave_reflect {d : ℕ} (hd : 1<d) (n : ℕ) {j : ℕ} (hj : j≤2*d) :
     wave n d (2*d-j)= -wave n d j := by
   by_cases hc : n.Coprime d
   · apply Int.cast_injective (α:=ℂ)
