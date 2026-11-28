@@ -1,4 +1,7 @@
 import Mathlib.FieldTheory.Separable
+import Mathlib.FieldTheory.PolynomialGaloisGroup
+import Mathlib.FieldTheory.Perfect
+import Mathlib.Data.Finite.Perm
 import Mathlib.RingTheory.Polynomial.Pochhammer
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.NumberTheory.NumberField.Ideal.KummerDedekind
@@ -153,19 +156,23 @@ private theorem integral_generator (K : Type*) [Field K] [NumberField K] :
   rw [Int.cast_smul_eq_zsmul]
   exact mem_adjoin_simple_self ℚ (θ : K)
 
+private theorem generator_degree {K : Type*} [Field K] [NumberField K]
+    (θ : 𝓞 K) (hθ : ℚ⟮(θ : K)⟯ = ⊤) :
+    (minpoly ℤ θ).natDegree = Module.finrank ℚ K := by
+  have hmin : (minpoly ℤ θ).natDegree = (minpoly ℚ (θ : K)).natDegree := by
+    rw [minpoly.isIntegrallyClosed_eq_field_fractions ℚ K θ.isIntegral,
+      (minpoly.monic θ.isIntegral).natDegree_map]
+  rw [hmin, ← IntermediateField.adjoin.finrank (Algebra.IsIntegral.isIntegral (R := ℚ) (θ : K)),
+    hθ, IntermediateField.finrank_top']
+
 /-- An integral primitive element generates an order of full rank. Its
 additive index annihilates the quotient and belongs to the conductor. -/
 private theorem exponent_pos {K : Type*} [Field K] [NumberField K]
     (θ : 𝓞 K) (hθ : ℚ⟮(θ : K)⟯ = ⊤) : 0 < RingOfIntegers.exponent θ := by
   let A := Algebra.adjoin ℤ ({θ} : Set (𝓞 K))
-  have hmin : (minpoly ℤ θ).natDegree = (minpoly ℚ (θ : K)).natDegree := by
-    rw [minpoly.isIntegrallyClosed_eq_field_fractions ℚ K θ.isIntegral,
-      (minpoly.monic θ.isIntegral).natDegree_map]
   have hr : Module.finrank ℤ A = Module.finrank ℤ (𝓞 K) := by
     rw [RingOfIntegers.rank, (Algebra.adjoin.powerBasis' θ.isIntegral).finrank,
-      Algebra.adjoin.powerBasis'_dim, hmin,
-      ← IntermediateField.adjoin.finrank (Algebra.IsIntegral.isIntegral (R := ℚ) (θ : K)),
-      hθ, IntermediateField.finrank_top']
+      Algebra.adjoin.powerBasis'_dim, generator_degree θ hθ]
   let H := A.toSubmodule.toAddSubgroup
   let : Finite ((𝓞 K) ⧸ H) := Submodule.finiteQuotientOfFreeOfRankEq A.toSubmodule hr
   have hi : 0 < H.index := by rw [AddSubgroup.index_eq_card]; exact Nat.card_pos
@@ -175,29 +182,42 @@ private theorem exponent_pos {K : Type*} [Field K] [NumberField K]
   change (H.index : 𝓞 K) * x ∈ H
   simpa only [nsmul_eq_mul] using H.nsmul_index_mem x
 
-/-- Arbitrarily large rational primes admit a degree-one specialization of
-the entire ring of integers of a fixed number field. -/
-private theorem large_prime_specialization (K : Type*) [Field K] [NumberField K] (N : ℕ) :
-    ∃ p > N, p.Prime ∧ Nonempty (𝓞 K →+* ZMod p) := by
+/-- Outside a finite cutoff, every root of a single monic integral
+polynomial gives a specialization of the entire ring of integers. -/
+private theorem specialization_polynomial (K : Type*) [Field K] [NumberField K] :
+    ∃ g : ℤ[X], g.Monic ∧ g.natDegree = Module.finrank ℚ K ∧ ∃ B : ℕ, ∀ p > B, p.Prime →
+      (∃ x : ZMod p, (g.map (Int.castRingHom (ZMod p))).IsRoot x) →
+        Nonempty (𝓞 K →+* ZMod p) := by
   obtain ⟨θ, hθ⟩ := integral_generator K
-  have hpos := exponent_pos θ hθ
-  obtain ⟨p, hp, hprime, x, hx⟩ := large_prime_root (minpoly ℤ θ)
-    (minpoly.natDegree_pos θ.isIntegral).ne' (max N (RingOfIntegers.exponent θ))
+  refine ⟨minpoly ℤ θ, minpoly.monic θ.isIntegral, generator_degree θ hθ,
+    RingOfIntegers.exponent θ, ?_⟩
+  rintro p hp hprime ⟨x,hx⟩
   let : Fact p.Prime := ⟨hprime⟩
   have hcop : ¬ p ∣ RingOfIntegers.exponent θ :=
-    Nat.not_dvd_of_pos_of_lt hpos (lt_of_le_of_lt (le_max_right _ _) hp)
+    Nat.not_dvd_of_pos_of_lt (exponent_pos θ hθ) hp
   let g := (minpoly ℤ θ).map (Int.castRingHom (ZMod p))
   have hker : Ideal.span ({g} : Set (ZMod p)[X]) ≤ RingHom.ker (evalRingHom x) :=
     Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hx)
   let ev := Ideal.Quotient.lift _ (evalRingHom x) (fun y hy ↦ hker hy)
   let e := RingOfIntegers.ZModXQuotSpanEquivQuotSpan hcop
-  exact ⟨p, lt_of_le_of_lt (le_max_left _ _) hp, hprime,
-    ⟨(ev.comp e.symm.toRingHom).comp (Ideal.Quotient.mk _)⟩⟩
+  exact ⟨(ev.comp e.symm.toRingHom).comp (Ideal.Quotient.mk _)⟩
 
-/-- A monic integer polynomial splits completely modulo arbitrarily large
-primes: specialize the integers of its splitting field. -/
-theorem arbitrarily_large_splitting_prime (f : ℤ[X]) (hf : f.Monic) (N : ℕ) :
-    ∃ p > N, p.Prime ∧ (f.map (Int.castRingHom (ZMod p))).Splits := by
+private theorem splitting_degree_bound (F : ℚ[X]) :
+    Module.finrank ℚ F.SplittingField ≤ F.natDegree.factorial := by
+  let K := F.SplittingField
+  let : IsGalois ℚ K := { to_isSeparable := inferInstance, to_normal := SplittingField.instNormal F }
+  let : Fact ((F.map (algebraMap ℚ K)).Splits) := ⟨SplittingField.splits F⟩
+  have hi := Nat.card_le_card_of_injective _ (Gal.galActionHom_injective F K)
+  rw [Nat.card_perm, Nat.card_coe_set_eq] at hi
+  exact (IsGalois.card_aut_eq_finrank ℚ K).ge.trans (hi.trans (Nat.factorial_le (F.ncard_rootSet_le K)))
+
+/-- A monic integer polynomial has a single positive-degree monic test
+polynomial. A root of the test polynomial modulo a sufficiently large
+prime forces complete splitting of the original polynomial. -/
+theorem splitting_test (f : ℤ[X]) (hf : f.Monic) :
+    ∃ g : ℤ[X], g.Monic ∧ 0 < g.natDegree ∧ g.natDegree ≤ f.natDegree.factorial ∧ ∃ B : ℕ, ∀ p > B, p.Prime →
+      (∃ x : ZMod p, (g.map (Int.castRingHom (ZMod p))).IsRoot x) →
+        (f.map (Int.castRingHom (ZMod p))).Splits := by
   let F := f.map (algebraMap ℤ ℚ)
   let K := F.SplittingField
   let : NumberField K := {}
@@ -214,11 +234,24 @@ theorem arbitrarily_large_splitting_prime (f : ℤ[X]) (hf : f.Monic) (N : ℕ) 
     have hai : IsIntegral ℤ a := ⟨f, hf, by
       simpa only [aeval_def, eval₂_eq_eval_map, IsRoot.def] using (isRoot_of_mem_roots ha)⟩
     exact ⟨⟨a, hai⟩, rfl⟩
-  obtain ⟨p, hp, hprime, ⟨φ⟩⟩ := large_prime_specialization K N
-  refine ⟨p, hp, hprime, ?_⟩
+  obtain ⟨u,hu,hd,B,hB⟩ := specialization_polynomial K
+  have hbound := splitting_degree_bound F
+  rw [show F.natDegree = f.natDegree from hf.natDegree_map _] at hbound
+  refine ⟨u,hu,hd ▸ Module.finrank_pos,hd.le.trans hbound,B,?_⟩
+  intro p hp hprime hroot
+  obtain ⟨φ⟩ := hB p hp hprime hroot
   have hs := hgSplit.map φ
   simpa only [g, Polynomial.map_map, RingHom.ext_int (φ.comp (algebraMap ℤ (𝓞 K)))
     (Int.castRingHom (ZMod p))] using hs
+
+/-- A monic integer polynomial splits completely modulo arbitrarily large
+primes: specialize the integers of its splitting field. -/
+theorem arbitrarily_large_splitting_prime (f : ℤ[X]) (hf : f.Monic) (N : ℕ) :
+    ∃ p > N, p.Prime ∧ (f.map (Int.castRingHom (ZMod p))).Splits := by
+  obtain ⟨g,_,hd,_,B,hB⟩ := splitting_test f hf
+  obtain ⟨p,hp,hprime,x,hx⟩ := large_prime_root g hd.ne' (max N B)
+  exact ⟨p, lt_of_le_of_lt (le_max_left _ _) hp, hprime,
+    hB p (lt_of_le_of_lt (le_max_right _ _) hp) hprime ⟨x,hx⟩⟩
 
 private theorem gap_degree [IsDomain R] {k : ℕ} (hk : 0 < k) :
     (gap R k).IsMonicOfDegree k := by
@@ -357,6 +390,7 @@ theorem exists_prime_subsequence :
 #print axioms exists_prime_subsequence
 #print axioms arbitrarily_large_split_gap
 #print axioms arbitrarily_large_deficit
+#print axioms splitting_test
 #print axioms arbitrarily_large_splitting_prime
 #print axioms card_add_gap_roots
 #print axioms card_add_gap_endpoints

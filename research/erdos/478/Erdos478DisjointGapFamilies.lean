@@ -166,6 +166,30 @@ theorem card_add_sum_gap_roots (S : Finset ℕ) (hS : ∀ k ∈ S, 2 ≤ k)
   rw [family, roots_prod _ _ hn, Multiset.card_bind] at h
   exact h
 
+private theorem split_family_test (S : Finset ℕ) (hS : ∀ k ∈ S, 2 ≤ k)
+    (g : ℤ[X]) (hg : g.Monic) :
+    ∃ t : ℤ[X], t.Monic ∧ t.natDegree = (∑ k ∈ S, k) + g.natDegree ∧ ∃ D : ℕ, ∀ p > D, p.Prime →
+      (t.map (Int.castRingHom (ZMod p))).Splits →
+      (g.map (Int.castRingHom (ZMod p))).Splits ∧ (family (ZMod p) S).Splits ∧
+      (family (ZMod p) S).Separable ∧
+      ((Ico 1 p).image (fun n ↦ n.factorial % p)).card + ∑ k ∈ S, k ≤ p - 1 := by
+  let f := family ℤ S
+  have hpos (k) (hk : k ∈ S) : 0 < k := by have := hS k hk; omega
+  have hm := (family_degree ℤ S hpos).monic
+  let D := (f.resultant f.derivative).natAbs
+  refine ⟨f*g, hm.mul hg, ?_, D, ?_⟩
+  · rw [natDegree_mul hm.ne_zero hg.ne_zero, (family_degree ℤ S hpos).natDegree_eq]
+  intro p hp hprime hs
+  let : Fact p.Prime := ⟨hprime⟩
+  let φ := Int.castRingHom (ZMod p)
+  rw [Polynomial.map_mul, splits_mul (hm.map φ).ne_zero (hg.map φ).ne_zero] at hs
+  have hf : (family (ZMod p) S).Splits := map_family φ S ▸ hs.1
+  have hd := family_separable_mod S hpos hp
+  have hc := card_add_family_roots S hS (p := p)
+  rw [Multiset.toFinset_card_of_nodup (nodup_roots hd), ← hf.natDegree_eq_card_roots,
+    (family_degree (ZMod p) S hpos).natDegree_eq] at hc
+  exact ⟨hs.2,hf,hd,hc⟩
+
 /-- Simultaneous complete splitting can additionally impose the complete
 splitting of any prescribed monic integral polynomial. -/
 theorem arbitrarily_large_split_family (S : Finset ℕ) (hS : ∀ k ∈ S, 2 ≤ k)
@@ -173,34 +197,30 @@ theorem arbitrarily_large_split_family (S : Finset ℕ) (hS : ∀ k ∈ S, 2 ≤
     ∃ p > N, p.Prime ∧ (g.map (Int.castRingHom (ZMod p))).Splits ∧
       (family (ZMod p) S).Splits ∧ (family (ZMod p) S).Separable ∧
       ((Ico 1 p).image (fun n ↦ n.factorial % p)).card + ∑ k ∈ S, k ≤ p - 1 := by
-  let f := family ℤ S
-  have hpos (k) (hk : k ∈ S) : 0 < k := by have := hS k hk; omega
-  have hm := (family_degree ℤ S hpos).monic
-  let D := (f.resultant f.derivative).natAbs
-  obtain ⟨p, hp, hprime, hs⟩ := FallingGap.arbitrarily_large_splitting_prime (f * g)
-    (hm.mul hg) (max N D)
-  let : Fact p.Prime := ⟨hprime⟩
-  let φ := Int.castRingHom (ZMod p)
-  rw [Polynomial.map_mul, splits_mul (hm.map φ).ne_zero (hg.map φ).ne_zero] at hs
-  have hf : (family (ZMod p) S).Splits := map_family φ S ▸ hs.1
-  have hd := family_separable_mod S hpos (lt_of_le_of_lt (le_max_right _ _) hp)
-  have hc := card_add_family_roots S hS (p := p)
-  rw [Multiset.toFinset_card_of_nodup (nodup_roots hd), ← hf.natDegree_eq_card_roots,
-    (family_degree (ZMod p) S hpos).natDegree_eq] at hc
-  exact ⟨p, lt_of_le_of_lt (le_max_left _ _) hp, hprime, hs.2, hf, hd, hc⟩
+  obtain ⟨t,ht,_,D,hD⟩ := split_family_test S hS g hg
+  obtain ⟨p,hp,hprime,hs⟩ := FallingGap.arbitrarily_large_splitting_prime t ht (max N D)
+  exact ⟨p,lt_of_le_of_lt (le_max_left _ _) hp,hprime,
+    hD p (lt_of_le_of_lt (le_max_right _ _) hp) hprime hs⟩
 
-/-- In every class 1 modulo a positive m there are arbitrarily large primes
-with simultaneous splitting of all gap lengths 2,...,L+1 and at least
-(L+2 choose 2) missing factorial residues, including zero. -/
-theorem triangular_deficit_in_progression (L m N : ℕ) (hm : 0 < m) :
-    ∃ p > N, p.Prime ∧ m ∣ p - 1 ∧
+/-- Complete splitting of one monic test polynomial forces all the specified
+factorial gaps and the congruence condition at every prime above a cutoff. -/
+theorem progression_splitting_test (L m : ℕ) (hm : 0 < m) :
+    ∃ t : ℤ[X], t.Monic ∧ t.natDegree = (L+2).choose 2 - 1 + m.totient ∧ ∃ B : ℕ, ∀ p > B, p.Prime →
+      (t.map (Int.castRingHom (ZMod p))).Splits → m ∣ p - 1 ∧
       (family (ZMod p) (Ico 2 (L + 2))).Splits ∧ (family (ZMod p) (Ico 2 (L + 2))).Separable ∧
       ((Ico 1 p).image (fun n ↦ n.factorial % p)).card + (L + 2).choose 2 ≤ p := by
   let S := Ico 2 (L + 2)
-  obtain ⟨p, hp, hprime, hcycl, hs, hd, hc⟩ := arbitrarily_large_split_family S
-    (fun _ hk ↦ (mem_Ico.mp hk).1) (cyclotomic m ℤ) (cyclotomic.monic m ℤ) (max N m)
+  obtain ⟨t,ht,htdeg,B,hB⟩ := split_family_test S (fun _ hk ↦ (mem_Ico.mp hk).1)
+    (cyclotomic m ℤ) (cyclotomic.monic m ℤ)
+  have hsum := sum_range_add_sum_Ico (fun k : ℕ ↦ k) (show 2 ≤ L + 2 by omega)
+  rw [show (∑ i ∈ range 2, i) = 1 by decide, sum_range_id, ← Nat.choose_two_right] at hsum
+  rw [natDegree_cyclotomic] at htdeg
+  change t.natDegree = (∑ k ∈ Ico 2 (L+2), k) + m.totient at htdeg
+  refine ⟨t,ht,by omega,max B m,?_⟩
+  intro p hp hprime hsplit
+  obtain ⟨hcycl,hs,hd,hc⟩ := hB p (lt_of_le_of_lt (le_max_left _ _) hp) hprime hsplit
   let : Fact p.Prime := ⟨hprime⟩
-  have hmp := lt_of_le_of_lt (le_max_right N m) hp
+  have hmp := lt_of_le_of_lt (le_max_right B m) hp
   let : NeZero (m : ZMod p) := ⟨fun h ↦ Nat.not_dvd_of_pos_of_lt hm hmp
     ((CharP.cast_eq_zero_iff (ZMod p) p m).mp h)⟩
   rw [map_cyclotomic] at hcycl
@@ -210,14 +230,25 @@ theorem triangular_deficit_in_progression (L m N : ℕ) (hm : 0 < m) :
   have hn : z ≠ 0 := by
     rintro rfl
     simpa [zero_pow hm.ne'] using hprim.pow_eq_one
-  have hsum := sum_range_add_sum_Ico (fun k : ℕ ↦ k) (show 2 ≤ L + 2 by omega)
-  rw [show (∑ i ∈ range 2, i) = 1 by decide, sum_range_id, ← Nat.choose_two_right] at hsum
   change _ + ∑ k ∈ Ico 2 (L + 2), k ≤ p - 1 at hc
-  refine ⟨p, lt_of_le_of_lt (le_max_left _ _) hp, hprime, hprim.dvd_of_pow_eq_one _
+  refine ⟨hprim.dvd_of_pow_eq_one _
     (ZMod.pow_card_sub_one_eq_one hn), hs, hd, ?_⟩
   have := hprime.pos
   omega
 
+/-- In every class 1 modulo a positive m there are arbitrarily large primes
+with simultaneous splitting of all gap lengths 2,...,L+1 and at least
+(L+2 choose 2) missing factorial residues, including zero. -/
+theorem triangular_deficit_in_progression (L m N : ℕ) (hm : 0 < m) :
+    ∃ p > N, p.Prime ∧ m ∣ p - 1 ∧
+      (family (ZMod p) (Ico 2 (L + 2))).Splits ∧ (family (ZMod p) (Ico 2 (L + 2))).Separable ∧
+      ((Ico 1 p).image (fun n ↦ n.factorial % p)).card + (L + 2).choose 2 ≤ p := by
+  obtain ⟨t,ht,_,B,hB⟩ := progression_splitting_test L m hm
+  obtain ⟨p,hp,hprime,hs⟩ := FallingGap.arbitrarily_large_splitting_prime t ht (max N B)
+  exact ⟨p,lt_of_le_of_lt (le_max_left _ _) hp,hprime,
+    hB p (lt_of_le_of_lt (le_max_right _ _) hp) hprime hs⟩
+
+#print axioms progression_splitting_test
 #print axioms triangular_deficit_in_progression
 #print axioms card_add_sum_gap_roots
 #print axioms arbitrarily_large_split_family
