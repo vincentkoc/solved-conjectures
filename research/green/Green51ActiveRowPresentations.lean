@@ -23,11 +23,10 @@ private theorem live_labelled_rows {I J H : Type*} [AddCommGroup H] [Module F H]
     obtain ⟨i,hi,rfl⟩ := (mb j y).mp hy
     exact mem_map.mpr ⟨a i,(ma j _).mpr ⟨i,hi,rfl⟩,hu i⟩
 
-theorem count_active_presentations {Q H : Type*} [Finite Q] [AddCommGroup H] [Module F H]
-    [FiniteDimensional F H] (h b : ℕ) (A : Q → Fin b → Finset H)
-    (total : ∀ q,∑ i,(A q i).card=h) (live : ∀ q i,(A q i).Nonempty)
-    (separate : ∀ p q,WordMatch (A p) (A q) → p=q) :
-    Nat.card Q ≤ b^(h-b)*((h-b+1)*2^((h-b)*(h-b)/4+(h-b))) := by
+theorem active_core_labels {Q H : Type*} [AddCommGroup H] (h b : ℕ) (A : Q → Fin b → Finset H)
+    (total : ∀ q,∑ i,(A q i).card=h) (live : ∀ q i,(A q i).Nonempty) :
+    ∃ (row : Q → Fin (h-b) → Fin b) (v : Q → Fin (h-b) → H),
+      ∀ q j x,x∈rowCore (A q j) ↔ ∃ i,row q i=j ∧ v q i=x := by
   classical
   have sum_core (q : Q) : ∑ i,(rowCore (A q i)).card=h-b := by
     have eq : (∑ i,(rowCore (A q i)).card) + ∑ _ : Fin b,1 = h := by
@@ -39,8 +38,6 @@ theorem count_active_presentations {Q H : Type*} [Finite Q] [AddCommGroup H] [Mo
     Fintype.equivOfCardEq (by simp [Fintype.card_sigma,sum_core])
   let row (q : Q) (i : Fin (h-b)) := (sites q i).1
   let v (q : Q) (i : Fin (h-b)) : H := (sites q i).2.val
-  let code (q : Q) : (Fin (h-b) → Fin b) × Submodule F (Fin (h-b) →₀ F) :=
-    (row q, LinearMap.ker (Finsupp.linearCombination F (v q)))
   have mem_core (q : Q) (j : Fin b) (x : H) :
       x∈rowCore (A q j) ↔ ∃ i,row q i=j ∧ v q i=x := by
     constructor
@@ -49,13 +46,30 @@ theorem count_active_presentations {Q H : Type*} [Finite Q] [AddCommGroup H] [Mo
       exact ⟨i,congrArg Sigma.fst hi,congrArg (fun z => z.2.val) hi⟩
     · rintro ⟨i,rfl,rfl⟩
       exact (sites q i).2.property
+  exact ⟨row,v,mem_core⟩
+
+theorem match_labelled_cores {I J H : Type*} [AddCommGroup H] [Module F H]
+    {A B : I → Finset H} {a b : J → H} {row : J → I} (u : H ≃ₗ[F] H)
+    (live : ∀ i,(A i).Nonempty ↔ (B i).Nonempty) (hu : ∀ j,u (a j)=b j)
+    (ma : ∀ j x,x∈rowCore (A j) ↔ ∃ i,row i=j ∧ a i=x)
+    (mb : ∀ j x,x∈rowCore (B j) ↔ ∃ i,row i=j ∧ b i=x) : WordMatch A B :=
+  match_of_cores _ _ u live (live_labelled_rows _ _ a b row u hu ma mb)
+
+theorem count_active_presentations {Q H : Type*} [Finite Q] [AddCommGroup H] [Module F H]
+    [FiniteDimensional F H] (h b : ℕ) (A : Q → Fin b → Finset H)
+    (total : ∀ q,∑ i,(A q i).card=h) (live : ∀ q i,(A q i).Nonempty)
+    (separate : ∀ p q,WordMatch (A p) (A q) → p=q) :
+    Nat.card Q ≤ b^(h-b)*((h-b+1)*2^((h-b)*(h-b)/4+(h-b))) := by
+  classical
+  obtain ⟨row,v,mem_core⟩ := active_core_labels h b A total live
+  let code (q : Q) : (Fin (h-b) → Fin b) × Submodule F (Fin (h-b) →₀ F) :=
+    (row q, LinearMap.ker (Finsupp.linearCombination F (v q)))
   have inj : Function.Injective code := by
     intro p q eq
     have sr : row p = row q := congrArg Prod.fst eq
     obtain ⟨u,hu⟩ := (tuple_ker_iff (v p) (v q)).mp (congrArg Prod.snd eq)
     apply separate p q
-    apply match_of_cores _ _ u (fun i => ⟨fun _ => live q i,fun _ => live p i⟩)
-    apply live_labelled_rows _ _ (v p) (v q) (row p) u hu (mem_core p)
+    apply match_labelled_cores u (fun i => ⟨fun _ => live q i,fun _ => live p i⟩) hu (mem_core p)
     rw [sr]
     exact mem_core q
   have size := Nat.card_le_card_of_injective code inj
@@ -79,5 +93,7 @@ theorem count_distinguished_presentations {Q H I : Type*} [Finite Q] [Fintype I]
     exact separate p q (restore_empty_rows _ _ (e p) (e q) m)
 
 end Green51FrameIsomorphisms
+#print axioms Green51FrameIsomorphisms.active_core_labels
+#print axioms Green51FrameIsomorphisms.match_labelled_cores
 #print axioms Green51FrameIsomorphisms.count_active_presentations
 #print axioms Green51FrameIsomorphisms.count_distinguished_presentations
