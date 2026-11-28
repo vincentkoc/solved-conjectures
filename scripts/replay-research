@@ -27,13 +27,14 @@ def compile_proof(source, out, env):
         if message["kind"] == "hasSorry":
             raise SystemExit(f"{source.name}: proof contains sorry")
         if message["severity"] == "information":
-            match = re.fullmatch(r"'[^']+' depends on axioms:\s*\[(.*?)\]", data, re.S)
+            match = re.fullmatch(r"'([^\n]+)' depends on axioms:\s*\[(.*?)\]", data, re.S)
             if match:
-                extra = {name.strip() for name in match[1].split(",")} - ALLOWED_AXIOMS
+                declaration, axioms = match.groups()
+                extra = {name.strip() for name in axioms.split(",")} - ALLOWED_AXIOMS
                 if extra:
-                    raise SystemExit(f"{source.name}: unexpected axioms {sorted(extra)}")
+                    raise SystemExit(f"{source.name}: {declaration}: unexpected axioms {sorted(extra)}")
                 reports += 1
-            elif re.fullmatch(r"'[^']+' does not depend on any axioms", data):
+            elif re.fullmatch(r"'[^\n]+' does not depend on any axioms", data):
                 reports += 1
     result.check_returncode()
     if not reports:
