@@ -28,7 +28,8 @@ noncomputable def numeratorVector (q m w : ℕ) [NeZero q] : EuclideanSpace ℂ 
     WithLp.toLp 2 (reciprocalCoeff q m (ZMod.unitOfCoprime w H.2.2.2))
   else 0
 
-private lemma numeratorVector_bound (q m w : ℕ) [NeZero q] :
+/-- Euclidean norm of the projection of one primitive numerator. -/
+theorem numeratorVector_bound (q m w : ℕ) [NeZero q] :
     ‖numeratorVector q m w‖ ≤ m.divisors.card / (m : ℝ) := by
   unfold numeratorVector
   split_ifs with H
@@ -38,30 +39,53 @@ private lemma numeratorVector_bound (q m w : ℕ) [NeZero q] :
     exact ⟨by positivity,he⟩
   · rw [norm_zero]; positivity
 
-/-- All primitive numerators at a fixed original denominator q*m, projected to q. -/
-noncomputable def numeratorRow (q m : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
-  ∑ k ∈ range (q*m-1), (((k : ℝ)+1)⁻¹) • numeratorVector q m (k+1)
+/-- Projection of the positive numerators up to n at denominator q*m. -/
+noncomputable def numeratorWindow (q m n : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
+  ∑ k ∈ range n, (((k : ℝ)+1)⁻¹) • numeratorVector q m (k+1)
 
-private lemma numeratorRow_bound (q m : ℕ) [NeZero q] :
-    ‖numeratorRow q m‖ ≤ (harmonic (q*m) : ℝ) * (m.divisors.card / (m : ℝ)) := by
-  unfold numeratorRow
+theorem numeratorWindow_bound (q m n : ℕ) [NeZero q] :
+    ‖numeratorWindow q m n‖ ≤ (harmonic n:ℝ)*(m.divisors.card/(m:ℝ)) := by
   apply (norm_sum_le ..).trans
-  have hr : (harmonic (q*m) : ℝ) = ∑ k ∈ range (q*m), ((k : ℝ)+1)⁻¹ := by simp [harmonic]
+  have hr : (harmonic n:ℝ) = ∑ k ∈ range n, ((k:ℝ)+1)⁻¹ := by simp [harmonic]
   rw [hr,sum_mul]
-  apply le_trans _ (sum_le_sum_of_subset_of_nonneg (range_mono (Nat.sub_le (q*m) 1)) (by intros; positivity))
   apply sum_le_sum; intro k _
   rw [norm_smul,Real.norm_eq_abs,abs_of_nonneg (by positivity)]
   exact mul_le_mul_of_nonneg_left (numeratorVector_bound ..) (by positivity)
+
+/-- All primitive numerators below the original denominator, projected to q. -/
+noncomputable def numeratorRow (q m : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
+  numeratorWindow q m (q*m-1)
+
+private lemma harmonic_mono_real {n m : ℕ} (h : n ≤ m) : (harmonic n:ℝ)≤harmonic m := by
+  simp only [harmonic,Rat.cast_sum,Rat.cast_inv,Rat.cast_natCast]
+  apply sum_le_sum_of_subset_of_nonneg (range_mono h) (by intros; positivity)
+
+private lemma harmonic_product (K d : ℕ) : (harmonic (K*d):ℝ) ≤ K*(harmonic d:ℝ) := by
+  induction K with
+  | zero => simp [harmonic]
+  | succ K ih =>
+    have h (n : ℕ) : (harmonic n:ℝ) = ∑ i ∈ range n, ((i:ℝ)+1)⁻¹ := by simp [harmonic]
+    have he : (harmonic (K*d+d):ℝ) ≤ harmonic (K*d)+(harmonic d:ℝ) := by
+      rw [h,h,h,sum_range_add]; apply add_le_add le_rfl
+      apply sum_le_sum; intro i _; push_cast; gcongr; linarith [mul_nonneg (Nat.cast_nonneg K : (0:ℝ)≤K) (Nat.cast_nonneg d)]
+    rw [Nat.succ_mul,Nat.cast_succ,add_mul,one_mul]
+    exact he.trans (add_le_add ih le_rfl)
+
+private lemma numeratorRow_bound (q m : ℕ) [NeZero q] :
+    ‖numeratorRow q m‖ ≤ (harmonic (q*m):ℝ)*(m.divisors.card/(m:ℝ)) :=
+  (numeratorWindow_bound q m _).trans (mul_le_mul_of_nonneg_right
+    (harmonic_mono_real (Nat.sub_le (q*m) 1)) (by positivity))
 
 /-- The entire weighted block at projected denominator q. Its primitive coordinates
 are exactly the frequencies with reduced denominator q in the cutoff expansion. -/
 noncomputable def weightedBlock (Y q : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
   ∑ m ∈ Icc 1 (Y/q), (commonWeight Y (q*m) / ((q:ℝ)*m)) • numeratorRow q m
 
-private lemma weightedBlock_finite_bound (Y q : ℕ) [NeZero q] :
-    ‖weightedBlock Y q‖ ≤ (zetaTwo / q) *
+private lemma aggregate_finite_bound (Y q : ℕ) [NeZero q] (B : ℝ)
+    (R : ℕ → EuclideanSpace ℂ (ZMod q))
+    (hr : ∀ m ∈ Icc 1 (Y/q), ‖R m‖ ≤ B*((harmonic (q*m):ℝ)*(m.divisors.card/(m:ℝ)))) :
+    ‖∑ m ∈ Icc 1 (Y/q), (commonWeight Y (q*m)/((q:ℝ)*m)) • R m‖ ≤ (B*(zetaTwo / q)) *
       ∑ m ∈ Icc 1 (Y/q), (harmonic (q*m) : ℝ) * m.divisors.card / (m:ℝ)^2 := by
-  unfold weightedBlock
   apply (norm_sum_le ..).trans
   rw [mul_sum]
   apply sum_le_sum; intro m hm
@@ -69,11 +93,12 @@ private lemma weightedBlock_finite_bound (Y q : ℕ) [NeZero q] :
   have hq' : 0<(q:ℝ) := Nat.cast_pos.mpr (NeZero.pos _)
   rw [norm_smul,Real.norm_eq_abs,abs_of_nonneg (div_nonneg (commonWeight_nonneg ..) (by positivity))]
   apply (mul_le_mul (div_le_div_of_nonneg_right (commonWeight_le ..) (by positivity))
-    (numeratorRow_bound q m) (norm_nonneg _) (div_nonneg ((commonWeight_nonneg ..).trans
+    (hr m hm) (norm_nonneg _) (div_nonneg ((commonWeight_nonneg ..).trans
       (commonWeight_le Y (q*m))) (by positivity))).trans
   apply le_of_eq; ring
 
-private lemma divisors_card_sqrt (m : ℕ) : m.divisors.card ≤ 2*m.sqrt := by
+/-- Pair divisors across the square root to bound their number. -/
+theorem divisors_card_sqrt (m : ℕ) : m.divisors.card ≤ 2*m.sqrt := by
   let A := m.divisors.filter (· ≤ m.sqrt)
   let B := m.divisors.filter (fun d => ¬d ≤ m.sqrt)
   have ha : A.card ≤ m.sqrt := by
@@ -130,26 +155,59 @@ private lemma harmonic_divisors {q m : ℕ} (hq : 0<q) (hm : 0 < m) :
   field_simp
   linear_combination 10*he
 
-/-- The aggregate coefficient vector decays as (1 + log q)/q, uniformly in Y. -/
-theorem weightedBlock_bound : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y q : ℕ) [NeZero q],
-    ‖weightedBlock Y q‖ ≤ C*(1+Real.log q)/q := by
+/-- Any projected numerator rows with the harmonic divisor bound give aggregate
+decay of order (1 + log q)/q, uniformly in the denominator cutoff. -/
+theorem aggregate_bound : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y q : ℕ) [NeZero q],
+    ∀ (B : ℝ), 0≤B → ∀ R : ℕ → EuclideanSpace ℂ (ZMod q),
+      (∀ m ∈ Icc 1 (Y/q), ‖R m‖ ≤ B*((harmonic (q*m):ℝ)*(m.divisors.card/(m:ℝ)))) →
+      ‖∑ m ∈ Icc 1 (Y/q), (commonWeight Y (q*m)/((q:ℝ)*m)) • R m‖ ≤ (B*C)*(1+Real.log q)/q := by
   have hZ : 0 ≤ zetaTwo := (commonWeight_nonneg 1 1).trans (commonWeight_le 1 1)
   have h5 : 0 ≤ zetaFiveFourths := tsum_nonneg fun _ => by positivity
   refine ⟨10*zetaTwo*zetaFiveFourths,by positivity,?_⟩
-  intro Y q _
+  intro Y q _ B hB R hr
   have hq : 0<(q:ℝ) := Nat.cast_pos.mpr (NeZero.pos _)
   have hlog : 0 ≤ Real.log q := Real.log_nonneg (by exact_mod_cast NeZero.pos q)
-  apply (weightedBlock_finite_bound Y q).trans
+  apply (aggregate_finite_bound Y q B R hr).trans
   have hS : ∑ m ∈ Icc 1 (Y/q), ((m:ℝ)^(5/4:ℝ))⁻¹ ≤ zetaFiveFourths :=
     (Real.summable_nat_rpow_inv.mpr (show (1:ℝ)<5/4 by norm_num)).sum_le_tsum _ (by intros; positivity)
   calc
-    _ ≤ (zetaTwo/q)*∑ m ∈ Icc 1 (Y/q), 10*(1+Real.log q)*((m:ℝ)^(5/4:ℝ))⁻¹ :=
+    _ ≤ (B*(zetaTwo/q))*∑ m ∈ Icc 1 (Y/q), 10*(1+Real.log q)*((m:ℝ)^(5/4:ℝ))⁻¹ :=
       mul_le_mul_of_nonneg_left (sum_le_sum fun m hm => harmonic_divisors (NeZero.pos q)
         (mem_Icc.mp hm).1) (by positivity)
-    _ ≤ (zetaTwo/q)*(10*(1+Real.log q)*zetaFiveFourths) := by
+    _ ≤ (B*(zetaTwo/q))*(10*(1+Real.log q)*zetaFiveFourths) := by
       rw [← mul_sum]
       gcongr
     _ = _ := by ring
+
+/-- The aggregate coefficient vector decays as (1 + log q)/q, uniformly in Y. -/
+theorem weightedBlock_bound : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y q : ℕ) [NeZero q],
+    ‖weightedBlock Y q‖ ≤ C*(1+Real.log q)/q := by
+  obtain ⟨C,hC,h⟩ := aggregate_bound
+  refine ⟨C,hC,?_⟩; intro Y q _
+  simpa only [weightedBlock,one_mul] using h Y q 1 zero_le_one (fun m => numeratorRow q m)
+    (fun m _ => (numeratorRow_bound q m).trans_eq (one_mul _).symm)
+
+/-- Aggregate coefficient vector when denominator d admits L(d) positive numerators. -/
+noncomputable def windowBlock (L : ℕ → ℕ) (Y q : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
+  ∑ m ∈ Icc 1 (Y/q), (commonWeight Y (q*m)/((q:ℝ)*m)) • numeratorWindow q m (L (q*m))
+
+/-- A fixed-width window retains the logarithmic-over-denominator decay. -/
+theorem windowBlock_bound {L : ℕ → ℕ} {K : ℕ} (hL : ∀ d, L d≤K*d) :
+    ∃ C : ℝ, 0≤C ∧ ∀ (Y q : ℕ) [NeZero q], ‖windowBlock L Y q‖ ≤ C*(1+Real.log q)/q := by
+  obtain ⟨C,hC,h⟩ := aggregate_bound
+  refine ⟨K*C,by positivity,?_⟩
+  intro Y q _
+  apply h Y q K (Nat.cast_nonneg K)
+  intro m _
+  apply (numeratorWindow_bound q m _).trans
+  rw [← mul_assoc]
+  exact mul_le_mul_of_nonneg_right ((harmonic_mono_real (hL _)).trans (harmonic_product K _)) (by positivity)
+
+/-- Coordinates of an aggregate window on the additive frequencies. -/
+noncomputable def windowCoordinate (L : ℕ → ℕ) (Y q h : ℕ) : ℂ :=
+  if hq : q=0 then 0 else
+    let _ : NeZero q := ⟨hq⟩
+    windowBlock L Y q (h:ZMod q)
 
 /-- A coordinate in the finite projection, using a natural numerator. -/
 noncomputable def blockCoordinate (Y q h : ℕ) : ℂ :=
@@ -161,11 +219,11 @@ noncomputable def blockCoordinate (Y q h : ℕ) : ℂ :=
 noncomputable def primitiveEnergy (Y q : ℕ) : ℝ :=
   ∑ h ∈ (range q).filter (·.Coprime q), ‖blockCoordinate Y q h‖^2
 
-private lemma primitiveEnergy_le (Y q : ℕ) [NeZero q] : primitiveEnergy Y q ≤ ‖weightedBlock Y q‖^2 := by
-  unfold primitiveEnergy
+/-- Restricting a coefficient vector to primitive frequencies decreases its squared mass. -/
+theorem primitive_mass_le (q : ℕ) [NeZero q] (b : EuclideanSpace ℂ (ZMod q)) :
+    ∑ h ∈ (range q).filter (·.Coprime q), ‖b (h:ZMod q)‖^2 ≤ ‖b‖^2 := by
   rw [EuclideanSpace.norm_sq_eq]
   apply (sum_le_sum_of_subset_of_nonneg (filter_subset _ _) (by intros; positivity)).trans_eq
-  simp only [blockCoordinate,dif_neg (NeZero.ne q)]
   apply sum_bij (fun (a : ℕ) _ => (a : ZMod q))
   · intros; exact mem_univ _
   · intro a ha b hb H
@@ -174,11 +232,12 @@ private lemma primitiveEnergy_le (Y q : ℕ) [NeZero q] : primitiveEnergy Y q �
   · intro b _; exact ⟨b.val,mem_range.mpr b.val_lt,ZMod.natCast_zmod_val _⟩
   · intros; rfl
 
-/-- The squared mass on any finite family of exact denominators above Q is
-O(Q^(-15/16)). The constant is independent of the original cutoff Y. -/
-theorem primitiveEnergy_tail : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y Q : ℕ), 0<Q → ∀ s : Finset ℕ,
-    (∀ q ∈ s, Q≤q) → ∑ q ∈ s, primitiveEnergy Y q ≤ C/((Q:ℝ)^(15/16:ℝ)) := by
-  obtain ⟨A,hA,hblock⟩ := weightedBlock_bound
+/-- A uniform logarithmic-over-denominator bound on the square root of each
+frequency mass implies power decay of the tail. -/
+theorem energy_tail_of_bound (E : ℕ → ℕ → ℝ) (A : ℝ) (hA : 0≤A)
+    (hblock : ∀ Y q : ℕ, 0<q → E Y q ≤ (A*(1+Real.log q)/q)^2) :
+    ∃ C : ℝ, 0≤C ∧ ∀ Y Q : ℕ, 0<Q → ∀ s : Finset ℕ,
+    (∀ q ∈ s, Q≤q) → ∑ q ∈ s, E Y q ≤ C/(Q:ℝ)^(15/16:ℝ) := by
   let K := (65*A)^2
   let Z := ∑' n : ℕ, ((n : ℝ)^(33/32:ℝ))⁻¹
   have hK : 0≤K := sq_nonneg _
@@ -186,16 +245,16 @@ theorem primitiveEnergy_tail : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y Q : ℕ), 0<Q →
   refine ⟨K*Z,mul_nonneg hK hZ,?_⟩
   intro Y Q hQ s hs
   have hQr : 0 < (Q:ℝ) := by exact_mod_cast hQ
-  have hb (q : ℕ) (ht : Q≤q) : primitiveEnergy Y q ≤
+  have hb (q : ℕ) (ht : Q≤q) : E Y q ≤
       (K/(Q:ℝ)^(15/16:ℝ))*((q:ℝ)^(33/32:ℝ))⁻¹ := by
-    let : NeZero q := ⟨by omega⟩
     have hqr : 0 < (q:ℝ) := by exact_mod_cast (hQ.trans_le ht)
     have hqone : (1:ℝ)≤q := by exact_mod_cast (hQ.trans_le ht)
     have hpow := Real.one_le_rpow hqone (by norm_num : (0:ℝ)≤1/64)
     have hl := Real.log_natCast_le_rpow_div q (by norm_num : (0:ℝ)<1/64)
     have he : (1+Real.log q) ≤ 65*(q:ℝ)^(1/64:ℝ) := by linarith
-    have hn := (hblock Y q).trans (div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left he hA) hqr.le)
-    apply (primitiveEnergy_le Y q).trans ((pow_le_pow_left₀ (norm_nonneg _) hn 2).trans ?_)
+    have hn := div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left he hA) hqr.le
+    have h₀ : 0≤A*(1+Real.log q)/(q:ℝ) := by have := Real.log_nonneg hqone; positivity
+    apply (hblock Y q (hQ.trans_le ht)).trans ((pow_le_pow_left₀ h₀ hn 2).trans ?_)
     have hprod : ((q:ℝ)^(1/64:ℝ))^2*(q:ℝ)^(15/16:ℝ)*(q:ℝ)^(33/32:ℝ) = (q:ℝ)^2 := by
       rw [sq,← Real.rpow_add hqr,← Real.rpow_add hqr,← Real.rpow_add hqr]; norm_num
     have monot := Real.rpow_le_rpow hQr.le (show (Q:ℝ) ≤ q by exact_mod_cast ht)
@@ -214,6 +273,38 @@ theorem primitiveEnergy_tail : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y Q : ℕ), 0<Q →
         (by norm_num : (1:ℝ)<33/32)).sum_le_tsum _ (by intros; positivity)) (by positivity)
     _ = _ := by ring
 
+/-- The squared mass on any finite family of exact denominators above Q is
+O(Q^(-15/16)). The constant is independent of the original cutoff Y. -/
+theorem primitiveEnergy_tail : ∃ C : ℝ, 0 ≤ C ∧ ∀ (Y Q : ℕ), 0<Q → ∀ s : Finset ℕ,
+    (∀ q ∈ s, Q≤q) → ∑ q ∈ s, primitiveEnergy Y q ≤ C/((Q:ℝ)^(15/16:ℝ)) := by
+  obtain ⟨A,hA,h⟩ := weightedBlock_bound
+  apply energy_tail_of_bound primitiveEnergy A hA
+  intro Y q hq
+  let : NeZero q := ⟨hq.ne'⟩
+  apply le_trans _ (pow_le_pow_left₀ (norm_nonneg _) (h Y q) 2)
+  simpa only [primitiveEnergy,blockCoordinate,dif_neg hq.ne'] using primitive_mass_le q (weightedBlock Y q)
+
+/-- Primitive frequencies of any fixed-width numerator window have a uniformly
+power-decaying squared tail. -/
+theorem windowEnergy_tail {L : ℕ → ℕ} {K : ℕ} (hL : ∀ d, L d≤K*d) :
+    ∃ C : ℝ, 0≤C ∧ ∀ Y Q : ℕ, 0<Q → ∀ s : Finset ℕ, (∀ q ∈ s, Q≤q) →
+    ∑ q ∈ s, ∑ h ∈ (range q).filter (·.Coprime q), ‖windowCoordinate L Y q h‖^2 ≤
+      C/(Q:ℝ)^(15/16:ℝ) := by
+  obtain ⟨A,hA,ha⟩ := windowBlock_bound hL
+  apply energy_tail_of_bound _ A hA
+  intro Y q hq
+  let : NeZero q := ⟨hq.ne'⟩
+  apply le_trans _ (pow_le_pow_left₀ (norm_nonneg _) (ha Y q) 2)
+  simpa only [windowCoordinate,dif_neg hq.ne'] using primitive_mass_le q (windowBlock L Y q)
+
 end Arxiv.«2501.03234».ThetaReciprocalBlocks
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.weightedBlock_bound
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.primitiveEnergy_tail
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.divisors_card_sqrt
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.numeratorVector_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.numeratorWindow_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.aggregate_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.windowBlock_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.primitive_mass_le
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.energy_tail_of_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.windowEnergy_tail

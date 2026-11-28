@@ -332,7 +332,8 @@ noncomputable def cotPrefix (p J : ℕ) : ℝ :=
   2/(p:ℝ) * ∑ j ∈ range J, weight p (2*j+1) *
     ∑ k ∈ range j, weight p (2*k+1)*reciprocalSign p (2*j+1) (2*k+1)
 
-private lemma weight_le {p u : ℕ} (hu : 0<u) (hul : u<p) : weight p u ≤ (p:ℝ)/u := by
+/-- Elementary reciprocal majorant for a cotangent weight. -/
+theorem weight_le {p u : ℕ} (hu : 0<u) (hul : u<p) : weight p u ≤ (p:ℝ)/u := by
   apply (ThetaCotangentTriangle.weight_upper hu hul).trans
   have h : 0<(u:ℝ) := by exact_mod_cast hu
   rw [div_le_div_iff₀ (by positivity) h]
@@ -341,7 +342,8 @@ private lemma weight_le {p u : ℕ} (hu : 0<u) (hul : u<p) : weight p u ≤ (p:�
 private lemma harmonic_range (n : ℕ) :
     (harmonic n : ℝ) = ∑ i ∈ range n, ((i:ℝ)+1)⁻¹ := by simp [harmonic]
 
-private lemma weight_mass {p N : ℕ} (hN : N≤p/2) :
+/-- Total cotangent mass on an initial segment of odd indices. -/
+theorem weight_mass {p N : ℕ} (hN : N≤p/2) :
     ∑ k ∈ range N, weight p (2*k+1) ≤ (p:ℝ)*harmonic N := by
   rw [harmonic_range,mul_sum]
   apply sum_le_sum; intro k hk
@@ -350,7 +352,8 @@ private lemma weight_mass {p N : ℕ} (hN : N≤p/2) :
   rw [← div_eq_mul_inv]
   gcongr; push_cast; linarith
 
-private lemma weighted_abs (w g : ℕ → ℝ) {D : ℝ} {n : ℕ} (hD : 0≤D) (hw₀ : 0≤w 0)
+/-- Summation by parts against a decreasing positive weight. -/
+theorem weighted_abs (w g : ℕ → ℝ) {D : ℝ} {n : ℕ} (hD : 0≤D) (hw₀ : 0≤w 0)
     (hw : ∀ i<n, 0≤w i) (hm : ∀ i, i+1<n → w (i+1)≤w i)
     (hg : ∀ k≤n, |∑ i ∈ range k, g i|≤D) :
     |∑ i ∈ range n, w i*g i| ≤ D*w 0 := by
@@ -695,3 +698,6 @@ end Arxiv.«2501.03234».ThetaReciprocalCutoff
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.weight_upper
 #print axioms Arxiv.«2501.03234».ThetaCotangentTriangle.sum_odd_indices
 #print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.product_error
+#print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weight_le
+#print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weight_mass
+#print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weighted_abs
