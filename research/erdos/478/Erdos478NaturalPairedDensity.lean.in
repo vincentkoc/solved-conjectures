@@ -1,0 +1,55 @@
+import Erdos478EvenGapSaturation
+import Erdos478NaturalPatternLaw
+
+/-!
+# Ordinary prime densities for prescribed even factorial collisions
+
+The natural density is the same inverse splitting degree as for general
+gap patterns. Reflection gives a stronger explicit lower bound for this
+density, including the original factorial-image cardinality.
+-/
+
+namespace Erdos478.SplittingDensity
+open Finset Filter Topology Real
+open scoped Classical
+
+theorem paired_saturation_density {m : ℕ} (hm : 0<m) (R : Finset ℕ)
+    (hR : ∀ r∈R, 0<r) :
+    ((m.totient * pairingProduct R : ℕ):ℝ)⁻¹ ≤ splitDensity m (evenLengths R) ∧
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+      m ∣ p-1 ∧ (∀ r∈R, (endpoints (2*r) p).card=2*r) ∧
+      ((Ico 1 p).image (fun j => j.factorial % p)).card + ∑ r∈R, 2*r ≤ p-1).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (splitDensity m (evenLengths R))) := by
+  refine ⟨paired_density_bound hm R hR,?_⟩
+  have hsize : ∀ k∈evenLengths R, 2≤k := by
+    intro k hk
+    obtain ⟨r,hr,rfl⟩ := mem_image.mp hk
+    exact Nat.mul_le_mul_left 2 (hR r hr)
+  have hsum : (∑ k∈evenLengths R, k) = ∑ r∈R, 2*r := by
+    rw [evenLengths,sum_image (by intro i _ j _ h; exact Nat.eq_of_mul_eq_mul_left (by decide : 0<2) h)]
+  have H := (saturated_gap_density hm _ hsize).2
+  rw [hsum] at H
+  simpa only [evenLengths,Finset.forall_mem_image] using H
+
+/-- For every positive `n`, an explicitly described subset of the primes
+in the progression loses at least `n*(n+1)` positive factorial values. -/
+theorem initial_even_saturation_density {m n : ℕ} (hm : 0<m) (hn : 0<n) :
+    ∃ δ : ℝ,
+      exp (-(((n*(n+1):ℕ):ℝ)/4 * log (4*((n*(n+1):ℕ):ℝ)))) / (m.totient:ℝ) ≤ δ ∧
+      Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+        m ∣ p-1 ∧ (∀ r∈Icc 1 n, (endpoints (2*r) p).card=2*r) ∧
+        ((Ico 1 p).image (fun j => j.factorial % p)).card + n*(n+1) ≤ p-1).card : ℝ) /
+        (Nat.primesLE X).card) atTop (𝓝 δ) := by
+  refine ⟨_,initial_even_density_bound hm hn,?_⟩
+  have H := (paired_saturation_density hm (Icc 1 n) (fun _ h => (mem_Icc.mp h).1)).2
+  apply H.congr
+  intro X
+  apply congrArg (fun S : Finset ℕ => (S.card : ℝ) / (Nat.primesLE X).card)
+  have he : (∑ r∈Icc 1 n, 2*r) = n*(n+1) := by rw [← mul_sum,double_sum_halves]
+  ext p
+  simp only [mem_filter]
+  rw [he]
+
+#print axioms paired_saturation_density
+#print axioms initial_even_saturation_density
+end Erdos478.SplittingDensity
