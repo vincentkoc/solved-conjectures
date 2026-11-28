@@ -122,11 +122,12 @@ private theorem orbit_factorization {K : Type*} [Field K] [CharP K 2] {H : ℤ[X
     (by rw [natDegree_finsetProd_X_sub_C_eq_card]; dsimp only [T]; rw [card_image_of_injOn inj,card_range]; exact (hm.natDegree_map _).le)
   simpa only [T,Finset.prod_image inj] using e
 
-private abbrev O := integralClosure ℤ ℝ
-
-private theorem with_residue (p : ℕ) [prime : Fact p.Prime] {goal : Prop} (run : ∀ (K : Type) [Field K] [CharP K p] [IsAlgClosed K],
-    (O →+* K) → goal) : goal := by
+/-- Reduce algebraic integers in a characteristic-zero field to an algebraically
+closed field of a chosen prime characteristic, using one homomorphism for all coefficients. -/
+theorem with_prime_residue (L : Type) [Field L] [CharZero L] (p : ℕ) [prime : Fact p.Prime] {goal : Prop} (run : ∀ (K : Type) [Field K] [CharP K p] [IsAlgClosed K],
+    (integralClosure ℤ L →+* K) → goal) : goal := by
   classical
+  let O := integralClosure ℤ L
   let P := RingHom.ker (Int.castRingHom (ZMod p))
   let _ : P.IsMaximal := RingHom.ker_isMaximal_of_surjective _ ZMod.intCast_surjective
   obtain ⟨J,jm,above⟩ := Ideal.exists_maximal_ideal_liesOver_of_isIntegral (S := O) P
@@ -167,7 +168,7 @@ theorem degrees_of_prime_reduction (p : ℕ) [Fact p.Prime] (H : ℤ[X]) (hm : H
     apply Polynomial.map_injective T.subtype Subtype.val_injective
     rw [Polynomial.map_mul,Polynomial.map_map,RingHom.ext_int (T.subtype.comp _) (Int.castRingHom ℝ)]
     simpa only [F,G,map_toSubring] using eq
-  apply with_residue p
+  apply with_prime_residue ℝ p
   intro K fld cp closed φ
   have prodK : F.map φ*G.map φ=H.map (Int.castRingHom K) := by
     rw [←Polynomial.map_mul,product,Polynomial.map_map,RingHom.ext_int (φ.comp _) (Int.castRingHom K)]
@@ -432,6 +433,7 @@ theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
   simp
 
 #print axioms pure_of_width_zero
+#print axioms with_prime_residue
 #print axioms degrees_of_prime_reduction
 #print axioms degrees_of_binary_reduction
 #print axioms exists_orbit_support

@@ -16,7 +16,8 @@ structure Models (P : PMF ℤ) (f : ℝ[X]) (a : ℤ) (s : ℝ) : Prop where
   below : ∀ z < a, P z = 0
   coeff : ∀ i : ℕ, (P (a+i)).toReal = s * f.coeff i
 
-private theorem convolution (P Q : PMF ℤ) (z : ℤ) :
+/-- The mass of an independent integer sum is the discrete convolution. -/
+theorem convolution (P Q : PMF ℤ) (z : ℤ) :
     indepSum P Q z = ∑' x, P x * Q (z-x) := by
   change (P.bind fun x => Q.bind fun y => PMF.pure (x+y)) z = _
   rw [PMF.bind_apply]
@@ -325,6 +326,7 @@ theorem algebraic_masses {P Q : PMF ℤ} (uniform : IsUniformOnSupport (indepSum
 #print axioms algebraic_masses
 #print axioms endpoint_weights
 #print axioms Models.mul
+#print axioms convolution
 #print axioms Models.uniform_iff
 #print axioms Models.field_iff
 #print axioms finite_of_uniform_sum
