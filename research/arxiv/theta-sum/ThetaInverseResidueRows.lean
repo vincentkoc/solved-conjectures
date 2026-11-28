@@ -45,39 +45,65 @@ private lemma after_period {d : ℕ} (hd : 1<d) (n K : ℕ) (hk : 2*d≤K) :
   dsimp [w]; rw [Nat.cast_zero,add_zero,mul_one,←div_eq_inv_mul,div_le_one (by positivity)]
   linarith
 
-private lemma first_period {a d n : ℕ} (ha : Odd a) (hd : 1<d) (hn : n.Coprime d)
+/-- Harmonic comparison keeps the dependence on the inverse parameter logarithmic. -/
+theorem first_period_log {a d n : ℕ} (ha : Odd a) (hd : 1<d) (hn : n.Coprime d)
     (he : (n:ZMod d)⁻¹=(a:ZMod d)) :
-    |row d (2*d) n-row d (2*d) 1|≤4*a := by
-  have hdp : (0:ℝ)<d := by exact_mod_cast (show 0<d by omega)
-  unfold row; rw [←sum_sub_distrib]
-  apply (abs_sum_le_sum_abs ..).trans
-  calc
-    _ ≤ ∑ i∈range (2*d),2*(a:ℝ)/d := by
-      apply sum_le_sum; intro i _
-      by_cases h : (i+1)*a<d
-      · rw [same_sign ha hn he h,sub_self,abs_zero]; positivity
-      have hf : |(wave n d (i+1):ℝ)-(wave 1 d (i+1):ℝ)|≤2 := (abs_sub _ _).trans
-        (by linarith only [wave_abs n d (i+1),wave_abs 1 d (i+1)])
-      rw [←mul_sub,abs_mul,abs_of_nonneg (by positivity : 0≤((i:ℝ)+1)⁻¹)]
-      have hi : 0<(i:ℝ)+1 := by positivity
-      have hdiv : ((i:ℝ)+1)⁻¹≤(a:ℝ)/d := by
-        rw [inv_eq_one_div,div_le_div_iff₀ hi hdp,one_mul]
-        have h' : (d:ℝ)≤((i:ℝ)+1)*a := by exact_mod_cast le_of_not_gt h
-        linarith only [h']
-      exact (mul_le_mul hdiv hf (abs_nonneg _) (by positivity)).trans_eq (by ring)
-    _ = _ := by simp only [sum_const,card_range,nsmul_eq_mul,Nat.cast_mul,Nat.cast_ofNat]; field_simp; ring
+    |row d (2*d) n-row d (2*d) 1|≤2*(1+Real.log (2*(a:ℝ))) := by
+  let k := (d-1)/a
+  let v (i : ℕ) := ((i:ℝ)+1)⁻¹
+  have hk : k≤2*d := (Nat.div_le_self ..).trans (by omega)
+  have hlow (i : ℕ) (hi : i<k) : (i+1)*a<d := by
+    have h := (Nat.mul_le_mul_right a (show i+1≤k by omega)).trans (Nat.div_mul_le_self (d-1) a)
+    omega
+  have hf : (range (2*d)).filter (·<k)=range k := by
+    ext i; simp only [mem_filter,mem_range]; omega
+  have hsum (t : ℕ) : ∑ i∈range t,v i=(harmonic t:ℝ) := by
+    simp [harmonic,v,Rat.cast_sum]
+  have hrows : |row d (2*d) n-row d (2*d) 1|≤2*((harmonic (2*d):ℝ)-harmonic k) := by
+    unfold row; rw [←sum_sub_distrib]
+    apply (abs_sum_le_sum_abs ..).trans
+    calc _ ≤ ∑ i∈range (2*d),(2*v i-(if i<k then 2*v i else 0)) := by
+             apply sum_le_sum; intro i _
+             by_cases hi : i<k
+             · rw [if_pos hi,same_sign ha hn he (hlow i hi),sub_self,abs_zero,sub_self]
+             · rw [if_neg hi,sub_zero,←mul_sub,abs_mul,abs_of_nonneg (by positivity : 0≤((i:ℝ)+1)⁻¹),mul_comm (2:ℝ)]
+               apply mul_le_mul_of_nonneg_left _ (by positivity)
+               exact (abs_sub _ _).trans (by linarith only [wave_abs n d (i+1),wave_abs 1 d (i+1)])
+         _ = _ := by
+             rw [sum_sub_distrib,←sum_filter,hf,←mul_sum,←mul_sum,hsum,hsum]; ring
+  have ht := (Nat.div_lt_iff_lt_mul ha.pos).mp (show (d-1)/a<k+1 by dsimp [k]; omega)
+  have ht' : d≤(k+1)*a := by omega
+  have hap : 0<(a:ℝ) := by exact_mod_cast ha.pos
+  have hdp : 0<(d:ℝ) := by exact_mod_cast (show 0<d by omega)
+  have hkp : 0<(k:ℝ)+1 := by positivity
+  have hlog := Real.log_le_log hdp (show (d:ℝ)≤((k:ℝ)+1)*a by exact_mod_cast ht')
+  rw [Real.log_mul hkp.ne' hap.ne'] at hlog
+  have hu := harmonic_le_one_add_log (2*d)
+  have hl := log_add_one_le_harmonic k
+  rw [Nat.cast_add,Nat.cast_one] at hl
+  simp only [Nat.cast_mul,Nat.cast_ofNat,Real.log_mul (by norm_num : (2:ℝ)≠0) hdp.ne'] at hu
+  rw [Real.log_mul (by norm_num : (2:ℝ)≠0) hap.ne']
+  linarith only [hrows,hlog,hu,hl]
+
+/-- Uniform for all subsequent numerator windows. -/
+theorem captured_log {a n d K : ℕ} (ha : Odd a) (hd : 1<d) (ho : Odd d) (hK : 2*d≤K)
+    (hn : n.Coprime d) (he : (n:ZMod d)⁻¹=(a:ZMod d)) :
+    U d-(2*Real.log (2*(a:ℝ))+5)≤row d K n := by
+  have h := ThetaIdentityHarmonics.lower hd ho (show d≤K by omega)
+  linarith only [h,(abs_le.mp (after_period hd n K hK)).1,(abs_le.mp (after_period hd 1 K hK)).2,
+    (abs_le.mp (first_period_log ha hd hn he)).1]
 
 /-- Outside the primes dividing the prescribed odd inverse a, a captured
 denominator loses at most 4a+3 from its identity harmonic mass, uniformly in d. -/
 theorem captured_lower {a n d K : ℕ} (ha : Odd a) (hd : 1<d) (ho : Odd d) (hK : 2*d≤K)
     (hn : n.Coprime d) (he : (n:ZMod d)⁻¹=(a:ZMod d)) :
     U d-(4*a+3)≤row d K n := by
-  have h := ThetaIdentityHarmonics.lower hd ho (show d≤K by omega)
-  have hnK := after_period hd n K hK
-  have h₁K := after_period hd 1 K hK
-  have hP := first_period ha hd hn he
-  linarith only [h,(abs_le.mp hnK).1,(abs_le.mp h₁K).2,(abs_le.mp hP).1]
+  have h := captured_log ha hd ho hK hn he
+  have hlog := Real.log_le_sub_one_of_pos (show 0<2*(a:ℝ) by exact_mod_cast Nat.mul_pos (by decide : 0<2) ha.pos)
+  linarith only [h,hlog]
 
+#print axioms first_period_log
+#print axioms captured_log
 end
 end Arxiv.«2501.03234».ThetaInverseResidueRows
 #print axioms Arxiv.«2501.03234».ThetaInverseResidueRows.captured_lower
