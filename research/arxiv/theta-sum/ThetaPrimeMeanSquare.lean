@@ -57,6 +57,13 @@ private lemma scale_control : ∃ C : ℝ, 0<C ∧ ∀ {N p : ℕ}, 2≤N → p.
   nlinarith only [hS,ho',hdiag p ho]
 
 
+/-- At a fixed prime scale, one window controls the original absolute error at all primes in the band. -/
+theorem scale_window_control : ∃ C : ℝ, 0<C ∧ ∀ N : ℕ, 2≤N →
+    ∃ L : ℕ → ℕ, L 1=0 ∧ ∀ p : ℕ, p.Prime → N^56≤p → p≤N^64 →
+    |(S p:ℝ)/p-Real.log p/2| ≤ C+(8/Real.pi^2)*‖windowExtension L (2*N^52) p‖ := by
+  obtain ⟨C,hC,H⟩ := scale_control
+  exact ⟨C,hC,fun N hN => ⟨coneWindow (coneWidth N),by simp [coneWindow],fun _ => H hN⟩⟩
+
 private noncomputable def error (p : ℕ) := (S p:ℝ)/p-Real.log p/2
 
 private lemma small_error {N p : ℕ} (hN : 2≤N) (hp : p.Prime) (hhi : p≤N^64) :
@@ -322,3 +329,4 @@ end Arxiv.«2501.03234».ThetaPrimeMeanSquare
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.relative_second_moment
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.prime_mean_relative_square
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.prime_mean_absolute_rate
+#print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.scale_window_control
