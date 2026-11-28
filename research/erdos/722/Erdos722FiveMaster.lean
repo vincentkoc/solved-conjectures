@@ -21,22 +21,23 @@ private noncomputable def modular (t : ℕ) (ht : t%6=1 ∨ t%6=5) : Directions 
   fin_cases i <;> fin_cases j <;> try exact (h rfl).elim
   all_goals norm_num <;> assumption
 
-private theorem directions {t : ℕ} (ht : Good t) : Nonempty (Directions 5 t) := by
+theorem directions {t : ℕ} (ht : Good t) : Nonempty (Directions 5 t) := by
   rcases ht with h | h | rfl | rfl
   · exact ⟨modular t (Or.inl h)⟩
   · exact ⟨modular t (Or.inr h)⟩
   · exact ⟨Directions.primePower 5 3 2 (by decide) (by decide)⟩
   · exact ⟨Directions.primePower 5 2 4 (by decide) (by decide)⟩
 
-private theorem truncate (t r a : ℕ) (ht : Good t) (hr : r ≤ t) (ha : a ≤ 1)
-    (hT : Has Sizes (t+a)) (hR : Has Sizes (r+a)) : Has Sizes (5*t+r+a) := by
+/-- Truncate the last column and fill the others, optionally adjoining one shared point. -/
+theorem truncate_with {S : ℕ → Prop} {k t r a : ℕ} (D : Directions k t)
+    (hk : S k) (hs : S (k+1)) (hr : r ≤ t) (ha : a ≤ 1)
+    (hT : Has S (t+a)) (hR : Has S (r+a)) : Has S (k*t+r+a) := by
   classical
-  let D := (directions ht).some
   let e := (Fin.castLEEmb hr).trans (Fintype.equivFinOfCardEq D.card).symm.toEmbedding
-  let V := Point 5 D.K (Fin r)
-  let C : Cover V (fun x y => column x ≠ column y) Sizes :=
+  let V := Point k D.K (Fin r)
+  let C : Cover V (fun x y => column x ≠ column y) S :=
     (truncated D.c D.units e).change (fun _ _ _ => Iff.rfl) (by
-      rintro n (rfl | rfl) <;> simp [Sizes])
+      rintro n (rfl | rfl) <;> assumption)
   rcases (show a=0 ∨ a=1 by omega) with rfl | rfl
   · apply (Cover.fillFibers column C _).has (by simp [Point,D.card])
     intro i
@@ -50,6 +51,10 @@ private theorem truncate (t r a : ℕ) (ht : Good t) (hr : r ≤ t) (ha : a ≤ 
     | some i =>
       exact (hT.realize (V := Option D.K) (by simp [D.card])).relabel (Equiv.optionCongr (finiteFiber i))
 
+private theorem truncate (t r a : ℕ) (ht : Good t) (hr : r ≤ t) (ha : a ≤ 1)
+    (hT : Has Sizes (t+a)) (hR : Has Sizes (r+a)) : Has Sizes (5*t+r+a) :=
+  truncate_with (directions ht).some (by simp [Sizes]) (by simp [Sizes]) hr ha hT hR
+
 theorem master (u : ℕ) (hu : 3200 ≤ u) (hr : u%5 ≤ 1) : Has Sizes u := by
   apply eventual_orders (Has Sizes) _ truncate u hu hr
   intro i hi
@@ -59,7 +64,7 @@ theorem master (u : ℕ) (hu : 3200 ≤ u) (hr : u%5 ≤ 1) : Has Sizes u := by
     unfold Sizes
     omega
 
-#print axioms truncate
+#print axioms truncate_with
 #print axioms master
 
 end Erdos722.Five
