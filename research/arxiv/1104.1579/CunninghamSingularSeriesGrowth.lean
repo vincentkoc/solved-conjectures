@@ -17,19 +17,20 @@ private lemma orderProduct_pos (k : ℕ) : 0 < orderProduct k := by
   have := one_lt_pow₀ (by decide : 1 < (2 : ℕ)) (by omega : i+1 ≠ 0)
   omega
 
-private lemma orderProduct_factors (k : ℕ) : (orderProduct k).primeFactors.card ≤ k^2 := by
-  have hprod : orderProduct k ≤ 2^(k^2) := calc
+private lemma orderProduct_le (k : ℕ) : orderProduct k ≤ 2^(k^2) := calc
     orderProduct k ≤ ∏ _i ∈ range k, 2^k := by
       apply Finset.prod_le_prod'
       intro i hi
       exact (Nat.sub_le ..).trans (Nat.pow_le_pow_right (by decide) (by simpa using hi))
     _ = _ := by simp [← pow_mul, pow_two]
+
+private lemma orderProduct_factors (k : ℕ) : (orderProduct k).primeFactors.card ≤ k^2 := by
   have hlo : 2^(orderProduct k).primeFactors.card ≤ orderProduct k := calc
     _ = ∏ _p ∈ (orderProduct k).primeFactors, 2 := by simp
     _ ≤ ∏ p ∈ (orderProduct k).primeFactors, p := Finset.prod_le_prod' fun _ hp =>
       (Nat.prime_of_mem_primeFactors hp).two_le
     _ ≤ orderProduct k := Nat.le_of_dvd (orderProduct_pos k) (Nat.prod_primeFactors_dvd _)
-  exact (Nat.pow_le_pow_iff_right (by decide : 1 < (2 : ℕ))).mp (hlo.trans hprod)
+  exact (Nat.pow_le_pow_iff_right (by decide : 1 < (2 : ℕ))).mp (hlo.trans (orderProduct_le k))
 
 private lemma small_order_mem {q k : ℕ} [Fact q.Prime] (hq : 2 < q)
     (h : orderOf (2 : ZMod q) < k) : q ∈ (orderProduct k).primeFactors := by
@@ -49,6 +50,26 @@ private lemma small_order_mem {q k : ℕ} [Fact q.Prime] (hq : 2 < q)
   have hi : d-1 ∈ range k := mem_range.mpr (by change d < k at h; omega)
   simpa [Nat.sub_add_cancel (by omega : 1 ≤ d)] using
     (Finset.dvd_prod_of_mem (f := fun i : ℕ => 2^(i+1)-1) hi)
+
+/-- The total logarithmic weight of odd primes of order below n is bounded
+by the log of the product of the first n Mersenne numbers. -/
+theorem small_order_prime_log_sum (n : ℕ) (Q : Finset ℕ)
+    (hQ : ∀ q∈Q, q.Prime ∧ 2<q ∧ orderOf (2 : ZMod q)<n) :
+    ∑ q ∈ Q, log (q:ℝ) ≤ (n:ℝ)^2 * log 2 := by
+  have sub : Q ⊆ (orderProduct n).primeFactors := by
+    intro q hq
+    let : Fact q.Prime := ⟨(hQ q hq).1⟩
+    exact small_order_mem (hQ q hq).2.1 (hQ q hq).2.2
+  have hprod : ∏ q ∈ Q,q ≤ 2^(n^2) :=
+    (Nat.le_of_dvd (orderProduct_pos n) ((prod_dvd_prod_of_subset _ _ _ sub).trans
+      (Nat.prod_primeFactors_dvd _))).trans (orderProduct_le n)
+  have hpos : 0 < ∏ q ∈ Q,q := prod_pos (fun q hq => (hQ q hq).1.pos)
+  have hh := log_le_log (by exact_mod_cast hpos : (0:ℝ)<↑(∏ q ∈ Q,q))
+    (Nat.cast_le.mpr hprod)
+  push_cast at hh
+  rwa [log_prod (fun q hq => by exact_mod_cast (hQ q hq).1.ne_zero),log_pow,Nat.cast_pow] at hh
+
+#print axioms small_order_prime_log_sum
 
 /-- The primes above k² at which the local root count is below k have total
 reciprocal mass at most one, uniformly in the truncation of the Euler product. -/
