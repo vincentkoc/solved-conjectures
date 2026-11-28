@@ -228,4 +228,3 @@ end Green51AffineMatchings
 #print axioms Green51AffineMatchings.affine_flat_cost
 #print axioms Green51AffineMatchings.sharp_examples
 #print axioms Green51AffineMatchings.least_labels
-
