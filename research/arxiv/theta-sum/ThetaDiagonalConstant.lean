@@ -218,19 +218,19 @@ theorem diagonal_second_order : Tendsto (fun p : ℕ => divisibleDiagonal p/p-Re
 def PositiveUpperPrimeDensity (P : ℕ → Prop) : Prop :=
   ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X≤((primeSet P X).card:ℝ)
 
-/-- Discarding finitely many primes preserves positive upper prime density. -/
-theorem PositiveUpperPrimeDensity.of_eventually_imp {P Q : ℕ → Prop} (h : ∀ᶠ p : ℕ in atTop, P p → Q p)
-    (hP : PositiveUpperPrimeDensity P) : PositiveUpperPrimeDensity Q := by
+private lemma eventually_primeSet_count_imp {P Q : ℕ → Prop} {δ : ℝ} (hδ : 0 < δ)
+    (h : ∀ᶠ p : ℕ in atTop, P p → Q p) :
+    ∀ᶠ X : ℕ in atTop, δ * Nat.primeCounting X ≤ ((primeSet P X).card : ℝ) →
+      (δ/2) * Nat.primeCounting X ≤ ((primeSet Q X).card : ℝ) := by
   classical
   obtain ⟨B,hB⟩ := eventually_atTop.mp h
-  obtain ⟨δ,hδ,H⟩ := hP
   obtain ⟨n,hn⟩ := exists_nat_gt (B/(δ/2))
   have hsmall : ∀ᶠ X : ℕ in atTop, (B:ℝ)≤(δ/2)*Nat.primeCounting X := by
     filter_upwards [Nat.tendsto_primeCounting.eventually_ge_atTop n] with X hX
     have h' := (div_lt_iff₀ (half_pos hδ)).mp hn
     have hn' : (n:ℝ)≤Nat.primeCounting X := by exact_mod_cast hX
     linarith only [h',mul_le_mul_of_nonneg_left hn' (half_pos hδ).le]
-  refine ⟨δ/2,half_pos hδ,(H.and_eventually hsmall).mono (fun X hh => ?_)⟩
+  filter_upwards [hsmall] with X hs hcount
   have hsubset : primeSet P X⊆range B∪primeSet Q X := by
     intro p hp; by_cases hle : B≤p
     · apply mem_union_right
@@ -240,7 +240,22 @@ theorem PositiveUpperPrimeDensity.of_eventually_imp {P Q : ℕ → Prop} (h : �
   have hcard := (card_le_card hsubset).trans (card_union_le ..)
   rw [card_range] at hcard
   have hcard' : ((primeSet P X).card:ℝ)≤B+((primeSet Q X).card:ℝ) := by exact_mod_cast hcard
-  linarith only [hh.1,hh.2,hcard']
+  linarith only [hcount,hs,hcard']
+
+/-- Discarding finitely many primes preserves positive upper prime density. -/
+theorem PositiveUpperPrimeDensity.of_eventually_imp {P Q : ℕ → Prop} (h : ∀ᶠ p : ℕ in atTop, P p → Q p)
+    (hP : PositiveUpperPrimeDensity P) : PositiveUpperPrimeDensity Q := by
+  obtain ⟨δ,hδ,H⟩ := hP
+  exact ⟨δ/2,half_pos hδ,(H.and_eventually (eventually_primeSet_count_imp hδ h)).mono
+    (fun _ hx => hx.2 hx.1)⟩
+
+/-- A finite change to the excursion predicate preserves its periodic witness. -/
+theorem witness_of_eventually_imp {P Q : ℕ → Prop} (h : ∀ᶠ p : ℕ in atTop, P p → Q p)
+    (hP : PeriodicWitness P) : PeriodicWitness Q := by
+  obtain ⟨q,hq,g,hg,hm,δ,hδ,H⟩ := hP
+  refine ⟨q,hq,g,hg,hm,δ/2,half_pos hδ,?_⟩
+  filter_upwards [H,eventually_primeSet_count_imp hδ h] with X hw hX hprefix
+  exact hX (hw hprefix)
 
 private lemma normalized_excursions {b c : ℝ}
     (hb : Tendsto (fun p : ℕ => divisibleDiagonal p/p-Real.log p/2) atTop (𝓝 b))
@@ -297,3 +312,5 @@ end Arxiv.«2501.03234».ThetaDiagonalConstant
 #print axioms Arxiv.«2501.03234».ThetaDiagonalConstant.S_prime_no_single_center
 
 #print axioms Arxiv.«2501.03234».ThetaDiagonalConstant.PositiveUpperPrimeDensity.of_eventually_imp
+
+#print axioms Arxiv.«2501.03234».ThetaDiagonalConstant.witness_of_eventually_imp

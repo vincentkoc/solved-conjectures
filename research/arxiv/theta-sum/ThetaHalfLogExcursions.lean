@@ -19,26 +19,37 @@ private lemma common_factor_mass {V : ℕ} (hV : 2≤V) :
   push_cast at h
   exact h.le.trans (sum_le_sum_of_subset_of_nonneg hs (fun g _ _ => by positivity))
 
-/-- The signed residual from the leading term has opposite linear
-excursions on sets of positive upper density relative to all primes. -/
-theorem S_half_log_excursions :
-    PositiveUpperPrimeDensity (fun p => p%24=1 ∧ (p:ℝ)*log p/2+13*(p:ℝ)/50<(S p:ℝ)) ∧
-    PositiveUpperPrimeDensity (fun p => p%24=17 ∧ (S p:ℝ)<(p:ℝ)*log p/2-(p:ℝ)/1000) := by
+/-- Periodic witnesses to the opposite excursions from the half-log term. -/
+theorem S_half_log_witnesses :
+    PeriodicWitness (fun p => p%24=1 ∧ (p:ℝ)*log p/2+13*(p:ℝ)/50<(S p:ℝ)) ∧
+    PeriodicWitness (fun p => p%24=17 ∧ (S p:ℝ)<(p:ℝ)*log p/2-(p:ℝ)/1000) := by
   have hc : (13/50:ℝ)<32*(121/100)/(15*π^2) := by
     rw [lt_div_iff₀ (by positivity)]
     nlinarith only [mul_self_lt_mul_self pi_pos.le pi_lt_d4]
-  obtain ⟨H₁,H₂⟩ := S_prime_excursion_densities_of_weight (fun _ => common_factor_mass) hc
+  have H₁ := excursion_witness_of_weight (fun _ => common_factor_mass) (Or.inl ⟨rfl,rfl⟩) hc
+  have H₂ := excursion_witness_of_weight (fun _ => common_factor_mass) (Or.inr ⟨rfl,rfl⟩) hc
+  simp only [one_mul] at H₁
+  simp only [neg_one_mul] at H₂
   constructor
-  · apply PositiveUpperPrimeDensity.of_eventually_imp _ H₁
+  · apply witness_of_eventually_imp _ H₁
     filter_upwards [diagonal_second_order.eventually_const_lt center_bounds.1,eventually_ge_atTop 1] with p hp hp' h
     have hlt : log p/2*(p:ℝ)<divisibleDiagonal p :=
       (lt_div_iff₀ (by exact_mod_cast hp')).mp (by linarith only [hp])
     exact ⟨h.1,by linarith only [h.2,hlt]⟩
-  · apply PositiveUpperPrimeDensity.of_eventually_imp _ H₂
+  · apply witness_of_eventually_imp _ H₂
     filter_upwards [diagonal_second_order.eventually_lt_const center_bounds.2,eventually_ge_atTop 1] with p hp hp' h
     have hlt : divisibleDiagonal p<(log p/2+259/1000)*(p:ℝ) :=
       (div_lt_iff₀ (by exact_mod_cast hp')).mp (by linarith only [hp])
     exact ⟨h.1,by linarith only [h.2,hlt]⟩
 
+/-- The signed residual from the leading term has opposite linear
+excursions on sets of positive upper density relative to all primes. -/
+theorem S_half_log_excursions :
+    PositiveUpperPrimeDensity (fun p => p%24=1 ∧ (p:ℝ)*log p/2+13*(p:ℝ)/50<(S p:ℝ)) ∧
+    PositiveUpperPrimeDensity (fun p => p%24=17 ∧ (S p:ℝ)<(p:ℝ)*log p/2-(p:ℝ)/1000) := by
+  exact ⟨S_half_log_witnesses.1.frequently,S_half_log_witnesses.2.frequently⟩
+
 end Arxiv.«2501.03234».ThetaHalfLogExcursions
 #print axioms Arxiv.«2501.03234».ThetaHalfLogExcursions.S_half_log_excursions
+
+#print axioms Arxiv.«2501.03234».ThetaHalfLogExcursions.S_half_log_witnesses

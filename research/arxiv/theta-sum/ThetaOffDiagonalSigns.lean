@@ -40,12 +40,24 @@ private lemma frequently_positive_prefix {q : ℕ} [NeZero q] {g : ℕ → ℝ} 
   exact h.not_ge ((le_abs_self (f X)).trans (single_le_sum (f:=fun n => |f n|)
     (fun _ _ => abs_nonneg _) (mem_range.mpr hx)))
 
+/-- A fixed periodic test of positive reduced-residue mean whose positive
+prime prefixes force a fixed proportion of primes to satisfy a predicate. -/
+def PeriodicWitness (P : ℕ → Prop) : Prop :=
+  ∃ q : ℕ, ∃ _ : NeZero q, ∃ g : ℕ → ℝ, OnMod q g ∧ 0 < unitMean q g ∧
+    ∃ δ : ℝ, 0 < δ ∧ ∀ᶠ X : ℕ in atTop, 0 < ∑ p ∈ Nat.primesLE X, g p →
+      δ * Nat.primeCounting X ≤ ((ThetaPrimeDensity.primeSet P X).card : ℝ)
+
+theorem PeriodicWitness.frequently {P : ℕ → Prop} (w : PeriodicWitness P) :
+    ∃ δ : ℝ, 0 < δ ∧ ∃ᶠ X : ℕ in atTop, δ * Nat.primeCounting X ≤
+        ((ThetaPrimeDensity.primeSet P X).card : ℝ) := by
+  obtain ⟨q,hq,g,hg,hm,δ,hδ,h⟩ := w
+  exact ⟨δ,hδ,((frequently_positive_prefix hg hm).and_eventually h).mono (fun _ hx => hx.2 hx.1)⟩
+
 private lemma transfer {q r : ℕ} [NeZero q] {s c ε : ℝ} {F : ℕ → ℝ}
     (hs : |s|=1) (hε : 0<ε) (hq : 24∣q) (hf : OnMod q F)
     (hm : 0<unitMean q (fun n => (if n%24=r then s*F n-c else 0)-2*ε))
     (herr : ∀ᶠ X : ℕ in atTop, ∑ p∈Nat.primesLE X,|scaledOff p-F p|≤ε*Nat.primeCounting X) :
-    ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
-      (((Nat.primesLE X).filter (fun p => p%24=r ∧ c<s*scaledOff p)).card:ℝ) := by
+    PeriodicWitness (fun p => p%24=r ∧ c<s*scaledOff p) := by
   classical
   let g (n : ℕ) := (if n%24=r then s*F n-c else 0)-2*ε
   have hg : OnMod q g := by intro n; dsimp only [g]; rw [Nat.mod_mod_of_dvd _ hq,hf]
@@ -68,20 +80,23 @@ private lemma transfer {q r : ℕ} [NeZero q] {s c ε : ℝ} {F : ℕ → ℝ}
         rw [abs_mul,hs,one_mul,abs_sub_comm] at hh
         linarith only [le_of_not_gt h,hh]
     · simp [hr,abs_nonneg]
-  refine ⟨ε/M,div_pos hε hM,?_⟩
-  apply ((frequently_positive_prefix hg hm).and_eventually herr).mono
-  intro X hh
+  refine ⟨q,inferInstance,g,hg,hm,ε/M,div_pos hε hM,?_⟩
+  filter_upwards [herr] with X he hprefix
+  have heq : ThetaPrimeDensity.primeSet (fun p => p%24=r ∧ c<s*scaledOff p) X =
+      (Nat.primesLE X).filter (fun p => p%24=r ∧ c<s*scaledOff p) := by
+    ext p
+    simp only [ThetaPrimeDensity.primeSet,mem_filter]
+  rw [heq]
   have hu := sum_le_sum (s:=Nat.primesLE X) (fun p _ => hpoint p)
   simp only [sum_sub_distrib,sum_add_distrib,← sum_filter,sum_const,nsmul_eq_mul,
     Nat.primesLE_card_eq_primeCounting] at hu
   rw [div_mul_eq_mul_div,div_le_iff₀ hM]
-  linarith only [hh.1,hh.2,hu]
+  linarith only [hprefix,he,hu]
 
 private lemma scaled_excursions {r : ℕ} {s c a₀ : ℝ}
     (hweight : ∀ V : ℕ, 2≤V → a₀≤commonWeight (2*V^52) 3)
     (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<4*a₀/15) :
-    ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
-      ((ThetaPrimeDensity.primeSet (fun p => p%24=r ∧ c<s*scaledOff p) X).card:ℝ) := by
+    PeriodicWitness (fun p => p%24=r ∧ c<s*scaledOff p) := by
   classical
   let ε := (a₀/30-c/8)/4
   have hε : 0<ε := by dsimp [ε]; linarith
@@ -109,23 +124,19 @@ private lemma scaled_excursions {r : ℕ} {s c a₀ : ℝ}
     rcases hrs with ⟨rfl,rfl⟩|⟨rfl,rfl⟩
     · linarith only [hp,h₃,hc]
     · linarith only [hn,h₃,hc]
-  obtain ⟨δ,hδ,H⟩ := transfer hs hε h24 hper hm herr
-  refine ⟨δ,hδ,H.mono (fun X hX => hX.trans ?_)⟩
-  apply Nat.cast_le.mpr; apply card_le_card
-  intro p hp
-  simpa only [ThetaPrimeDensity.primeSet,mem_filter] using hp
+  exact transfer hs hε h24 hper hm herr
 
-private lemma original_excursions {r : ℕ} {s c a₀ : ℝ}
+/-- Periodic witnesses for signed excursions of the original integer sum. -/
+theorem excursion_witness_of_weight {r : ℕ} {s c a₀ : ℝ}
     (hweight : ∀ V : ℕ, 2≤V → a₀≤commonWeight (2*V^52) 3)
     (hrs : (r=1 ∧ s=1) ∨ (r=17 ∧ s= -1)) (hc : c<32*a₀/(15*Real.pi^2)) :
-    ∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
-      ((ThetaPrimeDensity.primeSet (fun p => p%24=r ∧ c*p<s*((S p:ℝ)-divisibleDiagonal p)) X).card:ℝ) := by
+    PeriodicWitness (fun p => p%24=r ∧ c*p<s*((S p:ℝ)-divisibleDiagonal p)) := by
   have hπ : 0<Real.pi^2 := sq_pos_of_pos Real.pi_pos
   have hc' : c*(Real.pi^2/8)<4*a₀/15 := by
     rw [lt_div_iff₀ (by positivity)] at hc
     linarith only [hc]
-  obtain ⟨δ,hδ,H⟩ := scaled_excursions hweight hrs hc'
-  refine ⟨δ,hδ,H.mono (fun X hX => hX.trans ?_)⟩
+  obtain ⟨q,hq,g,hg,hm,δ,hδ,H⟩ := scaled_excursions hweight hrs hc'
+  refine ⟨q,hq,g,hg,hm,δ,hδ,H.mono (fun X hX hprefix => (hX hprefix).trans ?_)⟩
   apply Nat.cast_le.mpr; apply card_le_card
   classical
   intro p hp
@@ -150,10 +161,10 @@ theorem S_prime_excursion_densities_of_weight {a₀ c : ℝ}
     (∃ δ : ℝ, 0<δ ∧ ∃ᶠ X : ℕ in atTop, δ*Nat.primeCounting X ≤
       ((ThetaPrimeDensity.primeSet (fun p => p%24=17 ∧ (S p:ℝ)-divisibleDiagonal p< -(c*p)) X).card:ℝ)) := by
   constructor
-  · simpa only [one_mul] using original_excursions hweight (Or.inl ⟨rfl,rfl⟩) hc
+  · simpa only [one_mul] using (excursion_witness_of_weight hweight (Or.inl ⟨rfl,rfl⟩) hc).frequently
   · have he (p : ℕ) : c*p< -((S p:ℝ)-divisibleDiagonal p) ↔ (S p:ℝ)-divisibleDiagonal p< -(c*p) := by
       constructor <;> intro h <;> linarith
-    simpa only [neg_one_mul,he] using original_excursions hweight (Or.inr ⟨rfl,rfl⟩) hc
+    simpa only [neg_one_mul,he] using (excursion_witness_of_weight hweight (Or.inr ⟨rfl,rfl⟩) hc).frequently
 
 /-- For every c below 32/(15π²), each signed excursion of the original
 theta sum about its divisible diagonal has positive upper density relative
@@ -172,3 +183,5 @@ theorem S_prime_excursion_densities {c : ℝ} (hc : c<32/(15*Real.pi^2)) :
 end Arxiv.«2501.03234».ThetaOffDiagonalSigns
 #print axioms Arxiv.«2501.03234».ThetaOffDiagonalSigns.S_prime_excursion_densities_of_weight
 #print axioms Arxiv.«2501.03234».ThetaOffDiagonalSigns.S_prime_excursion_densities
+
+#print axioms Arxiv.«2501.03234».ThetaOffDiagonalSigns.excursion_witness_of_weight
