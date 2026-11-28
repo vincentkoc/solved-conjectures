@@ -9,7 +9,8 @@ namespace Green28PrimitiveSupport
 
 open Polynomial Finset
 
-private theorem divisor_subproduct {K : Type*} [Field K] (a : ℕ → K) (S : Finset ℕ)
+/-- A monic divisor of a split product selects a subfamily of its linear factors. -/
+theorem divisor_subproduct {K : Type*} [Field K] (a : ℕ → K) (S : Finset ℕ)
     {f g : K[X]} (fm : f.Monic) (gm : g.Monic) (eq : f*g=∏ i ∈ S, (X-C (a i))) :
     ∃ U⊆S, f=∏ i ∈ U, (X-C (a i)) := by
   classical
@@ -235,10 +236,12 @@ private theorem pure_of_width_zero {P : PMF ℤ} (fin : P.support.Finite) (hw : 
   · rw [(P.apply_eq_zero_iff z).mpr (by simpa [sing] using he),PMF.pure_apply]
     simp [he]
 
-/-- An output support primitive modulo two admits only a point-mass factor
-in any representation of its uniform law as an independent sum. -/
-theorem pure_factor_of_primitive {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
-    (sum : indepSum P Q=PMF.uniformOfFinset S ne) (primitive : PrimitiveBinary (outputMask S ne)) :
+/-- A real factor obstruction on the shifted mask forces a constant summand. -/
+theorem pure_factor_of_mask {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
+    (sum : indepSum P Q=PMF.uniformOfFinset S ne)
+    (obstruction : (outputMask S ne).Monic → ∀ {f g : ℝ[X]}, f.Monic → g.Monic →
+      f.coeff 0=1 → f*g=(outputMask S ne).map (Int.castRingHom ℝ) →
+      f.natDegree=0 ∨ g.natDegree=0) :
     (∃ x, P=PMF.pure x) ∨ (∃ y, Q=PMF.pure y) := by
   have flat : IsUniformOnSupport (indepSum P Q) := ⟨S,ne,sum⟩
   obtain ⟨pf,qf⟩ := finite_of_uniform_sum flat
@@ -268,9 +271,16 @@ theorem pure_factor_of_primitive {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonemp
     simp only [coeff_map,outputMask_coeff,least,←occ j]
     rcases bin j with h|h <;> simp [h]
   have mon : (outputMask S ne).Monic := monic_of_injective Int.cast_injective (product ▸ fm.mul gm)
-  rcases no_unit_constant_split _ mon primitive fm gm fc product with h|h
+  rcases obstruction mon fm gm fc product with h|h
   · exact Or.inl (pure_of_width_zero pf (fw ▸ h))
   · exact Or.inr (pure_of_width_zero qf (gw ▸ h))
+
+/-- An output support primitive modulo two admits only a point-mass factor
+in any representation of its uniform law as an independent sum. -/
+theorem pure_factor_of_primitive {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
+    (sum : indepSum P Q=PMF.uniformOfFinset S ne) (primitive : PrimitiveBinary (outputMask S ne)) :
+    (∃ x, P=PMF.pure x) ∨ (∃ y, Q=PMF.pure y) := by
+  exact pure_factor_of_mask ne sum fun mon => no_unit_constant_split _ mon primitive
 
 private theorem pure_ratios (x : ℤ) : RationalRatios (PMF.pure x) := by
   intro z y hy
@@ -280,13 +290,19 @@ private theorem pure_ratios (x : ℤ) : RationalRatios (PMF.pure x) := by
   · subst z; exact ⟨1,by simp⟩
   · exact ⟨0,by simp [PMF.pure_apply,eq]⟩
 
+/-- A point-mass summand of a uniform sum forces both marginals to be uniform. -/
+theorem uniform_of_pure_factor {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+    (pure : (∃ x, P=PMF.pure x) ∨ (∃ y, Q=PMF.pure y)) :
+    IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
+  apply uniform_of_rational_ratios flat
+  rcases pure with ⟨x,rfl⟩|⟨y,rfl⟩
+  · exact Or.inl (pure_ratios x)
+  · exact Or.inr (pure_ratios y)
+
 theorem uniform_of_primitive {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
     (sum : indepSum P Q=PMF.uniformOfFinset S ne) (primitive : PrimitiveBinary (outputMask S ne)) :
     IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
-  apply uniform_of_rational_ratios ⟨S,ne,sum⟩
-  rcases pure_factor_of_primitive ne sum primitive with ⟨x,rfl⟩|⟨y,rfl⟩
-  · exact Or.inl (pure_ratios x)
-  · exact Or.inr (pure_ratios y)
+  exact uniform_of_pure_factor ⟨S,ne,sum⟩ (pure_factor_of_primitive ne sum primitive)
 
 private theorem periodic_prod {M : Type*} [CommMonoid M] (u : ℕ → M) (d : ℕ) (period : u d=u 0) :
     ∏ i ∈ range d, u (i+1)=∏ i ∈ range d, u i := by
