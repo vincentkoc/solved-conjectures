@@ -10,7 +10,7 @@ noncomputable section
 theorem oscillation {m m₀ q a r u Y : ℕ} (hq : q.Prime) (ha : 0<a)
     (hm : m=m₀*q^a) (hm₀ : 0 < m₀) (hmP : m∣Y.factorial)
     (hr : r < m) (hu : u < m) (hrc : r.Coprime m) (huc : u.Coprime m)
-    (hmod : r ≡ u [MOD m₀]) (V : ℕ) :
+    (hmod : r ≡ u [MOD m₀]) (V : Window) :
     |ThetaSmoothConditionalModel.cond m r Y V-ThetaSmoothConditionalModel.cond m u Y V| ≤
       2*envelope*((logMass m+log q*mass m)/q) := by
   classical
@@ -46,7 +46,7 @@ theorem oscillation {m m₀ q a r u Y : ℕ} (hq : q.Prime) (ha : 0<a)
 theorem smooth_oscillation {m m₀ q a r u Y : ℕ} (hq : q.Prime) (ha : 0<a)
     (hm : m=m₀*q^a) (hm₀ : 0 < m₀) (hmP : m∣Y.factorial)
     (hr : r < m) (hu : u < m) (hrc : r.Coprime m) (huc : u.Coprime m)
-    (hmod : r ≡ u [MOD m₀]) (hl : 1≤log q) (hs : ∀ k∈m.primeFactors,k≤q) (V : ℕ) :
+    (hmod : r ≡ u [MOD m₀]) (hl : 1≤log q) (hs : ∀ k∈m.primeFactors,k≤q) (V : Window) :
     |ThetaSmoothConditionalModel.cond m r Y V-ThetaSmoothConditionalModel.cond m u Y V| ≤ 544*envelope*(log q)^2/q := by
   have hm' : 0 < m := by rw [hm];positivity [hq.pos]
   obtain ⟨hM,hL⟩ := smooth_bounds hm' hq.pos hl hs

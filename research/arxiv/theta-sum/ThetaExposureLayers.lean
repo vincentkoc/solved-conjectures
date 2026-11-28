@@ -6,11 +6,11 @@ open Finset Real ThetaFiniteExposure ThetaSmoothFiltration ThetaUnitExposure
 open ThetaPrimeTailTransfer ThetaSmoothConditionalModel
 noncomputable section
 
-def value (Y V t : ℕ) [NeZero Y.factorial] (x : (ZMod Y.factorial)ˣ) : ℝ :=
-  proj (key (modulus Y.factorial t)) (fun u : (ZMod Y.factorial)ˣ => model Y V (u:ZMod Y.factorial).val) x
+def value (Y : ℕ) (V : Window) (t : ℕ) [NeZero Y.factorial] (x : (ZMod Y.factorial)ˣ) : ℝ :=
+  proj (key (modulus Y.factorial t)) (fun u : (ZMod Y.factorial)ˣ => rowModel Y V (u:ZMod Y.factorial).val) x
 
 theorem baseline {Y t : ℕ} [NeZero Y.factorial] (hY : 2≤Y) (ht : 2≤t)
-    (hl : 1≤log t) (V : ℕ) (x : (ZMod Y.factorial)ˣ) :
+    (hl : 1≤log t) (V : Window) (x : (ZMod Y.factorial)ˣ) :
     |value Y V t x| ≤ envelope*(238*(log t)^2) := by
   have hm := pos (Nat.factorial_pos Y) t
   let : NeZero (modulus Y.factorial t) := ⟨hm.ne'⟩
@@ -19,7 +19,7 @@ theorem baseline {Y t : ℕ} [NeZero Y.factorial] (hY : 2≤Y) (ht : 2≤t)
     (divides (Nat.factorial_pos Y) t) (by omega) hl (prime_bound _ _) V
 
 theorem oscillation {Y t : ℕ} [NeZero Y.factorial] (hl : 1≤log (t+1:ℕ))
-    (V : ℕ) (x y : (ZMod Y.factorial)ˣ) (he : key (modulus Y.factorial t) x=key (modulus Y.factorial t) y) :
+    (V : Window) (x y : (ZMod Y.factorial)ˣ) (he : key (modulus Y.factorial t) x=key (modulus Y.factorial t) y) :
     |value Y V (t+1) x-value Y V (t+1) y| ≤ 544*envelope*(log (t+1:ℕ))^2/(t+1:ℕ) := by
   let P := Y.factorial
   let m := modulus P (t+1)
@@ -46,7 +46,7 @@ theorem oscillation {Y t : ℕ} [NeZero Y.factorial] (hl : 1≤log (t+1:ℕ))
     simpa only [Nat.ModEq,key,Nat.mod_mod_of_dvd _ hnm] using he
 
 theorem one_step {Y t : ℕ} [NeZero Y.factorial] (hl : 1≤log (t+1:ℕ))
-    (V : ℕ) {v a : ℝ} (ha : 544*envelope*(log (t+1:ℕ))^2/(t+1:ℕ)≤a)
+    (V : Window) {v a : ℝ} (ha : 544*envelope*(log (t+1:ℕ))^2/(t+1:ℕ)≤a)
     (hs : |v| * a≤1) :
     (∑ x,exp (v*value Y V (t+1) x)) ≤ exp (v^2*a^2)*∑ x,exp (v*value Y V t x) := by
   have hd : modulus Y.factorial t∣modulus Y.factorial (t+1) := by rw [next]; exact dvd_mul_right ..

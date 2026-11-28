@@ -9,15 +9,25 @@ open ThetaPrimeMeanSquare ThetaReciprocalInversion ThetaFactorialRows ThetaIdent
 open ThetaDivisorBudget
 noncomputable section
 
-def cond (m r Y V : ℕ) : ℝ :=
-  letI : NeZero Y.factorial := ⟨Nat.factorial_ne_zero _⟩
-  (m.totient:ℝ)*unitMean Y.factorial (fun n => selectClass r m n*model Y V n)
+/-- Arbitrary numerator window and cutoff for its common weight. -/
+structure Window where
+  width : ℕ → ℕ
+  weightCutoff : ℕ
 
-def term (m r Y V d : ℕ) : ℝ :=
-  letI : NeZero Y.factorial := ⟨Nat.factorial_ne_zero _⟩
-  commonWeight (2*V^52) d/d*residueMean r m d Y.factorial (coneWindow (coneWidth V) d)
+def standardWindow (V : ℕ) : Window := ⟨coneWindow (coneWidth V),2*V^52⟩
+instance : Coe ℕ Window := ⟨standardWindow⟩
 
-theorem expand (m r Y V : ℕ) : cond m r Y V = ∑ d∈Icc 2 Y,term m r Y V d := by
+def rowModel (Y : ℕ) (V : Window) := low Y V.width (commonWeight V.weightCutoff)
+
+def cond (m r Y : ℕ) (V : Window) : ℝ :=
+  letI : NeZero Y.factorial := ⟨Nat.factorial_ne_zero _⟩
+  (m.totient:ℝ)*unitMean Y.factorial (fun n => selectClass r m n*rowModel Y V n)
+
+def term (m r Y : ℕ) (V : Window) (d : ℕ) : ℝ :=
+  letI : NeZero Y.factorial := ⟨Nat.factorial_ne_zero _⟩
+  commonWeight V.weightCutoff d/d*residueMean r m d Y.factorial (V.width d)
+
+theorem expand (m r Y : ℕ) (V : Window) : cond m r Y V = ∑ d∈Icc 2 Y,term m r Y V d := by
   let : NeZero Y.factorial := ⟨Nat.factorial_ne_zero _⟩
   change (m.totient:ℝ)*unitMean Y.factorial (fun n => selectClass r m n*low Y _ _ n)=_
   rw [mean_low,mul_sum]
@@ -34,7 +44,7 @@ theorem envelope_nonneg : 0≤envelope := by
   dsimp [envelope];positivity
 
 theorem restricted {m r Y : ℕ} (hm : 1 < m) (hr : r < m) (hc : r.Coprime m)
-    (hmP : m ∣ Y.factorial) (V : ℕ) (D G : Finset ℕ) (hD : D ⊆ Icc 2 Y)
+    (hmP : m ∣ Y.factorial) (V : Window) (D G : Finset ℕ) (hD : D ⊆ Icc 2 Y)
     (hG : ∀ d∈D, m.gcd d∈G) :
     |∑ d∈D,term m r Y V d| ≤ envelope*∑ g∈G,logWeight g := by
   classical
@@ -44,10 +54,10 @@ theorem restricted {m r Y : ℕ} (hm : 1 < m) (hr : r < m) (hc : r.Coprime m)
       |term m r Y V d| ≤ (1080*Z)*(logWeight (m.gcd d)*tailWeight (d/(m.gcd d))) := by
     have hd := hD hd'
     obtain ⟨hl,hu⟩ := mem_Icc.mp hd
-    have H := residue_envelope hm hr hc hl hmP (Nat.dvd_factorial (by omega) hu) (coneWindow (coneWidth V) d)
-    obtain ⟨ha,ha'⟩ := commonWeight_bounds (2*V^52) d
-    calc _ = (commonWeight (2*V^52) d)*(|residueMean r m d Y.factorial (coneWindow (coneWidth V) d)|/d) := by
-             simp only [term,abs_mul,abs_div,abs_of_nonneg (show 0≤ (commonWeight (2*V^52) d) from ha),
+    have H := residue_envelope hm hr hc hl hmP (Nat.dvd_factorial (by omega) hu) (V.width d)
+    obtain ⟨ha,ha'⟩ := commonWeight_bounds V.weightCutoff d
+    calc _ = (commonWeight V.weightCutoff d)*(|residueMean r m d Y.factorial (V.width d)|/d) := by
+             simp only [term,abs_mul,abs_div,abs_of_nonneg (show 0≤ (commonWeight V.weightCutoff d) from ha),
                abs_of_nonneg (Nat.cast_nonneg d : 0≤ (d:ℝ))]; ring
          _ ≤ Z*(1080*logWeight (m.gcd d)*tailWeight (d/(m.gcd d))) :=
                mul_le_mul ha' H (by positivity) hZ
@@ -67,7 +77,7 @@ theorem restricted {m r Y : ℕ} (hm : 1 < m) (hr : r < m) (hc : r.Coprime m)
   exact H.trans ((mul_le_mul_of_nonneg_left hh (show 0≤1080*Z by positivity)).trans_eq (by dsimp only [envelope];ring))
 
 theorem smooth_bound {m r Y y : ℕ} (hm : 1 < m) (hr : r < m) (hc : r.Coprime m)
-    (hmP : m∣Y.factorial) (hy : 0<y) (hlog : 1≤log y) (hs : ∀ q∈m.primeFactors,q≤y) (V : ℕ) :
+    (hmP : m∣Y.factorial) (hy : 0<y) (hlog : 1≤log y) (hs : ∀ q∈m.primeFactors,q≤y) (V : Window) :
     |cond m r Y V| ≤ envelope*(238*(log y)^2) := by
   rw [expand]
   have he := restricted hm hr hc hmP V (Icc 2 Y) m.divisors Subset.rfl
