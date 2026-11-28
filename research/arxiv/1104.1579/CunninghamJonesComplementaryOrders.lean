@@ -153,7 +153,9 @@ private lemma split_prime_power {u v q : ℕ} (hu : 1<u) (hv : 1<v) (hc : u.Copr
     left
     nlinarith [Nat.mul_le_mul_left u hv',Nat.pow_pos hp.pos (n:=k)]
 
-private lemma factor_two_of_prime_power {q j : ℕ} (hq : IsPrimePow q) (hj : 0<j)
+/-- A reducible Jones polynomial with constant twice a prime power has a monic
+factorization with constants two and that prime power. -/
+theorem jones_factor_two_of_prime_power {q j : ℕ} (hq : IsPrimePow q) (hj : 0<j)
     (hred : ¬Irreducible ((jonesSumPolynomial (2*q) j).map (Int.castRingHom ℚ))) :
     ∃ A B : ℤ[X], A.Monic ∧ B.Monic ∧ A*B=jonesSumPolynomial (2*q) j ∧
       0<A.natDegree ∧ A.coeff 0=2 ∧ B.coeff 0=q := by
@@ -211,7 +213,7 @@ theorem jones_prime_power_part_degree_class {t j : ℕ} (ht : 5≤t) (ho : Odd t
     (hq : IsPrimePow ((2^t+1)/3)) (hj : 0<j)
     (hred : ¬Irreducible ((jonesSumPolynomial (jonesConstant t) j).map (Int.castRingHom ℚ))) :
     j ≡ t [MOD t*(t+1)] := by
-  obtain ⟨A,B,hA,_,hAB,_,hAu,_⟩ := factor_two_of_prime_power hq hj hred
+  obtain ⟨A,B,hA,_,hAB,_,hAu,_⟩ := jones_factor_two_of_prime_power hq hj hred
   exact jones_constant_two_degree_class ht ho hj hA ⟨B,hAB.symm⟩ hAu
 
 private lemma exceptional_irreducibility {t : ℕ} (ht : 3≤t) (ho : Odd t) :
@@ -253,7 +255,7 @@ theorem jones_prime_power_part_range (t j : ℕ) (ht : 5≤t) (ho : Odd t)
         rw [mul_pow,Nat.mul_comm (4^3)]
         exact (Nat.mul_le_mul_left _ (show 2^6 ≤ 2^(2*(t+1)) from
           Nat.pow_le_pow_right (by decide) (by omega))).trans hcut
-      obtain ⟨A,B,hA,_,hAB,hd,hAu,_⟩ := factor_two_of_prime_power hp hj hred
+      obtain ⟨A,B,hA,_,hAB,hd,hAu,_⟩ := jones_factor_two_of_prime_power hp hj hred
       have hk4 : 4*k ≤ j+1 := hk ▸ Nat.mul_le_mul_right k (by omega : 4≤t+1)
       obtain ⟨hdegree,hsize⟩ := jones_constant_two_degree_bounds ho (by omega) hk2 (by omega) hk hA hd ⟨B,hAB.symm⟩ hAu
       let e := A.natDegree
@@ -319,6 +321,7 @@ theorem jones_nine_complementary_classes (j : ℕ) (hj : 0<j)
   · exact check A B ha hab da ca cb h
   · exact check B A hb (mul_comm A B ▸ hab) db cb ca h
 
+#print axioms jones_factor_two_of_prime_power
 #print axioms jones_factor_complementary_modulus
 #print axioms jones_constant_two_degree_class
 #print axioms jones_prime_power_part_degree_class
