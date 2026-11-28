@@ -274,7 +274,8 @@ theorem one_deficit_of_one_unpaired {P Q : PMF ℤ} (sum : IsUniformOnSupport (i
     have rr := M.leftLow.greatest.2 low
     omega
 
-private theorem swap (P Q : PMF ℤ) : indepSum P Q=indepSum Q P := by
+/-- Interchanging the two independent integer laws preserves their sum. -/
+theorem indepSum_comm (P Q : PMF ℤ) : indepSum P Q=indepSum Q P := by
   change (P.bind fun x => Q.bind fun y => PMF.pure (x+y)) = _
   rw [PMF.bind_comm]
   simp only [indepSum, Bind.bind, add_comm]
@@ -286,10 +287,11 @@ theorem uniform_of_one_unpaired_each {P Q : PMF ℤ} (sum : IsUniformOnSupport (
     IsUniformOnSupport P ∧ IsUniformOnSupport Q := by
   by_cases size : width Q ≤ width P
   · exact uniform_of_one_deficit_of_width sum (one_deficit_of_one_unpaired sum left) size
-  · have rev := swap P Q ▸ sum
+  · have rev := indepSum_comm P Q ▸ sum
     exact (uniform_of_one_deficit_of_width rev (one_deficit_of_one_unpaired rev right) (by omega)).symm
 
-private theorem width_of_extremes {P : PMF ℤ} (pf : P.support.Finite) (E : Extremes P.support) :
+/-- The support width measured at any pair of certified extrema. -/
+theorem width_of_extremes {P : PMF ℤ} (pf : P.support.Finite) (E : Extremes P.support) :
     (width P : ℤ) = E.hi-E.lo := by
   classical
   let s := pf.toFinset
@@ -341,6 +343,8 @@ theorem one_unpaired_alternative {P Q : PMF ℤ} (sum : IsUniformOnSupport (inde
   have last := M.upper_eq
   exact Or.inr ⟨M,same,by omega,by omega,hpos,hlt,degree,bound,levels⟩
 
+#print axioms indepSum_comm
+#print axioms width_of_extremes
 #print axioms maximal_rectangle
 #print axioms one_unpaired_alternative
 #print axioms alignment_alternative
