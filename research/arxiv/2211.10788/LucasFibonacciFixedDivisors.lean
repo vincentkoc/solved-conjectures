@@ -376,7 +376,8 @@ theorem upperIndexForm_fixed_prime_power (r d k : ℕ) {p : ℕ} (hp : p.Prime) 
       exact scalar_lift p k (p+1) hs _
 
 
-private lemma form_scale {R : Type*} [CommRing R] (u x y : R) (r d : ℕ) :
+/-- Scaling both coordinates multiplies the form by the scale to the index step. -/
+theorem upperIndexForm_scale {R : Type*} [CommRing R] (u x y : R) (r d : ℕ) :
     upperIndexForm (u*x) (u*y) d r=u^d*upperIndexForm x y d r := by
   induction d generalizing r with
   | zero => simp [upperIndexForm]
@@ -418,7 +419,7 @@ private lemma affine_chart {m r d : ℕ} (h : ∀ x : ZMod m, upperIndexForm x 1
     (x y : ZMod m) (hy : IsUnit y ∨ IsUnit (x+y)) : upperIndexForm x y d r=0 := by
   have chart (a b : ZMod m) (hb : IsUnit b) : upperIndexForm a b d r=0 := by
     obtain ⟨u,rfl⟩ := hb
-    have hs := form_scale (u:ZMod m) ((↑u⁻¹:ZMod m)*a) 1 r d
+    have hs := upperIndexForm_scale (u:ZMod m) ((↑u⁻¹:ZMod m)*a) 1 r d
     simpa [←mul_assoc,h] using hs
   rcases hy with hy|hy
   · exact chart x y hy
@@ -456,7 +457,7 @@ private lemma affine_binary (r d e : ℕ) {p : ℕ} (hp : p.Prime) (hd : 0<d)
     · by_cases hx : (p:ℤ) ∣ x
       · obtain ⟨a,rfl⟩ := hx
         obtain ⟨b,rfl⟩ := hy
-        rw [form_scale,pow_succ,mul_comm ((p:ℤ)^e)]
+        rw [upperIndexForm_scale,pow_succ,mul_comm ((p:ℤ)^e)]
         exact mul_dvd_mul (dvd_pow_self _ hd.ne')
           (ih (fun n => (pow_dvd_pow (p:ℤ) (Nat.le_succ e)).trans (h n)) a b)
       · have hxy : ¬(p:ℤ) ∣ x+y := by
