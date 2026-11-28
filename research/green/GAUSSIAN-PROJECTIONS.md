@@ -63,3 +63,17 @@ For every 2-Lipschitz map $T$ on a finite-dimensional Euclidean space and every 
 The proof uses $n+1$ independent Gaussian increments. At each step the sum of the other $n$ increments, divided by $\sqrt n$, is exactly standard Gaussian and independent of the current increment. Rademacher’s theorem and dominated convergence give a Gaussian mean-square bound on the directional remainder. Averaging the derivative over the unrevealed increments gives a linear map of norm at most two. After centering, the errors at different steps are orthogonal. Their total second moment tends to zero, which gives the required weak approximation by finite adapted contractions. [Directional estimate](Green54GaussianLinearization.lean) · [Resampling and orthogonality](Green54GaussianResampling.lean) · [Finite approximation](Green54GaussianApproximation.lean)
 
 Caffarelli’s contraction theorem for smooth positive log-concave Gaussian tilts is the remaining hypothesis in this route to the positive DeepMind declaration. The Lipschitz image theorem and its finite approximations are unconditional. [Exact implication](Green54LipschitzImages.lean) · [Transport hypothesis](Green54ContractionReduction.lean)
+
+## Langevin approximation
+
+Let $\pi(dx)=c\,e^{-U(x)}\,dx$ be a probability measure in a finite Euclidean space. Suppose $G$ is an $L$-Lipschitz subgradient of $U$ and $\langle x-y,G(x)-G(y)\rangle\geq\|x-y\|^2$. For independent $Y\sim\pi$ and standard Gaussian $Z$, set $M=\mathbb E(\|G(Y)\|+2\|Z\|)^3$. Assume $M$ and $\mathbb E\|Y-x_0\|$ are finite. The unadjusted Langevin step sends $x$ to $x-hG(x)+\sqrt{2h}\,Z$. For $0<2h\leq1$ and $hL^2\leq1$, its expectation operator $P_h$ satisfies
+$$
+\left|P_h^n f(x_0)-\int f\,d\pi\right|
+\leq \operatorname{Lip}(f)\left[(1-h)^{n/2}\mathbb E\|Y-x_0\|+
+2\left(\frac L2+\frac L4(2+L)\right)M\sqrt h\right].
+$$
+One choice of $h,n$ therefore works for all 1-Lipschitz tests to any prescribed precision. Linear tests are included. Quantitative convergence of this algorithm for strongly convex potentials is classical. [Lean estimate and approximation theorem](Green54LangevinStationarity.lean) · [Durmus and Moulines](https://arxiv.org/abs/1507.05021)
+
+The proof compares the density of $(Y,Y-hG(Y)+\sqrt{2h}\,Z)$ with its transpose. Their minimum is symmetric, so it integrates $f(y)-f(x)$ to zero. The remaining term costs at most $\operatorname{Lip}(f)(L/2+L(2+L)/4)Mh^{3/2}$ per step. Contraction sums those errors geometrically. Independently, the centered finite Euler endpoint, viewed as a function of all its Gaussian innovations, has an exact representation as a sum of two standard Gaussian marginals. [Gaussian kernel](Green54GaussianKernel.lean) · [Log-density bound](Green54GaussianBalance.lean) · [Error propagation](Green54LangevinConvergence.lean) · [Finite-iterate Gaussian representation](Green54GaussianIterations.lean) · [Rectangular Lipschitz images](Green54RectangularImages.lean)
+
+Applying this construction to Green 54 still requires identifying the limit of the centered endpoint laws with the centered softmax conditional laws above and passing their two-Gaussian couplings to the limit.
