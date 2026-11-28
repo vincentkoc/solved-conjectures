@@ -11,7 +11,7 @@ private lemma join (a b c : ℕ) (hab : a≤b) (hbc : b≤c) :
   unfold block
   rw [←mul_add,sum_Ico_consecutive _ hab hbc]
 
-private lemma tiled (n t : ℕ) :
+lemma tiled (n t : ℕ) :
     ∑ i∈range t,block p (2^i) (min n (2^(i+1))) = block p 0 (min n (2^t)) := by
   induction t with
   | zero =>
