@@ -9,7 +9,8 @@ namespace Green51GoldSix
 local notation "F" => ZMod 2
 variable {K : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
 
-private theorem root_criterion (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
+/-- The nonzero vectors of a nonzero polar radical satisfy a cubic equation. -/
+theorem root_criterion (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
     {b r : K} (nb : b≠0) (nr : r≠0) : r∈(bracketForm Q b).ker ↔ b*r^3=1 := by
   rw [radical Q nq sq]
   rw [show b^2*r^4+b*r=(b*r)*(b*r^3+1) from by ring,mul_eq_zero]
@@ -201,6 +202,7 @@ theorem nineteen {α : ℝ} (density : α ≤ 64/(2:ℝ)^19) :
   exact (by decide : ¬(4:ℕ)≤3) (rank.symm.trans_le (bound W p sub))
 
 end Green51GoldSix
+#print axioms Green51GoldSix.root_criterion
 #print axioms Green51GoldSix.nineteen
 #print axioms Green51GoldSix.maximum_at_six
 #print axioms Green51GoldSix.four_flat_iff
