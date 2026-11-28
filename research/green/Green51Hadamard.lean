@@ -295,6 +295,11 @@ theorem partition_of_ones {n:ℕ} (length:n=16) (C:Submodule F (Cube n))
     (Subtype.val_injective.comp inj) vanish vanish ones balanced
   exact ⟨p,h,k⟩
 
+/-- The second binary character moment, expressed in support sizes. -/
+theorem weight_second_moment {n:ℕ} (C:Submodule F (Cube n)) :
+    (n:ℤ)*Fintype.card C≤∑x:C,((n:ℤ)-2*(supp x.val).card)^2 := by
+  simpa only [←imbalance_weight] using (moments C).2
+
 end Green51Hadamard
 #print axioms Green51Hadamard.partition_of_ones
 
@@ -302,3 +307,5 @@ end Green51Hadamard
 #print axioms Green51Hadamard.pair_partition
 
 #print axioms Green51Hadamard.opposite_on_pairs
+
+#print axioms Green51Hadamard.weight_second_moment
