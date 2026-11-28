@@ -11,12 +11,12 @@ namespace Arxiv.«2501.03234».ThetaFourier
 open Finset
 open ThetaDiagonal (U rep sign oddReps)
 
-variable {p : ℕ} [Fact p.Prime]
+variable {p : ℕ} [NeZero p]
 
-private def odds (p : ℕ) [Fact p.Prime] : Finset (ZMod p) :=
+def odds (p : ℕ) [NeZero p] : Finset (ZMod p) :=
   univ.filter (fun a => a.val % 2 = 1)
 
-private lemma sum_odds {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
+private lemma sum_odds [Fact p.Prime] {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
     ∑ a ∈ oddReps p, f (a : ZMod p) = ∑ a ∈ odds p, f a := by
   apply sum_bij (fun (a : U p) _ => (a : ZMod p))
   · intro a ha
@@ -29,18 +29,15 @@ private lemma sum_odds {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
     exact ⟨Units.mk0 b hn, mem_filter.mpr ⟨mem_univ _, ho⟩, rfl⟩
   · intros; rfl
 
-private lemma card_odds (hp : p % 2 = 1) : (odds p).card = p / 2 := by
-  simpa [ThetaDiagonal.card_oddReps hp] using (sum_odds (p := p) (fun _ => (1 : ℕ))).symm
-
 /-- The unnormalized additive Fourier coefficient, with positive exponent. -/
-private noncomputable def amp (A : Finset (ZMod p)) (t : ZMod p) : ℂ :=
+noncomputable def amp (A : Finset (ZMod p)) (t : ZMod p) : ℂ :=
   ∑ x ∈ A, ZMod.stdAddChar (x * t)
 
 /-- Number of ordered pairs in A whose product also belongs to A, viewed in ℂ. -/
-private noncomputable def triples (A : Finset (ZMod p)) : ℂ :=
+noncomputable def triples (A : Finset (ZMod p)) : ℂ :=
   ∑ a ∈ A, ∑ b ∈ A, if a * b ∈ A then 1 else 0
 
-private lemma S_trip (hp : p % 2 = 1) :
+private lemma S_trip [Fact p.Prime] (hp : p % 2 = 1) :
     (S p : ℂ) = 4 * triples (odds p) - 2 * ((odds p).card : ℂ)^2 := by
   rw [ThetaDiagonal.S_eq_odd_square hp]
   push_cast
@@ -73,7 +70,7 @@ private lemma inversion (A : Finset (ZMod p)) (z : ZMod p) :
   simp_rw [show ∀ x t : ZMod p, x * -t + z * t = (z - x) * t by intros; ring]
   simp [orthog, sub_eq_zero, sum_ite_eq]
 
-private lemma expand_triples (A : Finset (ZMod p)) :
+lemma expand_triples (A : Finset (ZMod p)) :
     (p : ℂ) * triples A =
       ∑ t : ZMod p, amp A (-t) * ∑ a ∈ A, amp A (a * t) := by
   simp only [triples, mul_sum, ← inversion]
@@ -94,13 +91,13 @@ private lemma expand_triples (A : Finset (ZMod p)) :
       intro a _
       rw [mul_assoc]
 
-private noncomputable def mass (A : Finset (ZMod p)) : ℝ :=
+noncomputable def mass (A : Finset (ZMod p)) : ℝ :=
   ∑ t ∈ univ.erase 0, ‖amp A t‖
 
-private lemma mass_nonneg (A : Finset (ZMod p)) : 0 ≤ mass A := sum_nonneg fun _ _ => norm_nonneg _
+lemma mass_nonneg (A : Finset (ZMod p)) : 0 ≤ mass A := sum_nonneg fun _ _ => norm_nonneg _
 
 /-- Scaling the odd representatives by a nonzero frequency samples distinct nonzero frequencies. -/
-private lemma norm_slice (A : Finset (ZMod p)) (hA : 0 ∉ A) {t : ZMod p} (ht : t ≠ 0) :
+private lemma norm_slice [Fact p.Prime] (A : Finset (ZMod p)) (hA : 0 ∉ A) {t : ZMod p} (ht : t ≠ 0) :
     ‖∑ a ∈ A, amp A (a * t)‖ ≤ mass A := by
   apply (norm_sum_le _ _).trans
   have hi : Set.InjOn (fun a : ZMod p => a * t) A := (mul_left_injective₀ ht).injOn
@@ -112,7 +109,7 @@ private lemma norm_slice (A : Finset (ZMod p)) (hA : 0 ∉ A) {t : ZMod p} (ht :
   · intros; positivity
 
 /-- Removing the zero frequency leaves an error bounded by the square of the Fourier mass. -/
-private lemma trip_error (A : Finset (ZMod p)) (hA : 0 ∉ A) :
+private lemma trip_error [Fact p.Prime] (A : Finset (ZMod p)) (hA : 0 ∉ A) :
     ‖(p : ℂ) * triples A - (A.card : ℂ)^3‖ ≤ (mass A)^2 := by
   classical
   rw [expand_triples, ← sum_erase_add _ _ (mem_univ (0 : ZMod p))]
@@ -164,7 +161,7 @@ theorem char_ne_one (t : ZMod p) (ht : t ≠ 0) : ZMod.stdAddChar t ≠ 1 := by
   exact fun h => ht (ZMod.injective_stdAddChar h)
 
 /-- The odd representatives form a progression with common difference two. -/
-private lemma amp_le_weight (hp : p % 2 = 1) {t : ZMod p} (ht : 2 * t ≠ 0) :
+lemma amp_le_weight (hp : p % 2 = 1) {t : ZMod p} (ht : 2 * t ≠ 0) :
     ‖amp (odds p) t‖ ≤ weight (2 * t) := by
   let z := ZMod.stdAddChar (2 * t)
   have hz : ‖z‖ = 1 := norm_char _
@@ -194,7 +191,7 @@ private lemma weight_neg (t : ZMod p) : weight (-t) = weight t := by
 /-- On the lower half of the circle Jordan’s sine bound gives a reciprocal-frequency bound. -/
 private lemma weight_small {n : ℕ} (hn : 0 < n) (hle : n ≤ p / 2) :
     weight (n : ZMod p) ≤ (p : ℝ) / (2 * n) := by
-  have hp : 0 < p := (Fact.out : p.Prime).pos
+  have hp : 0 < p := NeZero.pos p
   have hp' : (0 : ℝ) < p := by exact_mod_cast hp
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   have h2n : (2 : ℝ)*n ≤ p := by exact_mod_cast (show 2 * n ≤ p by omega)
@@ -223,7 +220,7 @@ private lemma weight_small {n : ℕ} (hn : 0 < n) (hle : n ≤ p / 2) :
   have hh := (div_le_iff₀ hp').mp hs
   linarith
 
-private lemma sum_nonzero (f : ZMod p → ℝ) :
+lemma sum_nonzero {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
     ∑ t ∈ univ.erase 0, f t = ∑ n ∈ Ico 1 p, f (n : ZMod p) := by
   apply sum_bij (fun (t : ZMod p) _ => t.val)
   · intro t ht
@@ -264,24 +261,28 @@ theorem weight_mass (hp : p % 2 = 1) :
       push_cast
       rfl
 
-private lemma mass_odds (hp : p % 2 = 1) :
+lemma card_odds (hp : p%2=1) : (odds p).card=p/2 := by
+  simpa using (sum_progression (p:=p) hp (fun _ => (1:ℕ))).symm
+
+omit [NeZero p] in
+lemma two_unit (hp : p%2=1) : IsUnit (2:ZMod p) := by
+  exact (ZMod.isUnit_iff_coprime 2 p).2 (Nat.prime_two.coprime_iff_not_dvd.mpr (by omega))
+
+lemma mass_odds (hp : p % 2 = 1) :
     mass (odds p) ≤ (p : ℝ) * harmonic (p / 2) := by
-  have h2 : (2 : ZMod p) ≠ 0 := by
-    have hgt : 2 < p := by have := (Fact.out : p.Prime).two_le; omega
-    have := ZMod.val_natCast_of_lt hgt
-    intro he
-    change (2 : ZMod p).val = 2 at this
-    rw [he, ZMod.val_zero] at this
-    omega
+  obtain ⟨v,hv⟩ := two_unit (p:=p) hp
   apply le_trans _ (weight_mass hp)
   calc
-    mass (odds p) ≤ ∑ t ∈ univ.erase (0 : ZMod p), weight (2 * t) := by
+    mass (odds p) ≤ ∑ t ∈ univ.erase (0 : ZMod p), weight ((v:ZMod p) * t) := by
       apply sum_le_sum
       intro t ht
-      exact amp_le_weight hp (mul_ne_zero h2 (mem_erase.mp ht).1)
+      rw [hv]
+      apply amp_le_weight hp
+      rw [←hv]
+      simpa using (mem_erase.mp ht).1
     _ = _ := by
-      apply sum_nbij' (fun t => 2 * t) (fun t => (2 : ZMod p)⁻¹*t)
-      all_goals simp [h2]
+      apply sum_nbij' (fun t => (v:ZMod p)*t) (fun t => (↑(v⁻¹):ZMod p)*t)
+      all_goals simp [←mul_assoc]
 
 /-- Centered, explicit harmonic bound for the canonical theta sum at an odd prime. -/
 theorem S_centered_harmonic_bound (p : ℕ) (hprime : p.Prime) (hodd : Odd p) :
@@ -384,6 +385,7 @@ theorem conjecture_3_3_upper {C ε : ℝ} (hC : 0 < C) (hε : 0 < ε) :
 
 end Arxiv.«2501.03234».ThetaFourier
 
+#print axioms Arxiv.«2501.03234».ThetaFourier.mass_odds
 #print axioms Arxiv.«2501.03234».ThetaFourier.S_centered_harmonic_bound
 #print axioms Arxiv.«2501.03234».ThetaFourier.abs_S_le_log_sq
 #print axioms Arxiv.«2501.03234».ThetaFourier.S_isBigO_prime_log_sq
