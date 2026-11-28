@@ -167,7 +167,7 @@ private theorem generator_degree {K : Type*} [Field K] [NumberField K]
 
 /-- An integral primitive element generates an order of full rank. Its
 additive index annihilates the quotient and belongs to the conductor. -/
-private theorem exponent_pos {K : Type*} [Field K] [NumberField K]
+theorem exponent_pos {K : Type*} [Field K] [NumberField K]
     (θ : 𝓞 K) (hθ : ℚ⟮(θ : K)⟯ = ⊤) : 0 < RingOfIntegers.exponent θ := by
   let A := Algebra.adjoin ℤ ({θ} : Set (𝓞 K))
   have hr : Module.finrank ℤ A = Module.finrank ℤ (𝓞 K) := by
@@ -391,6 +391,7 @@ theorem exists_prime_subsequence :
 #print axioms arbitrarily_large_split_gap
 #print axioms arbitrarily_large_deficit
 #print axioms splitting_test
+#print axioms exponent_pos
 #print axioms arbitrarily_large_splitting_prime
 #print axioms card_add_gap_roots
 #print axioms card_add_gap_endpoints
