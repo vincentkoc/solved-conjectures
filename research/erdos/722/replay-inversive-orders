@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""Replay the square-order obstructions using Dugongue's pinned Bruck–Ryser proof."""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import runpy
+import shutil
+import subprocess
+from tempfile import TemporaryDirectory
+from urllib.request import urlopen
+
+
+TOPIC = Path(__file__).resolve().parent
+RESEARCH = TOPIC.parents[1]
+OMA_PIN = "819608fccbdb8a58c5b7f503607e93c05619731d"
+URL = (f"https://raw.githubusercontent.com/lefttosolve2/open-math-agents/{OMA_PIN}/"
+       "proofs/Erdos723.erdos_723.variants.bruck_ryser.lean")
+DIGEST = "7d982c64b9394a79af447af84dfde2b35f4c110b7fd8716bd4e8e68b8c2ce66b"
+HOST = {"722": "647c61af68edd71036d9ed702a00a23abbee4bab",
+        "723": "3d0d244fe57ea0925bf8d1ae5f6cfec3d35d37fe"}
+
+COMPARISON = """
+import FormalConjectures.ErdosProblems.«722»
+import Erdos722InversiveBruckRyser
+/-! Direct comparisons with the pinned problems and two numerical specializations. -/
+open Erdos722.InversiveOrder Filter
+example : (type_of% Erdos722.erdos_722) = (∀ r k : ℕ, 1≤r → r<k → ∀ᶠ n : ℕ in atTop,
+    (∀ i<r, (k-i).choose (r-i) ∣ (n-i).choose (r-i)) →
+    ∃ H : Finset (Finset (Fin n)), H.IsBlockDesign r k) := rfl
+example : (type_of% @OMA.solution) = (type_of% @Erdos723.erdos_723.variants.bruck_ryser) := rfl
+example : ¬∃ H : Finset (Finset (Fin 37)), H.IsBlockDesign 3 7 :=
+  (signed_inversive_obstruction (q:=6) (by decide) (Or.inr (by decide)) (Or.inr (by decide))).2
+example : ∀ i<3, (7-i).choose (3-i) ∣ (77-i).choose (3-i) := by
+  intro i hi
+  interval_cases i <;> decide
+example {v : ℕ} (hv : 215<v) {H : Finset (Finset (Fin v))} (hH : H.IsBlockDesign 3 215) :
+    68588≤v := by
+  have h := double_prime_order_bound (p:=107) (by decide) (by decide) hv hH
+  by_contra! hs
+  have hc := Nat.pow_le_pow_left (show v≤68587 by omega) 3
+  norm_num at h hc
+  omega
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--certificate", type=Path, help="reuse the unmodified pinned source")
+    args = parser.parse_args()
+    upstream = Path.cwd()
+    manifest = json.loads((upstream / "lake-manifest.json").read_text())
+    if not any(p["name"] == "mathlib" and p.get("rev") == "0df444a360eaa60ab8c11dca51a86af692955474"
+               for p in manifest["packages"]) or "version 4.33.1," not in subprocess.check_output(
+                    ["lean", "--version"], text=True):
+        raise SystemExit("expected the pinned Formal Conjectures Lake environment")
+    runner = runpy.run_path(str(RESEARCH.parent / "scripts/replay-research"))
+    files = set(RESEARCH.rglob("*.lean"))
+    env = os.environ.copy()
+    roots = sorted({str(f.parent) for f in files})
+    env["LEAN_SRC_PATH"] = os.pathsep.join([str(RESEARCH.parent), *roots, env["LEAN_SRC_PATH"]])
+    order, _, aliases = runner["dependency_order"]([TOPIC / "Erdos722CubicOrderBound.lean"],
+                                                  files, upstream, env)
+    with TemporaryDirectory(prefix="steiner-square-orders-") as directory:
+        out = Path(directory)
+        env["LEAN_PATH"] = os.pathsep.join([directory, env["LEAN_PATH"]])
+        for name, digest in HOST.items():
+            path = Path(f"FormalConjectures/ErdosProblems/{name}.lean")
+            if subprocess.check_output(["git", "hash-object", path], text=True).strip() != digest:
+                raise SystemExit(f"{path} differs from the audited source")
+            obj = out / path.with_suffix(".olean")
+            obj.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["lean", "-R", upstream, "-o", obj, path], env=env, check=True)
+        cert = out / "BruckRyserCertificate.lean"
+        if args.certificate:
+            data = args.certificate.read_bytes()
+        else:
+            with urlopen(URL, timeout=60) as response:
+                data = response.read()
+        if hashlib.sha256(data).hexdigest() != DIGEST:
+            raise SystemExit("Bruck–Ryser certificate differs from the pinned source")
+        cert.write_bytes(data)
+        subprocess.run(["lean", "-R", out, "-o", cert.with_suffix(".olean"), cert], env=env, check=True)
+        for source in order:
+            runner["compile_proof"](source, out, env)
+            if source in aliases:
+                runner["compile_alias"](source, out, env)
+        adapter = out / "Erdos722InversiveBruckRyser.lean"
+        shutil.copyfile(TOPIC / (adapter.name + ".in"), adapter)
+        runner["compile_proof"](adapter, out, env)
+        subprocess.run(["lean", "-DwarningAsError=true", "--stdin"], input=COMPARISON,
+                       text=True, env=env, check=True)
+        runner["replay_kernel"]([cert, *order, adapter], env)
+        print(f"Replayed {len(order) + 1} notebook and adapter modules and the Bruck–Ryser certificate.")
+
+
+if __name__ == "__main__":
+    main()
