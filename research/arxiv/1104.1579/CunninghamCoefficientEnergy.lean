@@ -50,7 +50,8 @@ private lemma coeff_sq_le (P : ℤ[X]) {i N : ℕ} (hi : i<N) :
     (P.coeff i)^2 ≤ energy P N :=
   Finset.single_le_sum (f:=fun i => (P.coeff i)^2) (fun _ _ => sq_nonneg _) (Finset.mem_range.mpr hi)
 
-private lemma middle (P : ℤ[X]) (N : ℕ) :
+/-- The middle coefficient is the full squared weight through degree N. -/
+lemma coeff_mul_self_reflect (P : ℤ[X]) (N : ℕ) :
     (P*reflect N P).coeff N = energy P (N+1) := by
   rw [coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ
     (fun i k => P.coeff i * (reflect N P).coeff k)]
@@ -63,7 +64,7 @@ private lemma middle (P : ℤ[X]) (N : ℕ) :
 private lemma flip_energy (A B : ℤ[X]) (N : ℕ) (hN : N=A.natDegree+B.natDegree) :
     energy (A.reverse*B) (N+1)=energy (A*B) (N+1) := by
   subst N
-  rw [←middle,←middle,reflect_mul _ _ A.reverse_natDegree_le le_rfl,reflect_mul _ _ le_rfl le_rfl]
+  rw [←coeff_mul_self_reflect,←coeff_mul_self_reflect,reflect_mul _ _ A.reverse_natDegree_le le_rfl,reflect_mul _ _ le_rfl le_rfl]
   unfold reverse
   rw [reflect_reflect]
   ring
