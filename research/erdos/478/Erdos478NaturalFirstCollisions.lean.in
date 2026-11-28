@@ -1,0 +1,61 @@
+import Erdos478FirstCollisionLaw
+import Erdos478ShortFreeWindows
+import Erdos478NaturalHitWindows
+
+/-! # Ordinary densities for the first factorial collision and short-free primes -/
+
+namespace Erdos478.FirstCollision
+open Finset Filter Topology GapDensity GapSieve BinaryGap FrobeniusBands
+open scoped Classical
+noncomputable section
+
+/-- Ordinary frequencies of the exact smallest positive index difference over
+the pinned interval. The limiting masses sum to one, with every prime in the support. -/
+theorem ordinary_first_law :
+    (∀ l, Tendsto (fun X => fraction X (fun p => First p l)) atTop (𝓝 (firstDensity l))) ∧
+    HasSum firstDensity 1 ∧ ∀ l, l.Prime → 0<firstDensity l :=
+  ⟨first_limit_all degree_one_prime_ideal_theorem,atom_sum degree_one_prime_ideal_theorem,
+    fun _ hl => prime_atom_pos degree_one_prime_ideal_theorem hl⟩
+
+theorem ordinary_prime_atom {l : ℕ} (hl : l.Prime) :
+    ((∏ k∈Icc 2 (l-1), k.factorial : ℕ) : ℝ)⁻¹ /
+      (if broad l ∧ 3<l then 2 else (l:ℝ)) ≤ firstDensity l ∧
+    survival (l-1) ≤ (if broad l ∧ 3<l then 2 else (l:ℝ))*firstDensity l :=
+  ⟨prime_atom_lower degree_one_prime_ideal_theorem hl,first_density_bound degree_one_prime_ideal_theorem hl⟩
+
+theorem ordinary_survival (K : ℕ) :
+    Tendsto (fun X => fraction X (fun p => NoShort p K)) atTop (𝓝 (survival K)) ∧
+    ((∏ k∈Icc 2 K, k.factorial : ℕ) : ℝ)⁻¹ ≤ survival K ∧ survival K≤(1/2:ℝ)^(family 3 K).card :=
+  ⟨survival_limit degree_one_prime_ideal_theorem K,survival_lower K,survival_tail degree_one_prime_ideal_theorem K⟩
+
+theorem ordinary_short_free_window {H : ℕ → ℕ} {L b z A : ℝ} (hL : 1<L)
+    (hw : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hz : 0<z) (hz₁ : z≤1)
+    (hA : A<b*Real.log z-(L-1)/3*Real.log ((1+z)/2)) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-Real.exp (-A*K/Real.log K)<
+      relativeWindow X K (family K (H K)) (b*K/Real.log K) :=
+  relative_window_of_inputs degree_one_prime_ideal_theorem broad_mass hL hw hz hz₁ hA
+
+/-- Even within the primes avoiding every collision of length at most K, long
+distinct lengths in the next dyadic window give a growing canonical image deficit. -/
+theorem ordinary_short_free_dyadic {A : ℝ} (hA : A<Real.log (32/27)/9) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-Real.exp (-A*K/Real.log K)<
+      relativeWindow X K (family K (2*K)) ((1/9:ℝ)*K/Real.log K) := by
+  refine ordinary_short_free_window (H:=fun K => 2*K) (L:=2) (b:=1/9) (z:=1/2)
+    (by norm_num) ?_ (by norm_num) (by norm_num) ?_
+  · apply (tendsto_const_nhds (x:=(2:ℝ))).congr'
+    filter_upwards [eventually_gt_atTop 0] with K hK
+    push_cast
+    field_simp
+  · have rate : Real.log (32/27)/9=(1/9)*Real.log (1/2)-(2-1)/3*Real.log ((1+1/2)/2) := by
+      rw [show (32/27:ℝ)=(1/2)/(3/4)^3 by norm_num,Real.log_div (by norm_num) (by norm_num),
+        Real.log_pow,show ((1+1/2)/2:ℝ)=3/4 by norm_num]
+      ring
+    exact rate ▸ hA
+
+#print axioms ordinary_first_law
+#print axioms ordinary_prime_atom
+#print axioms ordinary_survival
+#print axioms ordinary_short_free_window
+#print axioms ordinary_short_free_dyadic
+end
+end Erdos478.FirstCollision

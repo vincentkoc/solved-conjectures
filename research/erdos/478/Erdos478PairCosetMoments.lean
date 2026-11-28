@@ -42,6 +42,15 @@ private theorem fixed_square (Y : Type*) [MulAction G Y] (g : G) :
       right_inv := fun _ => rfl }
   exact (Nat.card_congr e).trans (Nat.card_prod _ _)
 
+/-- A transitive subgroup has exactly one fixed point on average in each ambient coset. -/
+theorem transitive_coset_mean {Y : Type*} [Fintype Y] [Nonempty Y] [MulAction G Y]
+    (trans : ∀ x y : Y, ∃ n : N, n.val • x=y) (g : G) :
+    uniform N (fun n => (fixedCount Y (n.val*g) : ℝ))=1 := by
+  rw [twisted_fixed N Y g (fun y => trans y _)]
+  simpa only [Nat.card_unique,Nat.cast_one] using
+    orbit_mean N (fun _ : Y => (() : Unit)) (fun _ => ⟨Classical.choice inferInstance,rfl⟩)
+      (fun x y => ⟨fun _ => trans x y,fun _ => rfl⟩)
+
 /-- Transitivity on both the diagonal and its complement is sufficient, even
 when the ambient permutation group is larger than the subgroup. -/
 theorem pair_coset_moments {Y : Type*} [Fintype Y] [Nontrivial Y] [MulAction G Y]
@@ -53,10 +62,7 @@ theorem pair_coset_moments {Y : Type*} [Fintype Y] [Nontrivial Y] [MulAction G Y
     obtain ⟨n,h,_⟩ := pairs x x y y (by simp)
     exact ⟨n,h⟩
   constructor
-  · rw [twisted_fixed N Y g (fun y => trans y _)]
-    simpa only [Nat.card_unique,Nat.cast_one] using
-      orbit_mean N (fun _ : Y => (() : Unit)) (fun _ => ⟨Classical.choice inferInstance,rfl⟩)
-        (fun x y => ⟨fun _ => trans x y,fun _ => rfl⟩)
+  · exact transitive_coset_mean N trans g
   · let q (x : Y×Y) := decide (x.1=x.2)
     have onto : Surjective q := by
       obtain ⟨a,b,ne⟩ := exists_pair_ne Y
@@ -76,6 +82,7 @@ theorem pair_coset_moments {Y : Type*} [Fintype Y] [Nontrivial Y] [MulAction G Y
     have h := (twisted_fixed N (Y×Y) g within).trans (orbit_mean N q onto orb)
     simpa only [fixed_square,Nat.cast_mul,pow_two,Nat.card_eq_fintype_card,Fintype.card_bool,Nat.cast_ofNat] using h
 
+#print axioms transitive_coset_mean
 #print axioms pair_coset_moments
 end
 end Erdos478.FrobeniusCounts

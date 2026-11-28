@@ -30,6 +30,7 @@ ADAPTERS = {
     "counts": "Erdos478NaturalExactCounts",
     "conditional-hits": "Erdos478NaturalConditionalHits",
     "diverse-windows": "Erdos478NaturalHitWindows",
+    "first-collisions": "Erdos478NaturalFirstCollisions",
     "paired": "Erdos478NaturalPairedDensity",
     "sextic": "Erdos478NaturalSexticCounts",
     "real-gaps": "Erdos478NaturalCubicPattern",
