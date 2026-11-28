@@ -1,0 +1,15 @@
+# Prime-free intervals on the Lucas–Fibonacci diagonal
+
+Write `U(n) = 2Fₙ + Fₙ₊₂`. Fix any starting index `r ≥ 0` and step `d ≥ 1`. In **every** parameter interval `[N,2N)` with `N ≥ 1`, there are `k` consecutive parameters for which each value `U(r+dt)` has at least two distinct prime divisors. Here
+
+```text
+k = isqrt(⌊log₂ N⌋ div (4r + 6d + 12)).
+```
+
+For each of those `k` values there is a prime factor **larger than `k`** that divides no other value in the block. Thus even prime powers are absent throughout a block of length growing as a constant times `√log N` on each fixed progression. The pinned conjecture asks whether infinitely many values on the upper diagonal are themselves prime. Their infinitude remains open. [Lean proof](LucasFibonacciCompositeBlocks.lean) · [Pinned sequence and conjecture](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2211.10788/LucasFibonacciSumPrimes.lean)
+
+There is also a spacing bound at any prescribed block length. For each `k`, the proof finds a single positive `T` such that **every** parameter `1 + Tt` for `t ≥ 1` starts a qualifying block. The bound is `T ≤ 2^(2(2k(r+dk+2) + k² + dk²))`. Ching, Flórez, Luca, Mukherjee and Saunders prove in Theorem 3.1 that the full Hosoya triangle contains arbitrarily large composite squares whose two coordinates can vary. Their Proposition 2.2 bounds a common divisor on a fixed diagonal by a Fibonacci number at the separation. Here the diagonal, starting index and progression step are fixed before choosing the block. [Ching et al., Proposition 2.2 and Theorem 3.1](https://arxiv.org/pdf/2211.10788#page=4) · [Modular return-rank lemma](ProgressionDivisors.md)
+
+To construct the blocks, take the product `B` of the first `k` values starting at parameter 1. Let `F` be the product of `F_d,F_{2d},…,F_{kd}`, and set `V = B · k! · F`. The Fibonacci pair permutes at most `(BV)²` residue states modulo `BV`. At each positive multiple of its period, a template term `a` recurs as a strictly larger value `a(1+Vℓ)`. Any prime divisor of the cofactor exceeds `k` and is coprime to `a`. A hit at another position in the block would force the prime to divide `F`, contradicting its occurrence in the cofactor. The growth estimates `U(n) ≤ 2ⁿ⁺²` and `Fₙ ≤ 2ⁿ` bound the period. [Lean proof](LucasFibonacciCompositeBlocks.lean) · [Earlier single-term return argument](NOTES.md)
+
+The exported declarations in `Arxiv.«2211.10788»` are `composite_blocks_with_separate_primes` and `dyadic_composite_block`. Each reports only `propext`, `Classical.choice` and `Quot.sound`. Searches of open and closed DeepMind and OMA issues and pull requests and the LTS solved records found the original statement and no matching formalization of the block bounds. Codex assisted with the proof. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/8155) · [LTS solved records](https://lefttosolve.com/api/solved) · [Notebook replay](../../README.md#replay)
