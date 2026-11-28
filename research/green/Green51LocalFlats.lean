@@ -148,12 +148,12 @@ private theorem disjoint_images {d : ℕ} (X Y : Finset (Alphabet d)) :
   obtain ⟨y,_,eq⟩ := mem_image.mp hr
   exact (by decide : (1:F)≠0) (congrArg (fun z : Ambient d => z.2.1) eq)
 
-private theorem label_count (d : ℕ) : (labels d).card=2^(d+1) := by
+theorem label_count (d : ℕ) : (labels d).card=2^(d+1) := by
   rw [labels,card_union_of_disjoint (disjoint_images _ _),card_image_of_injective _ left_inj,
     card_image_of_injective _ right_inj,card_univ,pow_succ,Nat.mul_two]
   simp [Alphabet,Cube]
 
-private theorem label_free (d : ℕ) : ∀ T⊆labels d, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0 := by
+theorem label_free (d : ℕ) : ∀ T⊆labels d, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0 := by
   intro T sub sz zero
   let X := univ.filter fun x : Alphabet d => leftPoint x∈T
   let Y := univ.filter fun x : Alphabet d => rightPoint x∈T
@@ -187,7 +187,7 @@ private theorem label_free (d : ℕ) : ∀ T⊆labels d, T.card=4 ∨ T.card=6 �
   rw [xy,sum_pair ne] at total
   exact ne (add_right_cancel (total.trans (ZModModule.add_self _).symm))
 
-private theorem model_flat (d : ℕ) :
+theorem model_flat (d : ℕ) :
     ∃ (W : Submodule F (Ambient d)) (p : Ambient d), Module.finrank F W=d ∧
       p +ᵥ (W : Set (Ambient d)) ⊆ ↑(labels d+labels d) := by
   let j : Alphabet d →ₗ[F] Ambient d :=
@@ -202,15 +202,9 @@ private theorem model_flat (d : ℕ) :
     change (Pi.single z 1 + Pi.single z 1, _)=_
     simp [j,Prod.mk_add_mk,vadd_eq_add,leftPoint,rightPoint,ZModModule.add_self]
 
-private theorem label_rank {d : ℕ} (L : Submodule F (Ambient d)) (a : Ambient d)
-    (inside : ∀ x∈labels d,x+a∈L) : 2^d+d≤Module.finrank F L := by
-  let V := Submodule.span F ({a}:Set (Ambient d))
-  let U := L⊔V
-  have lu : L≤U := le_sup_left
-  have vu : V≤U := le_sup_right
-  have au : a∈U := vu (Submodule.subset_span (Set.mem_singleton _))
-  have raw (x : Ambient d) (hx : x∈labels d) : x∈U := by
-    simpa only [add_assoc,ZModModule.add_self,add_zero] using U.add_mem (lu (inside x hx)) au
+/-- The universal paired labels span their ambient linear space. -/
+theorem full_of_labels {d : ℕ} (U : Submodule F (Ambient d))
+    (raw : ∀ x∈labels d,x∈U) : U=⊤ := by
   have hl (z : Alphabet d) := raw (leftPoint z) (mem_union_left _ (mem_image_of_mem _ (mem_univ z)))
   have hr (z : Alphabet d) := raw (rightPoint z) (mem_union_right _ (mem_image_of_mem _ (mem_univ z)))
   have v (z : Alphabet d) : (0,1,z)∈U := by
@@ -225,12 +219,22 @@ private theorem label_rank {d : ℕ} (L : Submodule F (Ambient d)) (a : Ambient 
       · simp [Prod.snd_sum,leftPoint]
       · simp [Prod.snd_sum,leftPoint]
     exact eq ▸ h
-  have full : U=⊤ := by
-    apply top_unique
-    rintro ⟨f,b,z⟩ _
-    rcases (show ∀ x:F,x=0 ∨ x=1 from by decide) b with h|h <;> subst b
-    · simpa [Prod.mk_add_mk] using U.add_mem (hor f) (v0 z)
-    · simpa [Prod.mk_add_mk] using U.add_mem (hor f) (v z)
+  apply top_unique
+  rintro ⟨f,b,z⟩ _
+  rcases (show ∀ x:F,x=0 ∨ x=1 from by decide) b with h|h <;> subst b
+  · simpa [Prod.mk_add_mk] using U.add_mem (hor f) (v0 z)
+  · simpa [Prod.mk_add_mk] using U.add_mem (hor f) (v z)
+
+theorem label_rank {d : ℕ} (L : Submodule F (Ambient d)) (a : Ambient d)
+    (inside : ∀ x∈labels d,x+a∈L) : 2^d+d≤Module.finrank F L := by
+  let V := Submodule.span F ({a}:Set (Ambient d))
+  let U := L⊔V
+  have lu : L≤U := le_sup_left
+  have vu : V≤U := le_sup_right
+  have au : a∈U := vu (Submodule.subset_span (Set.mem_singleton _))
+  have raw (x : Ambient d) (hx : x∈labels d) : x∈U := by
+    simpa only [add_assoc,ZModModule.add_self,add_zero] using U.add_mem (lu (inside x hx)) au
+  have full := full_of_labels U raw
   have h := Submodule.finrank_sup_add_finrank_inf_eq L V
   change Module.finrank F U+_= _ at h
   rw [full,finrank_top] at h
@@ -299,4 +303,9 @@ end Green51LocalFlats
 #print axioms Green51LocalFlats.guaranteed_iff
 #print axioms Green51LocalFlats.worst_case
 
+#print axioms Green51LocalFlats.label_rank
+#print axioms Green51LocalFlats.full_of_labels
+#print axioms Green51LocalFlats.label_count
+#print axioms Green51LocalFlats.label_free
+#print axioms Green51LocalFlats.model_flat
 #print axioms Green51LocalFlats.model_image

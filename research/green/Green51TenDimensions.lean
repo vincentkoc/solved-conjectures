@@ -9,14 +9,14 @@ local notation "F" => ZMod 2
 variable {G H : Type*} [AddCommGroup G] [Module F G] [DecidableEq G]
   [AddCommGroup H] [Module F H] [DecidableEq H]
 
-private def FlatAt (A : Finset G) (p : G) : Prop :=
+def FlatAt (A : Finset G) (p : G) : Prop :=
   ∃ W : Submodule F G, Module.finrank F W=3 ∧ p +ᵥ (W : Set G) ⊆ ↑(A+A)
 
 private theorem center {A : Finset G} {p : G} (h : FlatAt A p) : p∈A+A := by
   obtain ⟨W,_,sub⟩ := h
   exact sub ⟨0,W.zero_mem,add_zero p⟩
 
-private theorem flat_zero (A : Finset G) :
+theorem flat_zero (A : Finset G) :
     FlatAt A 0 ↔ ∃ W : Submodule F G, Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A := by
   simp only [FlatAt,zero_vadd]
   rfl
@@ -51,7 +51,7 @@ private theorem flat_image (f : G →ₗ[F] H) (inj : Function.Injective f) (A :
     rw [image_double,←map_add]
     exact mem_image_of_mem _ (sub ⟨w,hw,rfl⟩)
 
-private theorem separates_image (f : G →ₗ[F] H) (inj : Function.Injective f) (A : Finset G) :
+theorem separates_image (f : G →ₗ[F] H) (inj : Function.Injective f) (A : Finset G) :
     ((¬FlatAt (A.image f) 0) ∧ ∃ p,FlatAt (A.image f) p) ↔
       ((¬FlatAt A 0) ∧ ∃ p,FlatAt A p) := by
   have lin := flat_image f inj A 0
@@ -192,3 +192,6 @@ end Green51TenDimensions
 #print axioms Green51TenDimensions.ambient_cost
 #print axioms Green51TenDimensions.separation_iff
 #print axioms Green51TenDimensions.sixteen_in_ten
+
+#print axioms Green51TenDimensions.flat_zero
+#print axioms Green51TenDimensions.separates_image
