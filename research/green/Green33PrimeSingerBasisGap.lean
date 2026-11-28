@@ -17,7 +17,7 @@ variable {F K : Type*} [Field F] [Field K] [Algebra F K] [Fintype F] [Fintype K]
 variable [DecidableEq F] [DecidableEq K]
 noncomputable local instance : Fintype (Plane F K) := Fintype.ofFinite _
 
-private theorem singer_map (h : Fintype.card K=(Fintype.card F)^3) (L : K→ₗ[F] F)
+theorem singer_map (h : Fintype.card K=(Fintype.card F)^3) (L : K→ₗ[F] F)
     (onto : Function.Surjective L) : Nonempty (SingerMap F K (labels h L)) := by
   classical
   have coords : ∃ e : ZMod (order F) ≃+ Additive (Plane F K),
@@ -105,12 +105,12 @@ private theorem reflected_holes {p : ℕ} [Fact p.Prime] {K : Type*}
   change 7*p^2 ≤ 32*(R+R)ᶜ.card
   exact_mod_cast (show 7*(p:ℝ)^2≤32*((R+R)ᶜ.card:ℝ) by linarith [show (0:ℝ)≤p by positivity])
 
-/-- Every balanced opposite layer leaves a quadratic number of holes in the doubled cycle. -/
-theorem prime_holes {p : ℕ} [Fact p.Prime] {K : Type*}
+/-- A uniform reflected hole bound transfers to every balanced opposite layer. -/
+theorem holes_of_reflection {p : ℕ} [Fact p.Prime] {K : Type*}
     [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
     (h : Fintype.card K=(Fintype.card (ZMod p))^3) (L : K→ₗ[ZMod p] ZMod p)
-    (onto : Function.Surjective L) (ψ : AddChar (ZMod p) ℂ) (nt : ψ≠0)
-    (bound : RankFourBound L ψ) (big : 4096≤p) (B : Finset (ZMod (order (ZMod p))))
+    (onto : Function.Surjective L) (big : 4096≤p)
+    (vacancy : ∀ c, 7*p^2≤32*(reflected h L c+reflected h L c)ᶜ.card) (B : Finset (ZMod (order (ZMod p))))
     (sizeB : B.card=p+1) :
     let S := split (v:=positiveOrder (ZMod p)) (labels h L) B
     p^2 ≤ 20*(S+S)ᶜ.card := by
@@ -142,13 +142,24 @@ theorem prime_holes {p : ℕ} [Fact p.Prime] {K : Type*}
     let R := reflected h L c
     have bill : (S\R).card≤t := outside.trans (Nat.sub_le_sub_right sizeB.le m)
     have change_bound := changed_sums S R
-    have vacant := reflected_holes h L onto ψ nt bound big c
+    have vacant := vacancy c
     change 7*p^2≤32*(R+R)ᶜ.card at vacant
     rw [sizes] at change_bound
     nlinarith only [vacant,change_bound,Nat.mul_le_mul_right (2*(p+1)) bill,
       Nat.mul_le_mul_right (p+1) cost,Nat.mul_le_mul_right p big]
   · change (D+B)ᶜ.card≤(S+S)ᶜ.card at hodd
     omega
+
+/-- Every balanced opposite layer leaves a quadratic number of holes in the doubled cycle. -/
+theorem prime_holes {p : ℕ} [Fact p.Prime] {K : Type*}
+    [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
+    (h : Fintype.card K=(Fintype.card (ZMod p))^3) (L : K→ₗ[ZMod p] ZMod p)
+    (onto : Function.Surjective L) (ψ : AddChar (ZMod p) ℂ) (nt : ψ≠0)
+    (bound : RankFourBound L ψ) (big : 4096≤p) (B : Finset (ZMod (order (ZMod p))))
+    (sizeB : B.card=p+1) :
+    let S := split (v:=positiveOrder (ZMod p)) (labels h L) B
+    p^2 ≤ 20*(S+S)ᶜ.card := by
+  exact holes_of_reflection h L onto big (reflected_holes h L onto ψ nt bound big) B sizeB
 
 #print axioms prime_holes
 
@@ -235,14 +246,14 @@ theorem anchored_gap {v : ℕ+} {p : ℕ} (pos : 0<p) (sizeV : v.val=p^2+p+1)
 
 #print axioms anchored_gap
 
-/-- For every cubic Singer line over a sufficiently large prime field, the normalized
-size of every full basis containing its even image stays away from Green's endpoint.
-The rank-four estimate is the only analytic hypothesis. -/
-theorem prime_gap {p : ℕ} [Fact p.Prime] {K : Type*}
+/-- A balanced-layer defect gives the literal radical gap for full anchored bases. -/
+theorem gap_of_holes {p : ℕ} [Fact p.Prime] {K : Type*}
     [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
     (h : Fintype.card K=(Fintype.card (ZMod p))^3) (L : K→ₗ[ZMod p] ZMod p)
-    (onto : Function.Surjective L) (ψ : AddChar (ZMod p) ℂ) (nt : ψ≠0)
-    (bound : RankFourBound L ψ) (big : 100000≤p)
+    (onto : Function.Surjective L) (big : 100000≤p)
+    (defect : ∀ B : Finset (ZMod (order (ZMod p))), B.card=p+1 →
+      let S := split (v:=positiveOrder (ZMod p)) (labels h L) B
+      p^2≤20*(S+S)ᶜ.card)
     (T : Finset (ZMod (2*(positiveOrder (ZMod p)).val)))
     (anchor : (labels h L).image (doubleHom (positiveOrder (ZMod p)))⊆T)
     (full : T+T=univ) :
@@ -254,7 +265,7 @@ theorem prime_gap {p : ℕ} [Fact p.Prime] {K : Type*}
   have sizeD : (labels h L).card=p+1 := by
     rw [labels,card_map,(cubic_parameters L onto h).1,ZMod.card]
   have finite := anchored_gap (by omega : 0<p) sizeV (labels h L) sizeD
-    (prime_holes h L onto ψ nt bound (by omega)) T anchor full
+    defect T anchor full
   refine ⟨finite,?_⟩
   have pos : (0:ℝ)<p := by exact_mod_cast (by omega : 0<p)
   have large : (100000:ℝ)≤p := by exact_mod_cast big
@@ -274,6 +285,21 @@ theorem prime_gap {p : ℕ} [Fact p.Prime] {K : Type*}
       (2+Real.sqrt 2/100000)*Real.sqrt (v.val:ℝ) := by linear_combination Real.sqrt (v.val:ℝ)*sq
     _ ≤ (2+2/100000)*((p:ℝ)+1) := mul_le_mul (by linarith) root (Real.sqrt_nonneg _) (by norm_num)
     _ ≤ (T.card:ℝ) := by linarith
+
+/-- For every cubic Singer line over a sufficiently large prime field, the normalized
+size of every full basis containing its even image stays away from Green's endpoint.
+The rank-four estimate is the only analytic hypothesis. -/
+theorem prime_gap {p : ℕ} [Fact p.Prime] {K : Type*}
+    [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
+    (h : Fintype.card K=(Fintype.card (ZMod p))^3) (L : K→ₗ[ZMod p] ZMod p)
+    (onto : Function.Surjective L) (ψ : AddChar (ZMod p) ℂ) (nt : ψ≠0)
+    (bound : RankFourBound L ψ) (big : 100000≤p)
+    (T : Finset (ZMod (2*(positiveOrder (ZMod p)).val)))
+    (anchor : (labels h L).image (doubleHom (positiveOrder (ZMod p)))⊆T)
+    (full : T+T=univ) :
+    40001*p≤20000*T.card ∧ Real.sqrt 2+1/100000≤
+      (T.card:ℝ)/Real.sqrt ((2*(positiveOrder (ZMod p)).val:ℕ):ℝ) := by
+  exact gap_of_holes h L onto big (prime_holes h L onto ψ nt bound (by omega)) T anchor full
 
 #print axioms prime_gap
 
