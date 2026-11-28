@@ -64,7 +64,8 @@ private theorem weight_add {n : ℕ} (x y : Cube n) :
   by_contra! h
   simp [h.1, h.2] at hi
 
-private theorem weight_of_mem_sum {n k r : ℕ} {y : Cube n} (hy : y ∈ r • ball n k) :
+/-- The weight in an iterated sum of a Hamming ball grows by at most its radius per summand. -/
+theorem weight_of_mem_sum {n k r : ℕ} {y : Cube n} (hy : y ∈ r • ball n k) :
     (supp y).card ≤ r * k := by
   induction r generalizing y with
   | zero =>
@@ -240,6 +241,7 @@ theorem necessary_for_green50 {C : ℝ} (hC : 0 < C)
   simpa only [logb_change hC] using h n A hne
 
 #print axioms max_weight
+#print axioms weight_of_mem_sum
 #print axioms ball_dimension
 #print axioms weight_polynomial
 #print axioms necessary
