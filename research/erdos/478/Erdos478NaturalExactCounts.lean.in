@@ -1,0 +1,39 @@
+import Erdos478CubicCountFrequencies
+import Erdos478NaturalDensity
+
+/-!
+# Ordinary prime densities of all finite factorial collision counts
+
+Specialize the mixed root-count interpolation to the checked degree-one
+prime ideal theorem, including the complete numerical law at gap three.
+-/
+
+namespace Erdos478.CollisionLaw
+noncomputable section
+open Filter Topology Finset GapDensity RootMoments SplittingDensity
+open scoped Classical
+
+theorem exact_count_density {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S, 2≤k)
+    (c : ℕ → ℕ) :
+    Tendsto (fun X => (((Nat.primesLE X).filter (exactEvent m S c)).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (jointDensity (requests m S c) : ℝ)) :=
+  exact_count_of_pit degree_one_prime_ideal_theorem hm S hS c
+
+theorem cubic_count_density (j : ℕ) :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p => (endpoints 3 p).card=j).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (cubicFrequency j : ℝ)) := by
+  apply (cubic_count_mean (countingAverage degree_one_prime_ideal_theorem) j).congr
+  intro X
+  change (Nat.primeCounting X : ℝ)⁻¹*(∑ p∈Nat.primesLE X, @ite ℝ ((endpoints 3 p).card=j) (Classical.propDecidable _) 1 0)=_
+  rw [← Nat.primesLE_card_eq_primeCounting,div_eq_inv_mul]
+  congr 1
+  rw [card_filter]
+  push_cast
+  apply sum_congr rfl
+  intro p _
+  by_cases h : (endpoints 3 p).card=j <;> simp [h]
+
+#print axioms exact_count_density
+#print axioms cubic_count_density
+end
+end Erdos478.CollisionLaw
