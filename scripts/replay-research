@@ -13,6 +13,14 @@ from pathlib import Path
 
 RESEARCH = Path(__file__).resolve().parents[1] / "research"
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
+KERNEL_REPLAY = """import LeanChecker
+
+#eval show IO Unit from do
+  let some target ← IO.getEnv "RESEARCH_REPLAY_MODULE" | throw (IO.userError "missing replay module")
+  let some paths ← IO.getEnv "RESEARCH_REPLAY_PATH" | throw (IO.userError "missing replay search path")
+  Lean.initSearchPath (← Lean.findSysroot) (System.SearchPath.parse paths)
+  replayFromImports (.str .anonymous target)
+"""
 
 
 def compile_proof(source, out, env):
@@ -43,9 +51,15 @@ def compile_proof(source, out, env):
 
 
 def replay_kernel(sources, env):
-    # LeanChecker starts an asynchronous replay for every selected module.
+    # Import the toolchain's checker first. Its replay uses the same path as compilation.
+    checker_env = env.copy()
+    checker_env["RESEARCH_REPLAY_PATH"] = checker_env.pop("LEAN_PATH")
     for source in sources:
-        subprocess.run(["leanchecker", "-v", source.stem], env=env, check=True)
+        print(f"replaying {source.stem}", flush=True)
+        subprocess.run(
+            ["lean", "--stdin"], input=KERNEL_REPLAY, text=True, check=True,
+            env=checker_env | {"RESEARCH_REPLAY_MODULE": source.stem},
+        )
 
 
 def qualified_imports(resolved, sources, env):

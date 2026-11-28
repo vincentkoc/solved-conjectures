@@ -15,14 +15,20 @@ compile_proof = runner["compile_proof"]
 
 class ReplayKernelTests(unittest.TestCase):
     def test_each_module_runs_in_its_own_checked_process(self):
-        sources = [Path("Base.lean"), Path("Derived.lean")]
-        env = {"LEAN_PATH": "compiled"}
-        with patch.object(subprocess, "run") as run:
+        sources = [Path("Base.lean"), Path("Derived'.lean")]
+        env = {"LEAN_PATH": "compiled", "PATH": "toolchain"}
+        with patch.object(subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()):
             runner["replay_kernel"](sources, env)
-        self.assertEqual(
-            [(call.args[0], call.kwargs) for call in run.call_args_list],
-            [(["leanchecker", "-v", source.stem], {"env": env, "check": True}) for source in sources],
-        )
+        self.assertEqual(run.call_count, len(sources))
+        for call, source in zip(run.call_args_list, sources):
+            self.assertEqual(call.args[0], ["lean", "--stdin"])
+            self.assertEqual(call.kwargs["input"], runner["KERNEL_REPLAY"])
+            self.assertTrue(call.kwargs["check"])
+            self.assertEqual(call.kwargs["env"], {
+                "PATH": "toolchain", "RESEARCH_REPLAY_PATH": "compiled",
+                "RESEARCH_REPLAY_MODULE": source.stem,
+            })
+        self.assertEqual(env["LEAN_PATH"], "compiled")
 
 
 class ReplaySelectionTests(unittest.TestCase):
