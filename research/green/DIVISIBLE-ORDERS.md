@@ -1,0 +1,19 @@
+# Green 33 · prescribed divisors of cyclic orders
+
+Green 33 holds if and only if, for every positive integer `D` and every `ε>0`, arbitrarily large multiples `N` of `D` have a strict two-basis `B` with `||B|/√N−√2|<ε`. Each residue has two distinct summands. The quantifier over `N` remains existential. [Lean proof](Green33DivisibleOrder.lean) · [Pinned Green 33](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/33.lean)
+
+There is an unconditional density statement. Let `S` be the common limiting order per squared size of strict and ordinary cyclic bases. For each `a<S`, fixed `D` and every sufficiently large budget `K`, there exists a multiple `N` of `D` with a strict cover of size at most `K` and `N>aK²`. The unrestricted maximum gives the matching asymptotic upper bound. In particular, divisibility by a fixed integer has no cost in limiting density. [Maximal cyclic orders and the definition of S](MAXIMAL-ORDERS.md)
+
+## The rectangular lift
+
+Start with a strict seed of size `k` modulo `M`. Assign its labels distinct positive heights such that `b−a` divides `a` whenever `a<b`. These exist for every `k`. Given heights `H`, take a positive common multiple `L` of all heights and form `{L} ∪ {L+h : h∈H}`. The old differences divide their translated endpoints, and a new difference `h` divides `L`.
+
+Let `C` be the maximum height and choose `p≥2` divisible by both `D` and every positive difference of heights. Put `q=p−1`. At height `a`, use the weight `wₐ=1+(a−1)p` and coefficients from zero to `p+C−1`. For each pair of heights `a<b`, the two progressions cover the entire group of order `pq`. Here is the integer calculation.
+
+Write the target as `x=x₀+p y` with `0≤x₀<p`. Set `d=b−a` and `h=a/d`. Since `d∣p` and `q=p−1`, choose `0≤v<q` satisfying `dv ≡ y−(a−1)x₀−a (mod q)`. If `v+h≤x₀`, use coefficients `(x₀−v−h,v+h)`. Otherwise use `(x₀+p−v,v)`. In the second case the extra `p` contributes `1+(a−1)p ≡ a (mod q)` to the high digit. Both choices produce the target modulo `pq`, with both coefficients less than `p+h`.
+
+For a seed label with least representative `z` and height `a`, place the progression at `z+M wₐt` modulo `Mpq`. Distinct seed labels remain distinct modulo `M`. A strict representation of a target modulo `M` leaves an integer multiple of `M`. The rectangular pair supplies its quotient modulo `pq`. This works for all common factors of `M` and `pq`. The square-modulus construction used CRT and required its width to be coprime to the seed modulus. Bevan, Erskine and Lewis also use pairs of progressions to cover cyclic product layers. [Square-modulus construction](STRICT-COVER-LIFT.md) · [Bevan–Erskine–Lewis, §3](https://arxiv.org/pdf/1506.04962#page=5)
+
+The order of the lifted group is `Mp(p−1)` and its cover uses at most `k(p+C)` labels. Taking `p` in a fixed arithmetic progression and choosing the last affordable width shows that some fixed `E` works for every `K≥E`, with lifted order satisfying `M(K−E)² ≤ k²N`. Optimizing over finite strict seeds proves the density statement. At `S=1/2`, the strict counting bound and this construction give precisely the absolute-error and frequency quantifiers required by Green. The value of `S` remains open. [Strictification and Green's finite criterion](STRICT-REDUCTION.md)
+
+All six declarations print only `propext`, `Classical.choice` and `Quot.sound`. Codex assisted with the proofs. [Replay instructions](../README.md#replay) · [DeepMind statement issue](https://github.com/google-deepmind/formal-conjectures/issues/1589) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/3613) · [Left to Solve](https://lefttosolve.com/api/problems/Green33.green_33) · [Open Math Agents](https://github.com/GuillaumeBAUD-coder/open-math-agents/issues?q=%22Green33%22)
