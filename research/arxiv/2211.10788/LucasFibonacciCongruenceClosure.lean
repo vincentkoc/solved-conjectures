@@ -38,13 +38,14 @@ theorem square_of_mod_self_sq {D x : ℕ} (hD : 0 < D) (hx : x^2 ≡ D [MOD D^2]
   obtain ⟨a,ha⟩ := exists_eq_pow_of_mul_eq_pow hg hc.symm
   exact ⟨a,ha.symm⟩
 
-private def signed (z : ℤ) : ℤ := 2 * Int.fib z + Int.fib (z+2)
+/-- The canonical upper sum extended to all integer indices. -/
+def signed (z : ℤ) : ℤ := 2 * Int.fib z + Int.fib (z+2)
 
-private lemma signed_nat (n : ℕ) : signed (n:ℤ) = (lucasFibonacciSum n : ℤ) := by
+lemma signed_nat (n : ℕ) : signed (n:ℤ) = (lucasFibonacciSum n : ℤ) := by
   simp only [signed,lucasFibonacciSum,Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,Int.fib_natCast]
   rw [show (n:ℤ)+2 = ((n+2:ℕ):ℤ) by push_cast; rfl, Int.fib_natCast]
 
-private lemma signed_lower (m : ℕ) :
+lemma signed_lower (m : ℕ) :
     signed (-((m+2:ℕ):ℤ)) = (-1:ℤ)^(m+1) * (lowerNeighborAtAddTwo m : ℤ) := by
   rw [signed,show -((m+2:ℕ):ℤ)+2 = -(m:ℤ) by push_cast; ring,
     Int.fib_neg_natCast,Int.fib_neg_natCast,lowerNeighborAtAddTwo]
@@ -102,7 +103,7 @@ private lemma bounded_hit {M y : ℕ} [NeZero M] {n : ℕ} (h : lucasFibonacciSu
     exact Function.iterate_mod_minimalPeriod_eq
   simpa only [zero_add,signed_nat,Int.cast_natCast] using read_state hs
 
-private lemma upper_mod_eleven (n : ℕ) : (lucasFibonacciSum n : ZMod 11) = 4^n := by
+lemma upper_mod_eleven (n : ℕ) : (lucasFibonacciSum n : ZMod 11) = 4^n := by
   induction n using Nat.twoStepInduction with
   | zero => decide
   | one => decide
@@ -110,6 +111,31 @@ private lemma upper_mod_eleven (n : ℕ) : (lucasFibonacciSum n : ZMod 11) = 4^n
     rw [lucas_fibonacci_sum_recurrence,Nat.cast_add,h₁,h₀,pow_add (4 : ZMod 11) n 2,
       pow_succ (4 : ZMod 11) n, show (4 : ZMod 11)^2 = 5 by decide]
     ring
+
+/-- Every signed term has fifth power one modulo eleven. -/
+theorem signed_fifth (z : ℤ) : (signed z : ZMod 11)^5 = 1 := by
+  have h (n : ℕ) : (lucasFibonacciSum n : ZMod 11)^5 = 1 := by
+    rw [upper_mod_eleven, ← pow_mul, mul_comm, pow_mul, show (4 : ZMod 11)^5 = 1 by decide, one_pow]
+  obtain ⟨n, rfl | rfl⟩ := z.eq_nat_or_neg
+  · simpa [signed_nat] using h n
+  · obtain ⟨j,hj⟩ := negative_hit 11 n
+    rw [←hj]
+    exact h j
+
+/-- A bilateral hit in a specified index class recurs on its nonnegative progression. -/
+theorem signed_progression_hit (M d r : ℕ) [NeZero M] (c : ℤ) :
+    ∃ t : ℕ, (lucasFibonacciSum (r+d*t) : ZMod M) = signed (r+d*c) := by
+  let z : ℤ := r+d*c
+  obtain ⟨T,hT,hfix⟩ := (shift_injective M).mem_periodicPts (state M z)
+  let k := c.natAbs
+  have hk : (k : ℤ) ≤ k*(T:ℤ) := by exact_mod_cast Nat.le_mul_of_pos_right k hT
+  have hc : 0 ≤ c+k*(T:ℤ) := by dsimp [k] at *; omega
+  let t := (c+k*T).toNat
+  have ht : (t:ℤ) = c+k*T := Int.toNat_of_nonneg hc
+  have he : z+((d*k*T:ℕ):ℤ) = ((r+d*t:ℕ):ℤ) := by dsimp [z]; rw [ht]; ring
+  have hr := read_state ((state_iterate M z (d*k*T)).trans (hfix.const_mul (d*k)).eq)
+  rw [he,signed_nat] at hr
+  exact ⟨t,by simpa [z] using hr⟩
 
 private lemma odd_lower_hit {y : ℕ} (hl : OddLowerValue y) (M : ℕ) [NeZero M] :
     ∃ n, lucasFibonacciSum n ≡ y [MOD M] := by
@@ -239,6 +265,11 @@ theorem false_positive_primes : ∀ p ∈ ({3,31} : Finset ℕ), p.Prime ∧
   · exact ⟨by decide,(upper_false_positives 3).mpr ⟨Or.inl rfl,by decide⟩⟩
   · exact ⟨by decide,(upper_false_positives 31).mpr ⟨Or.inr ⟨2,by decide⟩,by decide⟩⟩
 
+#print axioms signed_nat
+#print axioms signed_lower
+#print axioms upper_mod_eleven
+#print axioms signed_fifth
+#print axioms signed_progression_hit
 #print axioms square_of_mod_self_sq
 #print axioms upper_modular_closure
 #print axioms closure_of_eleven_and_diagonal
