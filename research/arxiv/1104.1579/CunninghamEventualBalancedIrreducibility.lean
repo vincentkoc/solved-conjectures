@@ -34,11 +34,13 @@ private lemma unit_of_signed_reversal {a : ℕ} (ha : 2≤a) (k : Bool) {n : ℕ
     simpa only [term,aeval_def,eval₂_map,comp] using h
   exact (balanced_no_reciprocal_roots (a:=(a:ℤ)) (by omega) k hn z0 (root _ hz) (root _ hi)).elim
 
-/-- From the explicit gap threshold onward, the first-kind rational iterate is
-irreducible for every a≥2. For the second kind a nonsquare coefficient suffices. -/
-theorem eventual_balanced_iterate_of_gap {a : ℕ} (ha : 2≤a) (k : Bool)
-    (ok : k=true ∨ ¬IsSquare a) {n : ℕ} (hn : 0<n)
-    (large : gapThreshold (gapEndpoint a k)≤n+2) : Irreducible (term k a (-a) n) := by
+/-- Reversal rigidity of the normalized sparse polynomial suffices for irreducibility
+of any positive balanced iterate with coefficient at least two. -/
+theorem balanced_iterate_of_rigidity {a : ℕ} (ha : 2≤a) (k : Bool) {n : ℕ} (hn : 0<n)
+    (rigid : ∀ G : ℤ[X], G.natDegree≤n+2 →
+      G*reflect (n+2) G=separated (gapEndpoint a k) (n+2)*reflect (n+2) (separated (gapEndpoint a k) (n+2)) →
+      ∃ s : ℤ, s^2=1 ∧ (G=C s*separated (gapEndpoint a k) (n+2) ∨
+        reflect (n+2) G=C s*separated (gapEndpoint a k) (n+2))) : Irreducible (term k a (-a) n) := by
   let seed : ℤ[X] := C (a:ℤ)*X+C (-(a:ℤ))
   let T := polynomialTerm k seed n
   let L : ℤ[X] := C (-sign k)*(X-1)
@@ -73,8 +75,7 @@ theorem eventual_balanced_iterate_of_gap {a : ℕ} (ha : 2≤a) (k : Bool)
     rw [separated_gap_endpoint,←hab]
     dsimp only [L,T,seed]
     ring
-  obtain ⟨s,hs,h|h⟩ := factor_reversal L A B _ (gap_endpoint_irreducible ha k ok)
-    large ln nz.1 nz.2 dl rl size eq
+  obtain ⟨s,hs,h|h⟩ := factor_reversal_of_rigid L A B _ rigid ln nz.1 nz.2 dl rl size eq
   · refine Or.inl (unit_of_signed_reversal ha k hn ?_ ⟨B,hab⟩ ?_ h)
     · rw [hab,mul_coeff_zero] at ct
       exact isUnit_of_mul_isUnit_left ct
@@ -83,6 +84,14 @@ theorem eventual_balanced_iterate_of_gap {a : ℕ} (ha : 2≤a) (k : Bool)
     · rw [hab,mul_coeff_zero] at ct
       exact isUnit_of_mul_isUnit_right ct
     · intro no; simp at no; simp [no] at hs
+
+/-- From the explicit gap threshold onward, the first-kind rational iterate is
+irreducible for every a≥2. For the second kind a nonsquare coefficient suffices. -/
+theorem eventual_balanced_iterate_of_gap {a : ℕ} (ha : 2≤a) (k : Bool)
+    (ok : k=true ∨ ¬IsSquare a) {n : ℕ} (hn : 0<n)
+    (large : gapThreshold (gapEndpoint a k)≤n+2) : Irreducible (term k a (-a) n) := by
+  exact balanced_iterate_of_rigidity ha k hn
+    (fun G => large_gap_rigidity G _ (gap_endpoint_irreducible ha k ok) large)
 
 /-- A single finite prefix decides whether a nonsquare coefficient works at
 every index in both rational polynomial chains from the same seed. -/
@@ -112,6 +121,7 @@ theorem reducible_second_at_two_three : ¬Irreducible (term false 2 (-2) 3) := b
     have d' : ((2:ℚ[X])*X^2+1).natDegree=2 := by compute_degree!
     omega
 
+#print axioms balanced_iterate_of_rigidity
 #print axioms eventual_balanced_iterate_of_gap
 #print axioms simultaneous_balanced_iff_finite
 #print axioms reducible_second_at_two_three

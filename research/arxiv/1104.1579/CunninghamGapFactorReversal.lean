@@ -7,8 +7,10 @@ open Polynomial
 
 /-- When an anti-reciprocal linear multiplier gives a rigid separated product,
 every two-factor decomposition has a factor invariant up to signed reversal. -/
-theorem factor_reversal (L A B c : ℤ[X]) {N : ℕ} (irr : Irreducible c)
-    (large : gapThreshold c ≤ N) (lnz : L≠0) (anz : A≠0) (bnz : B≠0)
+theorem factor_reversal_of_rigid (L A B c : ℤ[X]) {N : ℕ} (rigid : ∀ G : ℤ[X], G.natDegree≤N →
+      G*reflect N G=separated c N*reflect N (separated c N) →
+      ∃ s : ℤ, s^2=1 ∧ (G=C s*separated c N ∨ reflect N G=C s*separated c N))
+    (lnz : L≠0) (anz : A≠0) (bnz : B≠0)
     (dl : L.natDegree≤1) (rl : reflect 1 L= -L)
     (size : N=1+(A.natDegree+B.natDegree)) (eq : separated c N=L*(A*B)) :
     ∃ s : ℤ, s^2=1 ∧ (A.reverse=C s*A ∨ B.reverse=C (-s)*B) := by
@@ -32,7 +34,7 @@ theorem factor_reversal (L A B c : ℤ[X]) {N : ℕ} (irr : Irreducible c)
     rw [drG,drF,eq]
     dsimp only [G]
     ring
-  obtain ⟨s,hs,h|h⟩ := large_gap_rigidity G c irr large dg prod
+  obtain ⟨s,hs,h|h⟩ := rigid G dg prod
   · refine ⟨s,hs,Or.inl ?_⟩
     apply mul_left_cancel₀ (mul_ne_zero lnz bnz)
     rw [eq] at h
@@ -44,6 +46,16 @@ theorem factor_reversal (L A B c : ℤ[X]) {N : ℕ} (irr : Irreducible c)
     rw [map_neg]
     linear_combination -h
 
+/-- The explicit large-gap bound supplies rigidity for every irreducible endpoint. -/
+theorem factor_reversal (L A B c : ℤ[X]) {N : ℕ} (irr : Irreducible c)
+    (large : gapThreshold c ≤ N) (lnz : L≠0) (anz : A≠0) (bnz : B≠0)
+    (dl : L.natDegree≤1) (rl : reflect 1 L= -L)
+    (size : N=1+(A.natDegree+B.natDegree)) (eq : separated c N=L*(A*B)) :
+    ∃ s : ℤ, s^2=1 ∧ (A.reverse=C s*A ∨ B.reverse=C (-s)*B) := by
+  exact factor_reversal_of_rigid L A B c (fun G => large_gap_rigidity G c irr large)
+    lnz anz bnz dl rl size eq
+
+#print axioms factor_reversal_of_rigid
 #print axioms factor_reversal
 
 end CunninghamChain.LargeGap
