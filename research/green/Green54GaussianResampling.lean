@@ -59,6 +59,16 @@ theorem spliced_sum_preserving {ι : Type*} [Fintype ι] {n : ℕ} (hn : 0 < n) 
 variable {V F : Type*} [MeasurableSpace V] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
   [CompleteSpace F]
 
+/-- Replacing one coordinate of an independent sample by a fresh draw preserves its law. -/
+theorem fresh_update_preserving {n : ℕ} (μ : Measure V) [IsProbabilityMeasure μ] (j : Fin (n + 1)) :
+    MeasurePreserving (fun p : V × (Fin (n + 1) → V) => Function.update p.2 j p.1)
+      (μ.prod (Measure.pi fun _ => μ)) (Measure.pi fun _ => μ) := by
+  have he := measurePreserving_piFinSuccAbove (fun _ : Fin (n + 1) => μ) j
+  have h := he.symm.comp ((MeasurePreserving.id μ).prod (measurePreserving_snd.comp he))
+  convert h using 1
+  funext p
+  exact (Fin.insertNth_removeNth j p.1 p.2).symm
+
 private theorem integral_inner_of_centered_coordinate {n : ℕ} (μ : Measure V) [IsProbabilityMeasure μ]
     (j : Fin (n + 1)) (u v : (Fin (n + 1) → V) → F) (u₀ : (Fin n → V) → F)
     (hu : ∀ y w, u (j.insertNth y w) = u₀ w)
@@ -130,6 +140,73 @@ theorem adapted_sum_energy {n : ℕ} (μ : Measure V) [IsProbabilityMeasure μ]
   · simpa only [real_inner_comm (d i _) (d j _)] using hlt j i h
 
 
+section ConditionalEnergy
+variable {Ω H : Type*} [MeasurableSpace Ω] [NormedAddCommGroup H] [InnerProductSpace ℝ H]
+  [CompleteSpace H] {μ : Measure Ω} [IsProbabilityMeasure μ]
+
+private theorem square_add_centered (u : H) {r : Ω → H} (hr : MemLp r 2 μ) (hzero : ∫ z, r z ∂μ = 0) :
+    ∫ z, ‖u + r z‖ ^ 2 ∂μ = ‖u‖ ^ 2 + ∫ z, ‖r z‖ ^ 2 ∂μ := by
+  have hi : Integrable r μ := hr.integrable (by norm_num)
+  have hinner : Integrable (fun z => ⟪u, r z⟫) μ := (innerSL ℝ u).integrable_comp hi
+  have hs : Integrable (fun z => ‖r z‖ ^ 2) μ := hr.norm.integrable_sq
+  have heq (z : Ω) : ‖u + r z‖ ^ 2 = ‖u‖ ^ 2 + 2 * ⟪u, r z⟫ + ‖r z‖ ^ 2 :=
+    norm_add_sq_real _ _
+  simp only [heq]
+  rw [integral_add (f := fun z => ‖u‖ ^ 2 + 2 * ⟪u, r z⟫) ((integrable_const (‖u‖ ^ 2)).add (hinner.const_mul 2)) hs,
+    integral_add (integrable_const (‖u‖ ^ 2)) (hinner.const_mul 2), integral_const_mul,
+    show ∫ z, ⟪u, r z⟫ ∂μ = 0 by
+      rw [show (fun z => ⟪u, r z⟫) = (fun z => (innerSL ℝ u) (r z)) from rfl,
+        (innerSL ℝ u).integral_comp_comm hi, hzero, map_zero]]
+  simp
+
+private theorem centered_energy {f : Ω → H} (hf : MemLp f 2 μ) :
+    (∫ z, ‖f z - ∫ x, f x ∂μ‖ ^ 2 ∂μ) + ‖∫ x, f x ∂μ‖ ^ 2 = ∫ z, ‖f z‖ ^ 2 ∂μ := by
+  let m := ∫ x, f x ∂μ
+  have hr : MemLp (fun z => f z - m) 2 μ := hf.sub (memLp_const m)
+  have h0 : ∫ z, f z - m ∂μ = 0 := by
+    rw [integral_sub (hf.integrable (by norm_num)) (integrable_const m)]
+    simp [m]
+  have h := square_add_centered (μ := μ) m hr h0
+  change (∫ z, ‖f z - m‖ ^ 2 ∂μ) + ‖m‖ ^ 2 = _
+  simpa only [add_comm m, sub_add_cancel, add_comm (‖m‖ ^ 2)] using h.symm
+
+private theorem mean_energy_le {f : Ω → H} (hf : MemLp f 2 μ) :
+    ‖∫ x, f x ∂μ‖ ^ 2 ≤ ∫ z, ‖f z‖ ^ 2 ∂μ := by
+  rw [← centered_energy hf]
+  exact le_add_of_nonneg_left (integral_nonneg fun _ => sq_nonneg _)
+
+/-- Integrating over a future coordinate and centering in the current coordinate can only
+reduce the mean squared error. -/
+theorem conditional_error_energy {V W : Type*} [MeasurableSpace V] [MeasurableSpace W]
+    (ν : Measure V) (τ : Measure W) [IsProbabilityMeasure ν] [IsProbabilityMeasure τ]
+    (Q : V × W → H) (hQ : MemLp Q 2 (ν.prod τ)) :
+    let F (v : V) := ∫ w, Q (v, w) ∂τ
+    (∫ v, ‖F v - ∫ u, F u ∂ν‖ ^ 2 ∂ν) ≤ ∫ z, ‖Q z‖ ^ 2 ∂ν.prod τ := by
+  let F (v : V) := ∫ w, Q (v,w) ∂τ
+  have hi : Integrable Q (ν.prod τ) := hQ.integrable (by norm_num)
+  have hsq : Integrable (fun z => ‖Q z‖ ^ 2) (ν.prod τ) := hQ.norm.integrable_sq
+  have hfib : ∀ᵐ v ∂ν, MemLp (fun w => Q (v,w)) 2 τ := by
+    filter_upwards [hi.prod_right_ae, hsq.prod_right_ae] with v hv hv'
+    exact (memLp_two_iff_integrable_sq_norm hv.aestronglyMeasurable).mpr hv'
+  have hle : ∀ᵐ v ∂ν, ‖F v‖ ^ 2 ≤ ∫ w, ‖Q (v,w)‖ ^ 2 ∂τ :=
+    hfib.mono fun _ hf => mean_energy_le hf
+  have hFm : AEStronglyMeasurable F ν := hi.integral_prod_left.aestronglyMeasurable
+  have hF2 : Integrable (fun v => ‖F v‖ ^ 2) ν := by
+    apply hsq.integral_prod_left.mono' (hFm.norm.pow 2)
+    filter_upwards [hle] with v hv
+    change ‖‖F v‖ ^ 2‖ ≤ _
+    simpa only [Real.norm_of_nonneg (sq_nonneg _)] using hv
+  change (∫ v, ‖F v - ∫ u, F u ∂ν‖ ^ 2 ∂ν) ≤ _
+  have hc := centered_energy ((memLp_two_iff_integrable_sq_norm hFm).mpr hF2)
+  calc
+    _ ≤ ∫ v, ‖F v‖ ^ 2 ∂ν := by linarith [sq_nonneg ‖∫ u, F u ∂ν‖]
+    _ ≤ ∫ v, ∫ w, ‖Q (v,w)‖ ^ 2 ∂τ ∂ν := integral_mono_ae hF2 hsq.integral_prod_left hle
+    _ = _ := (integral_prod _ hsq).symm
+
+end ConditionalEnergy
+
+#print axioms fresh_update_preserving
+#print axioms conditional_error_energy
 #print axioms spliced_sum_preserving
 #print axioms adapted_sum_energy
 end Green54GaussianResampling
