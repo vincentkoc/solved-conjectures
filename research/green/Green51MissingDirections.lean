@@ -147,6 +147,30 @@ theorem even_missing_directions (s : ℕ) (A : Finset (Fin (2*(s+1)) → F))
     rw [size] at bound contradiction
     nlinarith only [bound,contradiction]
 
+/-- In the exceptional case the number of missing directions exceeds the
+ambient dimension by exactly one. -/
+theorem even_missing_count (s : ℕ) (A : Finset (Fin (2*(s+1)) → F))
+    (large : 2^(2*(s+1)) < 2*A.card + 4*(2*s).choose s)
+    (no : ¬∃ l : (Fin (2*(s+1)) → F) →ₗ[F] F, ∀ x∈l.ker,x∈A+A) :
+    (A+A)ᶜ.card=2*(s+1)+1 := by
+  classical
+  obtain ⟨B,size,ind,missing⟩ := (even_missing_directions s A large).resolve_left no
+  obtain ⟨l,hl⟩ := Module.exists_dual_forall_apply_eq_one ind
+  change ∀ x∈B,l x=1 at hl
+  have off : (∑ b∈B,b)∉B := by
+    intro h
+    have one := hl _ h
+    rw [map_sum,sum_eq_card_nsmul hl,size,mul_comm 2 _,mul_nsmul,two_nsmul,ZModModule.add_self] at one
+    exact zero_ne_one one
+  have eq : (A+A)ᶜ=insert (∑ b∈B,b) B := by
+    ext x
+    rw [Finset.mem_compl]
+    change x∈(((A+A : Finset _) : Set (Fin (2*(s+1)) → F))ᶜ) ↔ _
+    rw [missing]; simp [or_comm]
+  rw [eq,card_insert_of_notMem off,size]
+
 end Green51NearThreshold
 #print axioms Green51NearThreshold.frame_of_no_short
 #print axioms Green51NearThreshold.even_missing_directions
+
+#print axioms Green51NearThreshold.even_missing_count
