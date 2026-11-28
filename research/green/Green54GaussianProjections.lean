@@ -98,6 +98,51 @@ private lemma map_mass (μ : Measure Space) (I : Finset ℕ) {K : Set Space} (hK
   Measure.map_apply I.continuous_restrict.measurable
     (hK.image I.continuous_restrict).isClosed.measurableSet
 
+/-- Compact convex witnesses in arbitrarily small neighborhoods and at arbitrarily close
+mass thresholds give a witness in the original compact set at the endpoint. -/
+theorem compact_convex_of_thickenings {ι : Type*} [Fintype ι]
+    (μ : Measure (ι → ℝ)) [IsFiniteMeasure μ] {D : Set (ι → ℝ)} (hD : IsCompact D)
+    {β : ℝ≥0∞} (hβ : 0 < β)
+    (H : ∀ r : ℝ, 0 < r → ∀ b < β, ∃ C : Set (ι → ℝ), IsCompact C ∧ Convex ℝ C ∧
+      C ⊆ Metric.cthickening r D ∧ b ≤ μ C) :
+    ∃ C : Set (ι → ℝ), IsCompact C ∧ Convex ℝ C ∧ C ⊆ D ∧ β ≤ μ C := by
+  let J := Set.Ioi (0 : ℝ) × Set.Iio β
+  let aux (i : J) := {C : Compacts (ι → ℝ) | (C : Set (ι → ℝ)) ⊆ Metric.cthickening i.1.val D} ∩
+    ({C | Convex ℝ (C : Set (ι → ℝ))} ∩ {C | i.2.val ≤ μ (C : Set (ι → ℝ))})
+  have hc (i : J) : IsClosed (aux i) := (Compacts.isClosed_subsets_of_isClosed
+    Metric.isClosed_cthickening).inter (convex_closed.inter (mass_closed μ i.2.val))
+  have hdir : Directed (· ⊇ ·) aux := by
+    intro i j
+    have hr : 0 < min i.1.val j.1.val := lt_min i.1.property j.1.property
+    have hb : max i.2.val j.2.val < β := max_lt i.2.property j.2.property
+    let t : J := (⟨min i.1.val j.1.val, hr⟩, ⟨max i.2.val j.2.val, hb⟩)
+    refine ⟨t, ?_, ?_⟩
+    · intro C h
+      exact ⟨h.1.trans (Metric.cthickening_mono (min_le_left ..) D), h.2.1,
+        (le_max_left i.2.val j.2.val).trans (show max i.2.val j.2.val ≤ μ (C : Set _) from h.2.2)⟩
+    · intro C h
+      exact ⟨h.1.trans (Metric.cthickening_mono (min_le_right ..) D), h.2.1,
+        (le_max_right i.2.val j.2.val).trans (show max i.2.val j.2.val ≤ μ (C : Set _) from h.2.2)⟩
+  have hne (i : J) : (aux i).Nonempty := by
+    obtain ⟨C, hk, hv, hs, hm⟩ := H i.1.val i.1.property i.2.val i.2.property
+    exact ⟨⟨C, hk⟩, hs, hv, hm⟩
+  have hcompact (i : J) : IsCompact (aux i) := by
+    have hk := hD.cthickening (r := i.1.val)
+    exact (Compacts.isCompact_subsets_of_isCompact hk).of_isClosed_subset (hc i) inter_subset_left
+  let i₀ : J := (⟨1, by exact (zero_lt_one : (0 : ℝ) < 1)⟩, ⟨0, hβ⟩)
+  let : Nonempty J := ⟨i₀⟩
+  obtain ⟨C, hC⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    aux hdir hne hcompact hc
+  have h (i : J) := mem_iInter.mp hC i
+  refine ⟨C, C.isCompact, (h i₀).2.1, ?_, ?_⟩
+  · rw [← hD.isClosed.closure_eq, Metric.closure_eq_iInter_cthickening]
+    exact subset_iInter₂ fun r hr => (h (⟨r, hr⟩, i₀.2)).1
+  · by_contra! hlt
+    obtain ⟨b, hCb, hb⟩ := exists_between hlt
+    exact hCb.not_ge (h (i₀.1, ⟨b, hb⟩)).2.2
+
+#print axioms compact_convex_of_thickenings
+
 /-- Finite projections may choose their compact convex witnesses independently. -/
 theorem compact_convex_iff_projections (μ : Measure Space) [IsFiniteMeasure μ]
     {D : Set Space} (hD : IsCompact D) (β : ℝ≥0∞) :
