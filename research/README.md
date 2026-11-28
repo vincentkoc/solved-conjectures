@@ -88,6 +88,7 @@ These Lean files contain a proof of the positive Green 54 declaration and result
 | [Pell criterion for Lucas–Fibonacci values](arxiv/2211.10788/PellCriterion.md) | An integer `y ≥ 0` occurs on the upper diagonal iff some natural `x` satisfies `x² − 5y² = ±44` and `x ≡ 7y (mod 22)`. | Infinitude of primes satisfying this criterion remains open. |
 | [Both Lucas–Fibonacci diagonals](arxiv/2211.10788/DiagonalUnion.md) | A natural number occurs on either diagonal iff `x² − 5y² = ±44` for some natural `x`. The lower diagonal uses `x ≡ −7y (mod 22)`. The only common value is 5. | Infinitude of prime values on either diagonal remains open. |
 | [Square Lucas–Fibonacci values](arxiv/2211.10788/SquareValues.md) | The upper diagonal has exactly three squares, 1, 4 and 9. The lower has just 81. Together these give all four solutions of Cohn’s two norm-44 quartics. | Infinitude of prime values remains open. |
+| [Cube values on the odd Hosoya diagonals](arxiv/2211.10788/OddIndexCubes.md) | Neither diagonal contains an integer cube at any positive odd index. The underlying primitive quadratic form never represents a cube. | Even indices and infinitude of prime values remain open here. |
 
 ## Replay
 
