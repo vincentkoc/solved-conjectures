@@ -126,9 +126,9 @@ theorem guaranteed_iff {n d : ℕ} (pos : 0<d) {α : ℝ} (one : α≤1) :
 abbrev Alphabet (d : ℕ) := Cube d
 abbrev Ambient (d : ℕ) := (Alphabet d → F) × (F × Alphabet d)
 
-private def leftPoint {d : ℕ} (z : Alphabet d) : Ambient d := (Pi.single z 1,0,0)
-private def rightPoint {d : ℕ} (z : Alphabet d) : Ambient d := (Pi.single z 1,1,z)
-private def labels (d : ℕ) : Finset (Ambient d) :=
+def leftPoint {d : ℕ} (z : Alphabet d) : Ambient d := (Pi.single z 1,0,0)
+def rightPoint {d : ℕ} (z : Alphabet d) : Ambient d := (Pi.single z 1,1,z)
+def labels (d : ℕ) : Finset (Ambient d) :=
   univ.image leftPoint ∪ univ.image rightPoint
 
 private theorem left_inj {d : ℕ} : Function.Injective (@leftPoint d) := by
@@ -268,8 +268,35 @@ theorem worst_case (d : ℕ) (large : 3≤d) :
   rw [eq]
   exact label_rank
 
+/-- An affine flat in a binary double supplies a linear image of the
+universal pair configuration. Its direction map remains injective. -/
+theorem model_image {d : ℕ} (A : Finset G) (W : Submodule F G)
+    (rank : Module.finrank F W=d) (p : G) (inside : p +ᵥ (W:Set G) ⊆ ↑(A+A)) :
+    ∃ (f : Ambient d →ₗ[F] G) (j : Cube d ≃ₗ[F] W),
+      (labels d).image f ⊆ A ∧ ∀ z : Cube d,f (0,1,z)=p+(j z).val := by
+  classical
+  let j : Cube d ≃ₗ[F] W := LinearEquiv.ofFinrankEq _ _ (by simp [Cube,rank])
+  have pair (z : Cube d) : ∃ x∈A,∃ y∈A,x+y=p+(j z).val := mem_add.mp (inside ⟨_,(j z).property,rfl⟩)
+  choose x hx y hy eq using pair
+  let h := Fintype.linearCombination F x
+  let v := (LinearMap.toSpanSingleton F G p).coprod (W.subtype.comp j.toLinearMap)
+  let f := h.coprod v
+  have single (z : Cube d) : h (Pi.single z 1)=x z := by
+    simp [h,Fintype.linearCombination_apply,Pi.single_apply,ite_smul]
+  refine ⟨f,j,?_,?_⟩
+  · rintro _ hz
+    obtain ⟨pt,hpt,rfl⟩ := mem_image.mp hz
+    rcases mem_union.mp hpt with hl|hr
+    · obtain ⟨z,_,rfl⟩ := mem_image.mp hl
+      simpa [f,v,leftPoint,LinearMap.coprod_apply,single] using hx z
+    · obtain ⟨z,_,rfl⟩ := mem_image.mp hr
+      simpa [f,v,rightPoint,LinearMap.coprod_apply,single,←eq,←add_assoc,ZModModule.add_self] using hy z
+  · intro z;simp [f,v,LinearMap.coprod_apply]
+
 end Green51LocalFlats
 
 #print axioms Green51LocalFlats.local_labels
 #print axioms Green51LocalFlats.guaranteed_iff
 #print axioms Green51LocalFlats.worst_case
+
+#print axioms Green51LocalFlats.model_image

@@ -216,7 +216,41 @@ theorem pair_partition {n : ℕ} (length : n=16) (C : Submodule F (Cube n)) (i�
     rw [eq]
     exact C.add_mem (C.smul_mem c allOnes) (L b).val.property
 
+/-- If every common linear shift leaves eight ones in the two rows together,
+the rows take opposite values at every paired position. -/
+theorem opposite_on_pairs (u v : Cube 3 → F)
+    (balanced : ∀ f:Cube 3 →ₗ[F] F,
+      (univ.filter (fun z => u z+f z≠0)).card+(univ.filter (fun z => v z+f z≠0)).card=8) :
+    ∀ z,u z≠v z := by
+  let row (b : Cube 3) : Cube 3 →ₗ[F] F := {
+    toFun := dot b
+    map_add' := by intro x y;simp [dot,mul_add,sum_add_distrib]
+    map_smul' := by intro c x;rcases (show ∀ a:F,a=0 ∨ a=1 from by decide) c with h|h <;> simp [h,dot] }
+  have count (u : Cube 3 → F) : (∑ z,sign (u z))=8-2*((univ.filter fun z => u z≠0).card:ℤ) := by
+    have pt (z:Cube 3) : sign (u z)=1-(if u z≠0 then (2:ℤ) else 0) := by by_cases h : u z=0 <;> simp [sign,h]
+    simp_rw [pt]
+    simp [sum_sub_distrib,sum_ite,Cube,mul_comm]
+  let t (z:Cube 3) := sign (u z)+sign (v z)
+  have coeff (b : Cube 3) : (∑ z,t z * sign (dot b z))=0 := by
+    have q := balanced (row b)
+    change (univ.filter (fun z => u z+dot b z≠0)).card+(univ.filter (fun z => v z+dot b z≠0)).card=8 at q
+    simp only [t,add_mul,←sign_add,sum_add_distrib,count]
+    omega
+  intro a same
+  have invert : (∑ b:Cube 3, (∑ z,t z * sign (dot b z)) * sign (dot b a))=8*t a := by
+    simp_rw [sum_mul,mul_assoc]
+    rw [sum_comm]
+    simp_rw [←mul_sum,table]
+    simp [mul_ite,mul_comm]
+  simp_rw [coeff,zero_mul,sum_const_zero] at invert
+  have cases := (show ∀ x:F,sign x=1 ∨ sign x= -1 from by decide) (v a)
+  dsimp only [t] at invert
+  rw [same] at invert
+  omega
+
 end Green51Hadamard
 
 #print axioms Green51Hadamard.equality_words
 #print axioms Green51Hadamard.pair_partition
+
+#print axioms Green51Hadamard.opposite_on_pairs
