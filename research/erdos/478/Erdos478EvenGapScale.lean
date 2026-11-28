@@ -21,8 +21,17 @@ private theorem exponent_bound (b m : ℕ) (hb : 4 ≤ b) (hm : 1 ≤ m) :
   ring_nf
   omega
 
-theorem evenWitnessBound_le (n : ℕ) (hn : 0<n) :
-    evenWitnessBound n ≤ 2^((2*n+4)^(3*n+9)) := by
+/-- Size data for the common-root resolvent, independent of the prime-selection method. -/
+theorem even_resolvent_sizes (n : ℕ) :
+    let b := 2*n+4
+    let m := b^n
+    let D := evenWordDegree n
+    let U := 2*n+1
+    let V := wordBound n D U
+    let H := b+b+(b+b^2*2+0+1)*b
+    let E := 1+(1+b)*((b*b)*(b*b))+(1+H)*(m*m)
+    D ≤ m ∧ D ≤ 2^(b^2) ∧ V ≤ 2^H ∧
+      2*(2*U)^((n*(2*n))^2)*(2*V)^(D^2) ≤ 2^E := by
   let b := 2*n+4
   let m := b^n
   have hn' : n≤b := by dsimp [b]; omega
@@ -46,6 +55,17 @@ theorem evenWitnessBound_le (n : ℕ) (hn : 0<n) :
   have hE : 2*(2*(2*n+1))^((n*(2*n))^2)*(2*wordBound n (evenWordDegree n) (2*n+1))^((evenWordDegree n)^2) ≤ 2^E :=
     mul_bound (mul_bound two (pow_bound (mul_bound two Hu) (by simpa [pow_two] using Nat.mul_le_mul hN hN)))
       (pow_bound (mul_bound two hH) (by simpa [pow_two] using Nat.mul_le_mul Hm Hm))
+  exact ⟨Hm,Hm',hH,hE⟩
+
+theorem evenWitnessBound_le (n : ℕ) (hn : 0<n) :
+    evenWitnessBound n ≤ 2^((2*n+4)^(3*n+9)) := by
+  let b := 2*n+4
+  let m := b^n
+  let H := b+b+(b+b^2*2+0+1)*b
+  let E := 1+(1+b)*((b*b)*(b*b))+(1+H)*(m*m)
+  obtain ⟨Hm,_,hH,hE⟩ := even_resolvent_sizes n
+  have one : 1 ≤ (2:ℕ)^0 := by decide
+  have two : 2 ≤ (2:ℕ)^1 := by decide
   have h₁ := add_bound (mul_bound two hH) one
   have h₂ := add_bound (mul_bound two hH) two
   have he := pow_bound (add_bound h₂ (mul_bound (mul_bound h₁ hE)
@@ -56,5 +76,6 @@ theorem evenWitnessBound_le (n : ℕ) (hn : 0<n) :
     _ ≤ b^9*m^3 := exponent_bound b m (by dsimp [b]; omega) (by dsimp [m,b]; exact Nat.one_le_pow _ _ (by omega))
     _ = _ := by dsimp [b,m]; rw [← pow_mul,← pow_add]; congr 1; omega
 
+#print axioms even_resolvent_sizes
 #print axioms evenWitnessBound_le
 end Erdos478.EffectiveResolvent

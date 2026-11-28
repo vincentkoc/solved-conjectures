@@ -95,14 +95,14 @@ theorem roots_from_word {n : ℕ} (f : Fin n → ℤ[X]) (d : Fin n → ℕ)
 
 def wordBound (n D U : ℕ) := n*U*(n*D^2+1)^n
 
-theorem joint_prime {n : ℕ} (hn : 0<n) (d : Fin n → ℕ) (hd : ∀ i, 0<d i)
+theorem joint_prime_with (method : RootPrimeBound) {n : ℕ} (hn : 0<n) (d : Fin n → ℕ) (hd : ∀ i, 0<d i)
     (f : Fin n → ℤ[X]) (a : (i : Fin n) → Fin (d i) ↪ ℂ)
     (hf : ∀ i, (f i).map (Int.castRingHom ℂ) = ∏ j, (X-C (a i j)))
     (U B : ℕ) (hU : 0<U) (hB : 0<B) (hr : ∀ i j, ‖a i j‖ ≤ U)
     (safe : ∀ (p : ℕ) [Fact p.Prime], ¬p ∣ B → ∀ i, ((f i).map (Int.castRingHom (ZMod p))).Separable) :
     let D := Fintype.card (Word d)
     let V := wordBound n D U
-    ∃ p ≤ schurBound D V (B*(2*V)^(D^2)), p.Prime ∧ ¬p ∣ B ∧
+    ∃ p ≤ method.bound D V (B*(2*V)^(D^2)), p.Prime ∧ ¬p ∣ B ∧
       ∀ i, ∃ z : ZMod p, ((f i).map (Int.castRingHom (ZMod p))).IsRoot z := by
   classical
   let D := Fintype.card (Word d)
@@ -130,14 +130,25 @@ theorem joint_prime {n : ℕ} (hn : 0<n) (d : Fin n → ℕ) (hd : ∀ i, 0<d i)
     (by exact Int.cast_injective)).mpr (by rw [hw]; exact monic_prod_of_monic _ _ (fun _ _ => monic_X_sub_C _))
   have hwd : W.natDegree = D := by rw [← hmon.natDegree_map (Int.castRingHom ℂ),hw]; simp [D]
   obtain ⟨hb₁,hb₂⟩ := bad_bound W c hw V hV hc
-  obtain ⟨p,hp,hprime,ha,hroot⟩ := bounded_prime_root W c hw V (B*(bad W).natAbs) (Nat.mul_pos hB hb₁) hc
+  obtain ⟨p,hp,hprime,ha,hroot⟩ := method.prime_root W c hw V (B*(bad W).natAbs) (Nat.mul_pos hB hb₁) hc
   let : Fact p.Prime := ⟨hprime⟩
   have havoid : ¬p ∣ B := fun he => ha (dvd_mul_of_dvd_left he _)
   have hsep := separable_at_good_prime W (by omega) p (fun he => ha (dvd_mul_of_dvd_right he _))
   refine ⟨p,hp.trans ?_,hprime,havoid,roots_from_word f d hm hdeg M p (safe p havoid) hsep hroot⟩
-  dsimp [schurBound,V,D]
-  gcongr
+  exact method.mono _ _ (Nat.mul_le_mul_left _ hb₂)
 
+theorem joint_prime {n : ℕ} (hn : 0<n) (d : Fin n → ℕ) (hd : ∀ i, 0<d i)
+    (f : Fin n → ℤ[X]) (a : (i : Fin n) → Fin (d i) ↪ ℂ)
+    (hf : ∀ i, (f i).map (Int.castRingHom ℂ) = ∏ j, (X-C (a i j)))
+    (U B : ℕ) (hU : 0<U) (hB : 0<B) (hr : ∀ i j, ‖a i j‖ ≤ U)
+    (safe : ∀ (p : ℕ) [Fact p.Prime], ¬p ∣ B → ∀ i, ((f i).map (Int.castRingHom (ZMod p))).Separable) :
+    let D := Fintype.card (Word d)
+    let V := wordBound n D U
+    ∃ p ≤ schurBound D V (B*(2*V)^(D^2)), p.Prime ∧ ¬p ∣ B ∧
+      ∀ i, ∃ z : ZMod p, ((f i).map (Int.castRingHom (ZMod p))).IsRoot z :=
+  joint_prime_with elementarySchur hn d hd f a hf U B hU hB hr safe
+
+#print axioms joint_prime_with
 #print axioms word_separator
 #print axioms roots_from_word
 #print axioms joint_prime

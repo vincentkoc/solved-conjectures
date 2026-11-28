@@ -96,16 +96,18 @@ private theorem count_even_roots {p n : ℕ} [Fact p.Prime] (h₂ : (2 : ZMod p)
       exact two_roots_card h₂ i (hs.of_dvd (Finset.dvd_prod_of_mem _ (mem_univ i))) hz
 
 def evenWordDegree (n : ℕ) := ∏ i : Fin n, evenLength i
-def evenWitnessBound (n : ℕ) :=
+def evenBoundWith (method : RootPrimeBound) (n : ℕ) :=
   let D := evenWordDegree n
   let U := 2*n+1
   let V := wordBound n D U
-  schurBound D V (2*(2*U)^((n*(2*n))^2)*(2*V)^(D^2))
+  method.bound D V (2*(2*U)^((n*(2*n))^2)*(2*V)^(D^2))
+
+def evenWitnessBound := evenBoundWith elementarySchur
 
 /-- One bounded prime witnesses two disjoint upper endpoints for each
 of the lengths 2,4,...,2n. -/
-theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
-    ∃ p ≤ evenWitnessBound n, p.Prime ∧ 2*n<p ∧
+theorem simultaneous_even_with (method : RootPrimeBound) (n : ℕ) (hn : 0<n) :
+    ∃ p ≤ evenBoundWith method n, p.Prime ∧ 2*n<p ∧
       (∏ i : Fin n, (descPochhammer (ZMod p) (2*(i.val+1))-1)).Separable ∧
       (∀ i : Fin n, ∃ z w : ZMod p, z ≠ w ∧
         (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot z ∧
@@ -146,7 +148,7 @@ theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
     rw [ha]; simp only [IsRoot.def,eval_prod,eval_sub,eval_X,eval_C]
     exact prod_eq_zero (mem_univ j) (sub_self _)
   have hprod (i : Fin n) := (map_gap (Int.castRingHom ℂ) i).trans (ha i)
-  obtain ⟨p,hp,hprime,havoid,hr⟩ := joint_prime hn evenLength he (gapPoly ℤ) a hprod U B
+  obtain ⟨p,hp,hprime,havoid,hr⟩ := joint_prime_with method hn evenLength he (gapPoly ℤ) a hprod U B
     (by dsimp [U];omega) (by dsimp [B];omega) hu (by
       intro p _ h i
       rw [map_gap]
@@ -169,11 +171,22 @@ theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
     obtain ⟨hne,hy⟩ := two_even_roots h₂ (i.val+1) si hz
     exact ⟨z,_,hne,hz,hy⟩
   refine ⟨p,hp.trans ?_,hprime,by omega,sf,two,hh⟩
-  dsimp only [evenWitnessBound,schurBound,B,U] at *
+  apply method.mono
+  dsimp only [B,U] at *
   simp only [Fintype.card_fin] at hb₂
   gcongr
   exact hb₂.trans (by gcongr; omega)
 
+theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
+    ∃ p ≤ evenWitnessBound n, p.Prime ∧ 2*n<p ∧
+      (∏ i : Fin n, (descPochhammer (ZMod p) (2*(i.val+1))-1)).Separable ∧
+      (∀ i : Fin n, ∃ z w : ZMod p, z ≠ w ∧
+        (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot z ∧
+        (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot w) ∧
+      ((Ico 1 p).image (fun j => j.factorial % p)).card+2*n ≤ p-1 :=
+  simultaneous_even_with elementarySchur n hn
+
+#print axioms simultaneous_even_with
 #print axioms simultaneous_even_prime
 
 end Erdos478.EffectiveResolvent
