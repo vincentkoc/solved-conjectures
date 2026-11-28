@@ -128,6 +128,19 @@ private theorem small_collision (A U V : Finset G) (large : 5≤A.card)
     exact ne (add_right_cancel (zero.trans (ZModModule.add_self f).symm))
   exact different ((eq_of_subset_of_card_le iu (by omega)).symm.trans (eq_of_subset_of_card_le iv (by omega)))
 
+/-- Distinct singleton and triple sums are necessary for linear three-space avoidance. -/
+theorem odd_sum_inj (A : Finset G) (large : 5≤A.card)
+    (no : ¬∃ W : Submodule F G, Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A) :
+    Set.InjOn (fun U:Finset G => ∑u∈U,u) ↑(A.powersetCard 1 ∪ A.powersetCard 3) := by
+  let T := A.powersetCard 1 ∪ A.powersetCard 3
+  have member {U : Finset G} (h : U∈T) : U⊆A ∧ (U.card=1 ∨ U.card=3) := by
+    rcases mem_union.mp h with b|b
+    · exact ⟨(mem_powersetCard.mp b).1,Or.inl (mem_powersetCard.mp b).2⟩
+    · exact ⟨(mem_powersetCard.mp b).1,Or.inr (mem_powersetCard.mp b).2⟩
+  intro U hu V hv eq
+  by_contra ne
+  exact no (small_collision A U V large (member hu).1 (member hv).1 (member hu).2 (member hv).2 ne eq)
+
 /-- The four- and six-label obstructions give the binary triple-packing
 bound for every double which excludes a three-dimensional linear space. -/
 theorem triple_packing [Fintype G] (A : Finset G) (large : 5≤A.card)
@@ -135,15 +148,8 @@ theorem triple_packing [Fintype G] (A : Finset G) (large : 5≤A.card)
     A.card+A.card.choose 3≤Fintype.card G := by
   classical
   let T := A.powersetCard 1 ∪ A.powersetCard 3
-  have member {U : Finset G} (h : U∈T) : U⊆A ∧ (U.card=1 ∨ U.card=3) := by
-    rcases mem_union.mp h with b|b
-    · exact ⟨(mem_powersetCard.mp b).1,Or.inl (mem_powersetCard.mp b).2⟩
-    · exact ⟨(mem_powersetCard.mp b).1,Or.inr (mem_powersetCard.mp b).2⟩
   let f (U : Finset G) := ∑ a∈U,a
-  have inj : Set.InjOn f (↑T) := by
-    intro U hu V hv eq
-    by_contra ne
-    exact no (small_collision A U V large (member hu).1 (member hv).1 (member hu).2 (member hv).2 ne eq)
+  have inj : Set.InjOn f (↑T) := odd_sum_inj A large no
   have card := (T.image f).card_le_univ
   rw [card_image_iff.mpr inj] at card
   have dis : Disjoint (A.powersetCard 1) (A.powersetCard 3) := by
@@ -318,3 +324,5 @@ end Green51SparseDimensions
 #print axioms Green51SparseDimensions.pair_check
 #print axioms Green51SparseDimensions.rank_without_relation
 #print axioms Green51SparseDimensions.linear_three_iff
+
+#print axioms Green51SparseDimensions.odd_sum_inj

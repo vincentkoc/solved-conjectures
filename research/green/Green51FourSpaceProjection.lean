@@ -9,7 +9,8 @@ local notation "F" => ZMod 2
 
 variable {I G : Type*} [DecidableEq I] [AddCommGroup G] [Module F G]
 
-private theorem subset_sum_add (a : I → G) (U V : Finset I) :
+/-- In characteristic two symmetric difference adds the two subset sums. -/
+theorem subset_sum_add (a : I → G) (U V : Finset I) :
     (∑ i ∈ (U ∆ V), a i) = (∑ i ∈ U, a i) + ∑ i ∈ V, a i := by
   classical
   have h1 := sum_inter_add_sum_sdiff U V a
@@ -142,5 +143,6 @@ theorem projected_support (a:Cube d → G) (e:(F × Cube d) →ₗ[F] G)
 
 end Green51FourSpace
 
+#print axioms Green51FourSpace.subset_sum_add
 #print axioms Green51FourSpace.span_iff_subset_sum
 #print axioms Green51FourSpace.projected_support

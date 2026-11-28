@@ -88,12 +88,10 @@ private theorem avoids_subset (A B : Finset G) (sub : B⊆A) (avoid : ¬FlatAt A
   rintro ⟨V,n,inside⟩
   exact avoid ((flat_zero A).mpr ⟨V,n,fun v hv => add_subset_add sub sub (inside v hv)⟩)
 
-/-- In a double containing no linear three-space, each affine three-space
-requires sixteen distinct labels whose sum is zero. -/
-theorem sixteen_relation [Fintype G] {A : Finset G} (avoid : ¬FlatAt A 0)
-    {p : G} (flat : FlatAt A p) :
-    ∃ B⊆A, B.card=16 ∧ (∑ b∈B,b)=0 := by
-  obtain ⟨W,dim,inside⟩ := flat
+/-- The sixteen labels can be chosen to retain the specified affine three-space. -/
+theorem sixteen_relation_for [Fintype G] {A : Finset G} (avoid : ¬FlatAt A 0)
+    (p : G) (W : Submodule F G) (dim:Module.finrank F W=3) (inside:p +ᵥ (W:Set G) ⊆ ↑(A+A)) :
+    ∃ B⊆A, B.card=16 ∧ (∑ b∈B,b)=0 ∧ p +ᵥ (W:Set G) ⊆ ↑(B+B) := by
   obtain ⟨f,j,sub,lifts⟩ := model_image A W dim p inside
   let B := (labels 3).image f
   have cost := Green51AffineMatchings.affine_flat_cost B (avoids_subset A B sub avoid)
@@ -101,10 +99,19 @@ theorem sixteen_relation [Fintype G] {A : Finset G} (avoid : ¬FlatAt A 0)
   rw [dim] at cost
   have size : B.card=(labels 3).card := le_antisymm card_image_le (by
     rw [label_count]; exact cost)
-  refine ⟨B,sub,size.trans (label_count 3),?_⟩
+  refine ⟨B,sub,size.trans (label_count 3),?_,represented_flat W p f j lifts⟩
   have total : (∑ x∈labels 3,x)=0 := by decide +kernel
   change (∑ b∈(labels 3).image f,b)=0
   rw [sum_image (card_image_iff.mp size),←map_sum,total,map_zero]
+
+/-- In a double containing no linear three-space, each affine three-space
+requires sixteen distinct labels whose sum is zero. -/
+theorem sixteen_relation [Fintype G] {A : Finset G} (avoid : ¬FlatAt A 0)
+    {p : G} (flat : FlatAt A p) :
+    ∃ B⊆A, B.card=16 ∧ (∑ b∈B,b)=0 := by
+  obtain ⟨W,dim,inside⟩ := flat
+  obtain ⟨B,sub,sz,sum,_⟩ := sixteen_relation_for avoid p W dim inside
+  exact ⟨B,sub,sz,sum⟩
 
 private theorem presentation [Fintype G] {A : Finset G} (h : Witness A) :
     ∃ f : Space →ₗ[F] G, univ.image (fun i => f (label i))=A ∧
@@ -319,3 +326,5 @@ end Green51PairedTypes
 #print axioms Green51PairedTypes.distinct_types
 
 #print axioms Green51PairedTypes.sixteen_relation
+
+#print axioms Green51PairedTypes.sixteen_relation_for
