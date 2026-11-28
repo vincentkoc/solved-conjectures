@@ -2,7 +2,7 @@ import ThetaReciprocalVariance
 /-! Cancellation of projected reciprocal numerators over complete periods. -/
 
 namespace Arxiv.«2501.03234».ThetaUniformWindows
-open Finset ThetaReciprocalBlocks ThetaReciprocalFibers
+open Finset ThetaReciprocalBlocks ThetaReciprocalFibers ThetaReciprocalLargeSieve
 
 private lemma coeff_neg {q m : ℕ} [NeZero q] [NeZero (q*m)] (hd : 1<q*m)
     (ho : (q*m)%2=1) (v : (ZMod (q*m))ˣ) (h : ZMod q) :
@@ -79,84 +79,89 @@ private lemma weighted_prefix {E : Type*} [NormedAddCommGroup E] [NormedSpace �
     rw [← sum_mul,sum_range_sub']
     exact le_of_eq (by ring)
 
-private lemma full_period {q m : ℕ} [NeZero q] (hd : 1<q*m) :
-    ∑ i ∈ range (2*(q*m)), numeratorVector q m (i+1) = 0 := by
-  let v (j : ℕ) := numeratorVector q m j
-  let D := 2*(q*m)
+private lemma reflect_period {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {d : ℕ} (v : ℕ → E) (hz : v 0=0) (href : ∀ j≤2*d, v (2*d-j) = -v j) :
+    ∑ i ∈ range (2*d), v (i+1)=0 := by
+  let D := 2*d
   have h := sum_range_reflect v (D+1)
   simp only [Nat.add_sub_cancel] at h
   have he : ∑ i ∈ range (D+1), v (D-i) = ∑ i ∈ range (D+1), -v i := by
     apply sum_congr rfl; intro i hi
-    exact vector_reflect hd (by have := mem_range.mp hi; dsimp [D] at *; omega)
+    exact href i (by have := mem_range.mp hi; omega)
   rw [he,sum_neg_distrib] at h
   have hzero : ∑ i ∈ range (D+1), v i = 0 := by
-    apply WithLp.ofLp_injective 2; funext a
-    exact CharZero.neg_eq_self_iff.mp (congrArg (fun z : EuclideanSpace ℂ (ZMod q) => z a) h)
-  have hv : v 0 = 0 := by simp [v,numeratorVector]
-  rwa [sum_range_succ',hv,add_zero] at hzero
+    have htwo : (2:ℝ) • (∑ i ∈ range (D+1), v i) = 0 := by rw [two_smul,← neg_eq_iff_add_eq_zero,h]
+    exact (smul_eq_zero.mp htwo).resolve_left (by norm_num)
+  rwa [sum_range_succ',hz,add_zero] at hzero
 
-private lemma prefix_norm {q m : ℕ} [NeZero q] (hd : 1<q*m) (n : ℕ) :
-    ‖∑ i ∈ range n, numeratorVector q m (i+1)‖ ≤ (2*(q*m):ℕ)*(m.divisors.card/(m:ℝ)) := by
-  let D := 2*(q*m)
+private lemma period_prefix {E : Type*} [NormedAddCommGroup E] {d : ℕ} (hd : 0<d)
+    (v : ℕ → E) {M : ℝ} (hv : ∀ j, ‖v j‖≤M) (hp : ∀ j, v (2*d+j)=v j)
+    (hz : ∑ i ∈ range (2*d), v (i+1)=0) (n : ℕ) :
+    ‖∑ i ∈ range n, v (i+1)‖ ≤ (2*d:ℕ)*M := by
+  let D := 2*d
+  have hM := (norm_nonneg _).trans (hv 0)
   induction n using Nat.strong_induction_on with
   | h n ih =>
     by_cases hl : D≤n
     · have hi := ih (n-D) (by dsimp [D]; omega)
-      have he := sum_range_add (fun i => numeratorVector q m (i+1)) D (n-D)
-      rw [Nat.add_sub_of_le hl,full_period hd,zero_add] at he
-      simp only [Nat.add_assoc,vector_period,D] at he
+      have he := sum_range_add (fun i => v (i+1)) D (n-D)
+      rw [Nat.add_sub_of_le hl,hz,zero_add] at he
+      simp only [D,Nat.add_assoc,hp] at he
       rwa [he]
     · apply (norm_sum_le ..).trans
-      have he := sum_le_sum (s:=range n) (fun i _ => numeratorVector_bound q m (i+1))
-      apply he.trans
+      apply (sum_le_sum (s:=range n) (fun i _ => hv (i+1))).trans
       simp only [sum_const,card_range,nsmul_eq_mul]
-      apply mul_le_mul_of_nonneg_right _ (by positivity)
-      exact_mod_cast (show n≤D by omega)
+      exact mul_le_mul_of_nonneg_right (by exact_mod_cast (show n≤D by omega)) hM
 
-/-- Summation by parts bounds the weighted tail after the first period,
-uniformly in the end of the numerator window. -/
-theorem numeratorWindow_uniform {q m : ℕ} [NeZero q] (hd : 1<q*m) (n : ℕ) :
-    ‖numeratorWindow q m n‖ ≤ 3*((harmonic (q*m):ℝ)*(m.divisors.card/(m:ℝ))) := by
-  let d := q*m
+/-- Reciprocal sum with an odd reflected wave, uniformly in the length. -/
+theorem reciprocal_window {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {d : ℕ} (hd : 0<d) (v : ℕ → E) {M : ℝ} (hv : ∀ j, ‖v j‖≤M) (hz : v 0=0)
+    (hp : ∀ j, v (2*d+j)=v j) (href : ∀ j≤2*d, v (2*d-j) = -v j) (n : ℕ) :
+    ‖∑ i ∈ range n, ((i:ℝ)+1)⁻¹ • v (i+1)‖ ≤ 3*((harmonic d:ℝ)*M) := by
   let D := 2*d
-  let M := m.divisors.card/(m:ℝ)
-  have hM : 0≤M := by dsimp [M]; positivity
+  let row (n : ℕ) := ∑ i ∈ range n, ((i:ℝ)+1)⁻¹ • v (i+1)
+  have hM := (norm_nonneg _).trans (hv 0)
   have hH : (1:ℝ)≤harmonic d := by
     calc (1:ℝ) = harmonic 1 := by norm_num [harmonic]
-         _ ≤ _ := harmonic_mono_real (by dsimp [d]; omega)
-  have hD (i : ℕ) (hi : i≤D) : ‖numeratorWindow q m i‖ ≤ 2*(harmonic d:ℝ)*M := by
-    apply (numeratorWindow_bound q m i).trans
+         _ ≤ _ := harmonic_mono_real hd
+  have hD (i : ℕ) (hi : i≤D) : ‖row i‖ ≤ 2*(harmonic d:ℝ)*M := by
+    have ha : ‖row i‖≤(harmonic i:ℝ)*M := by
+      apply (norm_sum_le ..).trans
+      have hr : (harmonic i:ℝ) = ∑ k ∈ range i, ((k:ℝ)+1)⁻¹ := by simp [harmonic]
+      rw [hr,sum_mul]
+      apply sum_le_sum; intro j _
+      rw [norm_smul,Real.norm_eq_abs,abs_of_nonneg (by positivity)]
+      exact mul_le_mul_of_nonneg_left (hv _) (by positivity)
+    apply ha.trans
     exact mul_le_mul_of_nonneg_right ((harmonic_mono_real hi).trans (by exact_mod_cast harmonic_product 2 d)) hM
+  change ‖row n‖≤_
   by_cases hn : n≤D
-  · have := hD n hn; change _ ≤ 3*((harmonic d:ℝ)*M)
-    nlinarith only [this,mul_nonneg (by linarith : 0≤(harmonic d:ℝ)) hM]
+  · nlinarith only [hD n hn,mul_nonneg (by linarith : 0≤(harmonic d:ℝ)) hM]
   let w (i : ℕ) : ℝ := ((D:ℝ)+i+1)⁻¹
   have hw (i : ℕ) : 0≤w i := by dsimp [w]; positivity
   have hm : Antitone w := by
     intro a b hab; dsimp [w]; apply inv_anti₀ (by positivity); exact_mod_cast (show D+a+1≤D+b+1 by omega)
-  have ht := weighted_prefix (fun i => numeratorVector q m (i+1)) w ((D:ℝ)*M) hw hm
-    (prefix_norm hd) (n-D)
-  have he : numeratorWindow q m n = numeratorWindow q m D +
-      ∑ i ∈ range (n-D), w i • numeratorVector q m (i+1) := by
-    unfold numeratorWindow
-    nth_rw 1 [show n=D+(n-D) by omega]
-    rw [sum_range_add]
-    congr 1
-    apply sum_congr rfl; intro i hi
-    rw [Nat.add_assoc,vector_period]
-    simp [w]
+  have ht := weighted_prefix (fun i => v (i+1)) w ((D:ℝ)*M) hw hm
+    (period_prefix hd v hv hp (reflect_period v hz href)) (n-D)
+  have he : row n = row D + ∑ i ∈ range (n-D), w i • v (i+1) := by
+    dsimp only [row]; nth_rw 1 [show n=D+(n-D) by omega]; rw [sum_range_add]
+    congr 1; apply sum_congr rfl; intro i _
+    rw [Nat.add_assoc,hp]; simp [w]
   have hscale : w 0*((D:ℝ)*M) ≤ M := by
     have hpos : (0:ℝ)<D+1 := by positivity
     dsimp [w]; rw [Nat.cast_zero,add_zero,← div_eq_inv_mul,div_le_iff₀ hpos]
     nlinarith only [hM]
   rw [he]
-  change _ ≤ 3*((harmonic d:ℝ)*M)
   apply (norm_add_le ..).trans
-  have hhead := hD D (le_refl _)
-  have htail := ht.trans hscale
-  nlinarith only [hhead,htail,mul_le_mul_of_nonneg_right hH hM]
+  nlinarith only [hD D (le_refl _),ht.trans hscale,mul_le_mul_of_nonneg_right hH hM]
 
-open ThetaReciprocalLargeSieve
+/-- Summation by parts bounds the weighted tail after the first period,
+uniformly in the end of the numerator window. -/
+theorem numeratorWindow_uniform {q m : ℕ} [NeZero q] (hd : 1<q*m) (n : ℕ) :
+    ‖numeratorWindow q m n‖ ≤ 3*((harmonic (q*m):ℝ)*(m.divisors.card/(m:ℝ))) :=
+  reciprocal_window (d:=q*m) (by omega) (fun j => numeratorVector q m j) (fun j => numeratorVector_bound q m j)
+    (by simp [numeratorVector]) (fun j => vector_period q m j) (fun _ => vector_reflect hd) n
+
 /-- All numerator windows that omit the divisible row have the same block envelope. -/
 theorem windowBlock_uniform : ∃ C : ℝ, 0≤C ∧ ∀ (L : ℕ → ℕ), L 1=0 →
     ∀ (Y q : ℕ) [NeZero q], ‖windowBlock L Y q‖ ≤ C*(1+Real.log q)/q := by
@@ -200,3 +205,4 @@ end Arxiv.«2501.03234».ThetaUniformWindows
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.windowBlock_uniform
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.windowEnergy_uniform
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.window_variance_uniform
+#print axioms Arxiv.«2501.03234».ThetaUniformWindows.reciprocal_window

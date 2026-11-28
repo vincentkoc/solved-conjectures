@@ -362,6 +362,12 @@ private lemma window_rows (L : ℕ → ℕ) {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y,
       simp_rw [← mul_sum,he]
       rfl
 
+/-- The finite Fourier window equals its weighted primitive rows whenever the argument is coprime to all retained moduli. -/
+theorem window_primitive_rows (L : ℕ → ℕ) {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
+    windowExtension L Y p = ∑ d ∈ Icc 1 Y, (commonWeight Y d : ℂ)/(d:ℂ) *
+      ∑ i ∈ range (L d), (↑(i+1:ℕ):ℂ)⁻¹*primitiveTerm p d (i+1) :=
+  window_rows L hp
+
 /-- Fourier synthesis for the lower triangle. -/
 noncomputable def extension : ℕ → ℕ → ℂ := windowExtension (fun d => d-1)
 
@@ -434,3 +440,4 @@ end Arxiv.«2501.03234».ThetaReciprocalInversion
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.sum_reduced_window
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.odds_interval
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.windowExtension_nondivisible
+#print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.window_primitive_rows

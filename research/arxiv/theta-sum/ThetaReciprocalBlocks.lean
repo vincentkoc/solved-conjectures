@@ -20,6 +20,10 @@ private lemma commonWeight_nonneg (Y d : ℕ) : 0 ≤ commonWeight Y d := by
 private lemma commonWeight_le (Y d : ℕ) : commonWeight Y d ≤ zetaTwo :=
   (Real.summable_nat_pow_inv.mpr (by decide : 1<2)).sum_le_tsum _ (by intros; positivity)
 
+/-- Common-factor weights are nonnegative and bounded by the full reciprocal-square sum. -/
+theorem commonWeight_bounds (Y d : ℕ) : 0≤commonWeight Y d ∧ commonWeight Y d≤∑' g : ℕ, ((g:ℝ)^2)⁻¹ :=
+  ⟨commonWeight_nonneg Y d,commonWeight_le Y d⟩
+
 /-- A primitive odd numerator contributes a vector indexed by additive frequencies;
 the vector is zero outside the odd coprime support. -/
 noncomputable def numeratorVector (q m w : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
@@ -129,7 +133,8 @@ theorem divisors_card_sqrt (m : ℕ) : m.divisors.card ≤ 2*m.sqrt := by
 
 private noncomputable def zetaFiveFourths : ℝ := ∑' m : ℕ, ((m : ℝ)^(5/4 : ℝ))⁻¹
 
-private lemma harmonic_divisors {q m : ℕ} (hq : 0<q) (hm : 0 < m) :
+/-- Harmonic divisor weights are dominated by a summable power uniformly in q. -/
+theorem harmonic_divisors {q m : ℕ} (hq : 0<q) (hm : 0 < m) :
     (harmonic (q*m) : ℝ)*m.divisors.card / (m:ℝ)^2 ≤
     10*(1+Real.log q)*((m:ℝ)^(5/4:ℝ))⁻¹ := by
   have hq' : (1:ℝ)≤q := by exact_mod_cast hq
@@ -234,46 +239,48 @@ theorem primitive_mass_le (q : ℕ) [NeZero q] (b : EuclideanSpace ℂ (ZMod q))
   · intro b _; exact ⟨b.val,mem_range.mpr b.val_lt,ZMod.natCast_zmod_val _⟩
   · intros; rfl
 
+/-- Summing the squared pointwise frequency envelope above Q preserves a
+power of Q. The constant is independent of every numerator cutoff. -/
+theorem power_envelope_tail (A : ℝ) : ∃ B : ℝ, 0≤B ∧ ∀ {Q : ℕ}, 0<Q →
+    ∀ s : Finset ℕ, (∀ q ∈ s, Q≤q) →
+      ∑ q ∈ s, (A*(q:ℝ)^(1/64:ℝ)/q)^2 ≤ B/(Q:ℝ)^(15/16:ℝ) := by
+  let Z := ∑' n : ℕ, ((n:ℝ)^(33/32:ℝ))⁻¹
+  have hZ : 0≤Z := tsum_nonneg (by intros; positivity)
+  refine ⟨A^2*Z,mul_nonneg (sq_nonneg _) hZ,?_⟩
+  intro Q hQ s hs
+  have hQr : (0:ℝ)<Q := by exact_mod_cast hQ
+  have hb (q : ℕ) (hq : q ∈ s) : (A*(q:ℝ)^(1/64:ℝ)/q)^2 ≤
+      (A^2/(Q:ℝ)^(15/16:ℝ))*((q:ℝ)^(33/32:ℝ))⁻¹ := by
+    have hp : 0<(q:ℝ) := by exact_mod_cast hQ.trans_le (hs q hq)
+    have hprod : ((q:ℝ)^(1/64:ℝ))^2*(q:ℝ)^(15/16:ℝ)*(q:ℝ)^(33/32:ℝ)=(q:ℝ)^2 := by
+      rw [sq,← Real.rpow_add hp,← Real.rpow_add hp,← Real.rpow_add hp]; norm_num
+    have ht := Real.rpow_le_rpow hQr.le (show (Q:ℝ)≤q by exact_mod_cast hs q hq) (show (0:ℝ)≤15/16 by norm_num)
+    apply le_trans _ (mul_le_mul_of_nonneg_right (div_le_div_of_nonneg_left (sq_nonneg A) (by positivity) ht) (by positivity))
+    apply le_of_eq; field_simp; linear_combination A^2*hprod
+  apply (sum_le_sum hb).trans
+  rw [← mul_sum]
+  have hS : ∑ q ∈ s, ((q:ℝ)^(33/32:ℝ))⁻¹ ≤ Z :=
+    (Real.summable_nat_rpow_inv.mpr (by norm_num : (1:ℝ)<33/32)).sum_le_tsum _ (by intros; positivity)
+  exact (mul_le_mul_of_nonneg_left hS (by positivity)).trans_eq (by ring)
+
 /-- A uniform logarithmic-over-denominator bound on the square root of each
 frequency mass implies power decay of the tail. -/
 theorem energy_tail_of_bound (E : ℕ → ℕ → ℝ) (A : ℝ) (hA : 0≤A)
     (hblock : ∀ Y q : ℕ, 0<q → E Y q ≤ (A*(1+Real.log q)/q)^2) :
     ∃ C : ℝ, 0≤C ∧ ∀ Y Q : ℕ, 0<Q → ∀ s : Finset ℕ,
     (∀ q ∈ s, Q≤q) → ∑ q ∈ s, E Y q ≤ C/(Q:ℝ)^(15/16:ℝ) := by
-  let K := (65*A)^2
-  let Z := ∑' n : ℕ, ((n : ℝ)^(33/32:ℝ))⁻¹
-  have hK : 0≤K := sq_nonneg _
-  have hZ : 0≤Z := tsum_nonneg (by intros; positivity)
-  refine ⟨K*Z,mul_nonneg hK hZ,?_⟩
-  intro Y Q hQ s hs
-  have hQr : 0 < (Q:ℝ) := by exact_mod_cast hQ
-  have hb (q : ℕ) (ht : Q≤q) : E Y q ≤
-      (K/(Q:ℝ)^(15/16:ℝ))*((q:ℝ)^(33/32:ℝ))⁻¹ := by
-    have hqr : 0 < (q:ℝ) := by exact_mod_cast (hQ.trans_le ht)
-    have hqone : (1:ℝ)≤q := by exact_mod_cast (hQ.trans_le ht)
-    have hpow := Real.one_le_rpow hqone (by norm_num : (0:ℝ)≤1/64)
-    have hl := Real.log_natCast_le_rpow_div q (by norm_num : (0:ℝ)<1/64)
-    have he : (1+Real.log q) ≤ 65*(q:ℝ)^(1/64:ℝ) := by linarith
-    have hn := div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left he hA) hqr.le
-    have h₀ : 0≤A*(1+Real.log q)/(q:ℝ) := by have := Real.log_nonneg hqone; positivity
-    apply (hblock Y q (hQ.trans_le ht)).trans ((pow_le_pow_left₀ h₀ hn 2).trans ?_)
-    have hprod : ((q:ℝ)^(1/64:ℝ))^2*(q:ℝ)^(15/16:ℝ)*(q:ℝ)^(33/32:ℝ) = (q:ℝ)^2 := by
-      rw [sq,← Real.rpow_add hqr,← Real.rpow_add hqr,← Real.rpow_add hqr]; norm_num
-    have monot := Real.rpow_le_rpow hQr.le (show (Q:ℝ) ≤ q by exact_mod_cast ht)
-      (by norm_num : (0:ℝ)≤15/16)
-    apply le_trans _ (mul_le_mul_of_nonneg_right (div_le_div_of_nonneg_left hK (by positivity) monot)
-      (by positivity))
-    apply le_of_eq; dsimp [K]
-    field_simp
-    first | linear_combination hprod | linear_combination (65*A)^2*hprod | (ring_nf at hprod ⊢; grind)
-  calc
-    _ ≤ ∑ q ∈ s, (K/(Q:ℝ)^(15/16:ℝ))*((q:ℝ)^(33/32:ℝ))⁻¹ :=
-      sum_le_sum fun q hq => hb q (hs q hq)
-    _ ≤ (K/(Q:ℝ)^(15/16:ℝ))*Z := by
-      rw [← mul_sum]
-      exact mul_le_mul_of_nonneg_left ((Real.summable_nat_rpow_inv.mpr
-        (by norm_num : (1:ℝ)<33/32)).sum_le_tsum _ (by intros; positivity)) (by positivity)
-    _ = _ := by ring
+  obtain ⟨C,hC,ht⟩ := power_envelope_tail (65*A)
+  refine ⟨C,hC,?_⟩; intro Y Q hQ s hs
+  apply (sum_le_sum _).trans (ht hQ s hs)
+  intro q hq
+  have hqp : 0<(q:ℝ) := by exact_mod_cast hQ.trans_le (hs q hq)
+  have hqone : 1≤(q:ℝ) := by exact_mod_cast hQ.trans_le (hs q hq)
+  have hl := Real.log_natCast_le_rpow_div q (show (0:ℝ)<1/64 by norm_num)
+  have he : 1+Real.log q≤65*(q:ℝ)^(1/64:ℝ) := by linarith only [hl,Real.one_le_rpow hqone (show (0:ℝ)≤1/64 by norm_num)]
+  apply (hblock Y q (hQ.trans_le (hs q hq))).trans
+  have hlog := Real.log_nonneg hqone
+  apply pow_le_pow_left₀ (by positivity)
+  exact div_le_div_of_nonneg_right ((mul_le_mul_of_nonneg_left he hA).trans_eq (by ring)) hqp.le
 
 /-- The squared mass on any finite family of exact denominators above Q is
 O(Q^(-15/16)). The constant is independent of the original cutoff Y. -/
@@ -312,3 +319,6 @@ end Arxiv.«2501.03234».ThetaReciprocalBlocks
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.windowEnergy_tail
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.harmonic_mono_real
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.harmonic_product
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.power_envelope_tail
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.commonWeight_bounds
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.harmonic_divisors
