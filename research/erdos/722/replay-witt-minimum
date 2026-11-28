@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Replay the Steiner minimum orders with the pinned external Witt witness."""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import runpy
+import shutil
+import subprocess
+import tarfile
+from tempfile import TemporaryDirectory
+from urllib.request import urlopen
+
+
+TOPIC = Path(__file__).resolve().parent
+RESEARCH = TOPIC.parents[1]
+PIN = "6bd7a2cd9d9a50ba92c3d3b3ae1a2d64e241f4bd"
+MODULES = ["Data", "PairsA", "PairsB", "PairsC", "PairsD", "Main"]
+DIGEST = "38a9db029afc7e07f99c87bc736715df49a58a6f945ad73889e19f2e0cc67456"
+URL = f"https://codeload.github.com/danielpuri1901/erdos-lean-formalization/tar.gz/{PIN}"
+WIKI = Path("FormalConjectures/Wikipedia/SteinerSystem.lean")
+
+
+def unpack(archive, source):
+    digest = hashlib.sha256()
+    with tarfile.open(archive, "r:gz") as pack:
+        for name in sorted(MODULES):
+            path = Path("Solution/Witt") / f"{name}.lean"
+            member = pack.getmember(f"erdos-lean-formalization-{PIN}/{path.as_posix()}")
+            if not member.isfile():
+                raise ValueError(member.name)
+            data = pack.extractfile(member).read()
+            digest.update(path.as_posix().encode() + b"\0" + hashlib.sha256(data).digest())
+            (source / path).parent.mkdir(parents=True, exist_ok=True)
+            (source / path).write_bytes(data)
+    if digest.hexdigest() != DIGEST:
+        raise ValueError("the six Witt sources differ from the audited pin")
+
+
+def compile_module(root, relative, out, env):
+    target = (out / relative).with_suffix(".olean")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["lean", "-j1", "-R", root, "-o", target, root / relative], env=env, check=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--archive", type=Path, help="reuse the source archive at the pinned revision")
+    args = parser.parse_args()
+    upstream = Path.cwd().resolve()
+    manifest = json.loads((upstream / "lake-manifest.json").read_text())
+    if not any(p["name"] == "mathlib" and p.get("rev") == "0df444a360eaa60ab8c11dca51a86af692955474"
+               for p in manifest["packages"]):
+        raise SystemExit("run in the pinned Formal Conjectures Lake environment")
+    version = subprocess.check_output(["lean", "--version"], text=True)
+    if "version 4.33.1," not in version or subprocess.check_output(
+        ["git", "hash-object", WIKI], text=True).strip() != "e57ff36f646eb3cc71a522ec6bfaf9956b04a2c3":
+        raise SystemExit("expected the pinned SteinerSystem source and Lean 4.33.1")
+    runner = runpy.run_path(str(RESEARCH.parent / "scripts/replay-research"))
+    files = set(RESEARCH.rglob("*.lean"))
+    env = os.environ.copy()
+    roots = sorted({str(f.parent) for f in files})
+    env["LEAN_SRC_PATH"] = os.pathsep.join([str(RESEARCH.parent), *roots, env["LEAN_SRC_PATH"]])
+    root = TOPIC / "Erdos722ExtremalParameters.lean"
+    order, _, aliases = runner["dependency_order"]([root], files, upstream, env)
+    with TemporaryDirectory(prefix="steiner-minimum-orders-") as directory:
+        work = Path(directory)
+        src, out = work / "src", work / "obj"
+        out.mkdir()
+        archive = args.archive
+        if archive is None:
+            archive = work / "witt.tar.gz"
+            with urlopen(URL, timeout=90) as incoming, archive.open("wb") as writer:
+                shutil.copyfileobj(incoming, writer)
+        unpack(archive, src)
+        env["LEAN_PATH"] = os.pathsep.join([str(out), env["LEAN_PATH"]])
+        compile_module(upstream, WIKI, out, env)
+        for name in MODULES:
+            compile_module(src, Path("Solution/Witt") / f"{name}.lean", out, env)
+        for path in order:
+            runner["compile_proof"](path, out, env)
+            if path in aliases:
+                runner["compile_alias"](path, out, env)
+        adapter = src / "Erdos722WittMinimumOrders.lean"
+        shutil.copyfile(TOPIC / (adapter.name + ".in"), adapter)
+        runner["compile_proof"](adapter, out, env)
+        for name in MODULES:
+            subprocess.run(["leanchecker", "-v", f"Solution.Witt.{name}"], env=env, check=True)
+        runner["replay_kernel"]([*order, adapter], env)
+        print(f"Replayed {len(order) + 1} notebook and adapter modules and six Witt modules.")
+
+
+if __name__ == "__main__":
+    main()

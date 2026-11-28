@@ -1,0 +1,88 @@
+import Erdos722ExtremalParameters
+import Solution.Witt.Main
+
+/-!
+# The ordinary designs at the minimum orders
+
+The checked 759-octad witness of danielpuri1901 supplies W24. Deriving at a point
+provides W23 and W22. The order exclusions use the binomial tests and the
+exterior-point bound.
+-/
+
+namespace Erdos722.MinimumOrder
+open Finset
+
+private theorem witt24 : 24∈orders 5 8 := by
+  let W := Witt.witt
+  refine ⟨by decide,W.blocks,W.block_card,?_⟩
+  intro S hS
+  simpa only [card_eq_one_iff_existsUnique,mem_filter] using W.cover_unique S hS
+
+private theorem witt23 : 23∈orders 4 7 := by
+  obtain ⟨_,H,hH⟩ := witt24
+  exact ⟨by decide,Cyclotomy.derive_design hH⟩
+
+private theorem witt22 : 22∈orders 3 6 := by
+  obtain ⟨_,H,hH⟩ := witt23
+  exact ⟨by decide,Cyclotomy.derive_design hH⟩
+
+theorem attained_realized {r k v : ℕ} (h : attained r k v) : v∈orders r k := by
+  rcases h with ⟨rfl,rfl,rfl⟩|⟨rfl,rfl,rfl⟩|⟨rfl,rfl,rfl⟩|⟨rfl,rfl,rfl⟩
+  · exact four_minimum.1
+  · exact witt22
+  · exact witt23
+  · exact witt24
+
+/-- At rank at least four, two parameter triples, and only these two,
+attain the lower bound. -/
+theorem higher_rank_equality {r k v : ℕ} (hr : 4≤r) (hrk : r<k) (hkv : k<v)
+    (hv : v=(k-r+1)*(k-r+2)+(r-1)) :
+    v∈orders r k ↔ (r=4 ∧ k=7 ∧ v=23) ∨ (r=5 ∧ k=8 ∧ v=24) := by
+  constructor
+  · intro h
+    rcases equality_cases (by omega) hrk hkv hv h with h|h
+    · unfold attained at h
+      omega
+    · omega
+  · rintro (h|h)
+    · exact attained_realized (Or.inr (Or.inr (Or.inl h)))
+    · exact attained_realized (Or.inr (Or.inr (Or.inr h)))
+
+/-- The classification in every rank at least three, with the classical
+nonexistence of the order-ten plane supplied explicitly. -/
+theorem equality_of_no_ten {r k v : ℕ} (hr : 3≤r) (hrk : r<k) (hkv : k<v)
+    (hv : v=(k-r+1)*(k-r+2)+(r-1)) (h₁₀ : ¬ PlaneOfOrder 10) :
+    v∈orders r k ↔ attained r k v := by
+  refine ⟨fun h => ?_,attained_realized⟩
+  exact (equality_cases hr hrk hkv hv h).resolve_right fun h => h₁₀ h.2.2.2
+
+theorem six_minimum : IsLeast (orders 3 6) 22 := by
+  refine ⟨witt22,?_⟩
+  rintro v ⟨hv,H,hH⟩
+  have h := boundary_or_square (by decide : 3≤3) (by decide : 3<6) hv hH
+  norm_num at h
+  omega
+
+/-- The external order-ten input is needed only at Q=11. The values
+8 and 22 in the two exceptional small cases are attained. -/
+theorem all_prime_power_minima {Q : ℕ} (hQ : IsPrimePow Q) (h₃ : 3≤Q)
+    (h₁₀ : Q=11 → ¬ PlaneOfOrder 10) :
+    IsLeast (orders 3 (Q+1)) (if Q=3 then 8 else if Q=5 then 22 else Q^2+1) := by
+  by_cases h3 : Q=3
+  · subst Q
+    simpa using four_minimum
+  by_cases h5 : Q=5
+  · subst Q
+    simpa using six_minimum
+  rw [if_neg h3,if_neg h5]
+  by_cases h11 : Q=11
+  · subst Q
+    exact twelve_minimum_alternatives.resolve_left (fun h => h₁₀ rfl h.2)
+  exact prime_power_minimum hQ (by omega) h5 h11
+
+#print axioms attained_realized
+#print axioms higher_rank_equality
+#print axioms equality_of_no_ten
+#print axioms six_minimum
+#print axioms all_prime_power_minima
+end Erdos722.MinimumOrder
