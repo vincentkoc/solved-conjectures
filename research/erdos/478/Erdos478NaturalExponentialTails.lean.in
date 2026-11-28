@@ -1,0 +1,41 @@
+import Erdos478ExponentialEndpointLaw
+import Erdos478NaturalFrobeniusBands
+
+/-! # Exponentially few ordinary primes with a factorial endpoint shortfall -/
+
+namespace Erdos478.GapTail
+open Finset Filter Topology BinaryGap GapBands GapSieve GapDensity FrobeniusBands
+open scoped Classical
+noncomputable section
+
+theorem ordinary_finite_tail (s : Finset Nat.Primes) (good : ∀ i∈s, broad i.val ∧ 3 < i.val)
+    {δ ε : ℝ} (hd : 0≤δ) (he : 0<ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => ((joined s p).card:ℝ)<(1-δ)*s.card) <
+      Real.exp (-δ^2*s.card/2)+ε :=
+  finite_lower_tail degree_one_prime_ideal_theorem s good hd he
+
+theorem ordinary_proportional {H : ℕ → ℕ} {L b A : ℝ} (hL : 1<L)
+    (hw : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hb : b<(L-1)/3)
+    (hA : A<((L-1)/3-b)^2/(2*((L-1)/3))) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-Real.exp (-A*K/Real.log K)<fraction X (fun p =>
+      let D := ⌈b*K/Real.log K⌉₊
+      D≤(joined (family K (H K)) p).card ∧ ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) :=
+  proportional_of_inputs degree_one_prime_ideal_theorem broad_mass hL hw hb hA
+
+/-- The dyadic quarter threshold holds outside an exponentially small
+exceptional fraction. Every A below 1/96 is admissible. -/
+theorem dyadic_quarter_exponential {A : ℝ} (hA : A<1/96) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-Real.exp (-A*K/Real.log K)<fraction X (fun p =>
+      let D := ⌈(1/4:ℝ)*K/Real.log K⌉₊
+      D≤(joined (family K (2*K)) p).card ∧ ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  apply ordinary_proportional (H:=fun K => 2*K) (L:=2) (by norm_num) _ (by norm_num) (by norm_num at *; exact hA)
+  apply (tendsto_const_nhds (x:=(2:ℝ))).congr'
+  filter_upwards [eventually_gt_atTop 0] with K hK
+  push_cast
+  field_simp
+
+#print axioms ordinary_finite_tail
+#print axioms ordinary_proportional
+#print axioms dyadic_quarter_exponential
+end
+end Erdos478.GapTail

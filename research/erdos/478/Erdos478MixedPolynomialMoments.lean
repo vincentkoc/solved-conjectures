@@ -24,7 +24,7 @@ def moment (fs : List ℤ[X]) := factorCount (wordAt fs (weight fs))
 
 def productRoots (fs : List ℤ[X]) (p : ℕ) := (fs.map fun f => RootMoments.roots f p).prod
 
-private theorem good_at_weight (fs : List ℤ[X]) (good : ∀ f∈fs, Good f) : Good (wordAt fs (weight fs)) := by
+theorem good_at_weight (fs : List ℤ[X]) (good : ∀ f∈fs, Good f) : Good (wordAt fs (weight fs)) := by
   classical
   apply Nat.sInf_mem (s:={M : ℕ | Good (wordAt fs M)})
   let d (i : Fin fs.length) := (fs.get i).natDegree
@@ -79,6 +79,7 @@ theorem mixed_root_mean (A : PrimeAverage) (fs : List ℤ[X]) (good : ∀ f∈fs
   rw [← List.prod_ofFn]
   exact congrArg List.prod (by simpa [Function.comp_def] using (List.map_ofFn (g:=fun f => RootMoments.roots f p) (f:=fs.get)))
 
+#print axioms good_at_weight
 #print axioms mixed_root_mean
 end
 end Erdos478.CollisionLaw

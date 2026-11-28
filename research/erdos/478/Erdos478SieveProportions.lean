@@ -16,7 +16,7 @@ open Finset Filter Topology GapDensity GapVariance MeanDeficit
 def fraction (X : ℕ) (P : ℕ → Prop) : ℝ := by
   classical exact (((Nat.primesLE X).filter P).card : ℝ) / (Nat.primesLE X).card
 
-private theorem ordinary_eq (X : ℕ) (P : ℕ → Prop) [DecidablePred P] :
+theorem ordinary_eq (X : ℕ) (P : ℕ → Prop) [DecidablePred P] :
     ordinary X (fun p => if P p then 1 else 0) = fraction X P := by
   classical
   change (Nat.primeCounting X : ℝ)⁻¹*(∑ p ∈ Nat.primesLE X, if P p then 1 else 0) = _
@@ -69,6 +69,7 @@ theorem deficit_upper_of_pit (h : DegreeOnePrimeIdealTheorem) (s : Finset Nat.Pr
   simp only [Nat.lt_succ_iff] at hc
   linarith
 
+#print axioms ordinary_eq
 #print axioms lower_of_pit
 #print axioms upper_of_pit
 #print axioms deficit_upper_of_pit
