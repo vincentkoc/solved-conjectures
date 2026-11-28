@@ -230,6 +230,47 @@ private lemma dilation_subset_nine (K : Set Space) :
   rw [he]
   exact h
 
+/-- Any uniform finite-dimensional bound for an n-fold sum of compact sets lifts with
+the same input threshold, number of summands and witness mass. -/
+theorem gaussian_sum_of_finite (n : ℕ) (α β : ℝ≥0∞)
+    (hf : ∀ (I : Finset ℕ), I.Nonempty → ∀ A : Set (I → ℝ), IsCompact A →
+      α < (Measure.pi (fun _ : I => gaussianReal 0 1)) A →
+      ∃ L : Set (I → ℝ), IsCompact L ∧ Convex ℝ L ∧ L ⊆ n • A ∧
+        β ≤ (Measure.pi (fun _ : I => gaussianReal 0 1)) L)
+    {K : Set Space} (hK : IsCompact K) (hm : α < gaussian K) :
+    ∃ C : Set Space, IsCompact C ∧ Convex ℝ C ∧ C ⊆ n • K ∧ β ≤ gaussian C := by
+  have hsum (k : ℕ) : IsCompact (k • K) := by
+    induction k with
+    | zero => simp
+    | succ k ih => simpa [succ_nsmul] using ih.add hK
+  apply (compact_convex_iff_projections gaussian (hsum n) β).2
+  intro I hI
+  have marginal : gaussian.map (proj I) = Measure.pi (fun _ : I => gaussianReal 0 1) :=
+    Measure.infinitePi_map_restrict _
+  have hmass : gaussian K ≤ (gaussian.map (proj I)) (proj I '' K) := by
+    rw [map_mass gaussian I hK]
+    exact measure_mono fun x hx => ⟨x, hx, rfl⟩
+  rw [marginal] at hmass
+  obtain ⟨C, hc, hv, hs, hμ⟩ := hf I hI (proj I '' K) (hK.image I.continuous_restrict)
+    (hm.trans_le hmass)
+  exact ⟨C, hc, hv, (Set.image_nsmul (projLinear I) K n).symm ▸ hs, marginal.symm ▸ hμ⟩
+
+/-- Mazhar, Theorem 1.2, restricted to compact inputs and the mass of its convex witness. -/
+def FiniteThreeSum : Prop :=
+  ∀ (I : Finset ℕ), I.Nonempty → ∀ A : Set (I → ℝ), IsCompact A →
+    (2 / 3 : ℝ≥0∞) < (Measure.pi (fun _ : I => gaussianReal 0 1)) A →
+    ∃ C : Set (I → ℝ), IsCompact C ∧ Convex ℝ C ∧ C ⊆ A + A + A ∧
+      (1 / 2 : ℝ≥0∞) ≤ (Measure.pi (fun _ : I => gaussianReal 0 1)) C
+
+/-- Mazhar's compact-input estimate gives a half-mass convex witness in three summands. -/
+theorem gaussian_three_of_finite (hmz : FiniteThreeSum) {K : Set Space} (hK : IsCompact K)
+    (hm : (2 / 3 : ℝ≥0∞) < gaussian K) :
+    ∃ C : Set Space, IsCompact C ∧ Convex ℝ C ∧ C ⊆ K + K + K ∧
+      (1 / 2 : ℝ≥0∞) ≤ gaussian C := by
+  have hf := gaussian_sum_of_finite 3 (2 / 3) (1 / 2)
+    (by simpa [FiniteThreeSum, succ_nsmul] using hmz) hK hm
+  simpa [succ_nsmul] using hf
+
 /-- Nine Minkowski summands suffice at mass greater than 5/6, conditional on the finite input. -/
 theorem gaussian_nine_of_finite (hfinite : FiniteGaussianConvexity)
     {K : Set Space} (hK : IsCompact K) (hm : (5 / 6 : ℝ≥0∞) < gaussian K) :
@@ -263,6 +304,8 @@ theorem green_54_of_finite (hfinite : FiniteGaussianConvexity) :
 #print axioms compact_convex_iff_projections
 #print axioms gaussian_dilation_of_finite
 #print axioms finite_iff_countable
+#print axioms gaussian_sum_of_finite
+#print axioms gaussian_three_of_finite
 #print axioms gaussian_nine_of_finite
 #print axioms green_54_of_finite
 
