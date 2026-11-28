@@ -50,17 +50,19 @@ theorem affine_examples (n : ℕ) (hn : 4≤n) :
   obtain ⟨N,P,kernel,size⟩ := padded_check (n:=n) (t:=4) (m:=n/4) (by decide) (by omega) (by omega)
   refine ⟨_,size,fun W x h => Green50BCH.sparse_image_flat P kernel W x (h.trans (double_image P))⟩
 
-private theorem plane {n : ℕ} (A : Finset (Cube n)) (large : 3≤A.card) :
-    ∃ W : Submodule F (Cube n), Module.finrank F W=2 ∧ ∀ w∈W,w∈A+A := by
+/-- Three distinct labels determine a binary linear plane in their double. -/
+theorem plane_of_three {G : Type*} [AddCommGroup G] [Module F G] [DecidableEq G]
+    (A : Finset G) (large : 3≤A.card) :
+    ∃ W : Submodule F G, Module.finrank F W=2 ∧ ∀ w∈W,w∈A+A := by
   obtain ⟨T,sub,size⟩ := exists_subset_card_eq large
   obtain ⟨a,b,c,ab,ac,bc,rfl⟩ := card_eq_three.mp size
   obtain ⟨ha,hb,hc⟩ : a∈A ∧ b∈A ∧ c∈A := by simpa only [insert_subset_iff,singleton_subset_iff] using sub
-  let L : (Fin 2 → F) →ₗ[F] Cube n := Fintype.linearCombination F ![a+b,a+c]
+  let L : (Fin 2 → F) →ₗ[F] G := Fintype.linearCombination F ![a+b,a+c]
   have eval (v : Fin 2 → F) : L v=v 0 • (a+b)+v 1 • (a+c) := by
     simp [L,Fintype.linearCombination_apply,Fin.sum_univ_two]
   have pair : (a+b)+(a+c)=b+c := by rw [add_add_add_comm,ZModModule.add_self,zero_add]
   have bit (u : F) : u=0 ∨ u=1 := (show ∀ t:F,t=0 ∨ t=1 from by decide) u
-  have nz {u v : Cube n} (ne : u≠v) : u+v≠0 := fun eq =>
+  have nz {u v : G} (ne : u≠v) : u+v≠0 := fun eq =>
     ne (add_right_cancel (eq.trans (ZModModule.add_self v).symm))
   have inj : Function.Injective L := by
     apply (injective_iff_map_eq_zero L).mpr
@@ -184,7 +186,7 @@ theorem two_above_two_points {n : ℕ} {α : ℝ} (one : α≤1) (lo : 2/(2:ℝ)
   intro B hb
   have l := lo.trans_le hb
   rw [density,div_lt_div_iff_of_pos_right (by positivity)] at l
-  exact plane B (by exact_mod_cast l)
+  exact plane_of_three B (by exact_mod_cast l)
 
 /-- Green's affine guarantee is exactly two on this sparse density interval,
 including its upper endpoint. -/
@@ -237,3 +239,4 @@ end Green51SparseBounds
 #print axioms Green51SparseBounds.two_above_two_points
 #print axioms Green51SparseBounds.sparse_plateau
 #print axioms Green51SparseBounds.three_above_packing
+#print axioms Green51SparseBounds.plane_of_three
