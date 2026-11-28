@@ -72,7 +72,8 @@ theorem even_barrier (γ : Measure E) [IsProbabilityMeasure γ] (hn : MeasurePre
     change _ < f x + f (-x) - 2 * f 0
     linarith [hp x hx, hm x hx]
 
-private theorem finite_reflection (I : Finset ℕ) : MeasurePreserving (fun x : I → ℝ => -x)
+/-- Reflection preserves the standard finite product Gaussian measure. -/
+theorem finite_reflection (I : Finset ℕ) : MeasurePreserving (fun x : I → ℝ => -x)
     (Measure.pi (fun _ : I => gaussianReal 0 1)) (Measure.pi (fun _ : I => gaussianReal 0 1)) := by
   refine ⟨measurable_neg, ?_⟩
   change (Measure.pi (fun _ : I => gaussianReal 0 1)).map (fun x i => -x i) = _
@@ -127,6 +128,7 @@ theorem symmetric_doubled_triple {ι : Type*} [Fintype ι] (γ : Measure (ι →
     linarith
 
 #print axioms mass_at_twice_mean
+#print axioms finite_reflection
 #print axioms even_barrier
 #print axioms symmetric_doubled_triple
 
