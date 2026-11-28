@@ -123,7 +123,7 @@ theorem order_weight_bound : ∃ C : ℝ, ∀ Q : Finset ℕ, (∀ q ∈ Q, q.Pr
   linarith only [hS,hR]
 
 /-- Count collisions by the multiples of each period among the positive offsets. -/
-private lemma average_collisions (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.Prime ∧ 2 < q) (H : ℕ) :
+lemma average_collisions (Q : Finset ℕ) (hQ : ∀ q ∈ Q, q.Prime ∧ 2 < q) (H : ℕ) :
     (∑ i ∈ range H, ∑ q ∈ Q.filter (fun q => period q ∣ i+1), (q:ℝ)^(-(7/8:ℝ))) ≤
       (H:ℝ) * ∑ q ∈ Q, (q:ℝ)^(-(7/8:ℝ)) / period q := by
   classical
@@ -192,7 +192,7 @@ private lemma euler_power_bound : ∃ C : ℝ, 0 < C ∧ ∀ p : ℕ, 1 ≤ p �
     exact h₁.trans <| (show B ≤ A+B by linarith).trans (le_mul_of_one_le_right (by linarith) hpow)
 
 /-- Insert the largest prime last so its incremental cost sees only smaller primes. -/
-private lemma product_loss_bound : ∃ C : ℝ, 0 < C ∧ ∀ S : Finset ℕ, (∀ q ∈ S, q.Prime) →
+lemma product_loss_bound : ∃ C : ℝ, 0 < C ∧ ∀ S : Finset ℕ, (∀ q ∈ S, q.Prime) →
     (∏ q ∈ S, loss q) ≤ 1 + C * ∑ q ∈ S, (q:ℝ)^(-(7/8:ℝ)) := by
   obtain ⟨A,hA,ha⟩ := euler_power_bound
   refine ⟨8*A, by positivity, fun S => ?_⟩
@@ -381,14 +381,12 @@ private lemma exceptional_count (N H : ℕ) :
   intro i _
   exact (card_union_le ..).trans (by have := hE true i; have := hE false i; dsimp [P] at *; omega)
 
-private lemma pair_count_scale : ∃ C : ℝ, 0 < C ∧ ∀ᶠ N : ℕ in atTop, ∀ (b : Bool) (H : ℕ),
-    (∑ i ∈ range H, ((pairSeeds b (i+1) (N+1)).card:ℝ))*(log (N:ℝ))^2 ≤ C*H*N := by
-  obtain ⟨A,hA,ha⟩ := all_offset_counts
-  refine ⟨(32:ℝ)^2 * (2+2*A),by positivity,?_⟩
+/-- A uniform choice of the dimension-two sieve cutoff and both error controls. -/
+theorem pair_sieve_cutoff : ∀ᶠ N : ℕ in atTop, ∃ z : ℕ, 4≤z ∧ (z^8)^4≤N ∧
+    log (N:ℝ)≤32*log ((z:ℝ)+1) ∧ ((z:ℝ)+1)*(log ((z:ℝ)+1))^2≤2*N := by
   have hcut := (tendsto_nat_floor_atTop.comp
     ((tendsto_rpow_atTop (by norm_num : (0:ℝ) < 1/32)).comp tendsto_natCast_atTop_atTop)).eventually_ge_atTop 4
   filter_upwards [hcut,eventually_ge_atTop 2] with N hz hN
-  intro b H
   let z := ⌊(N:ℝ)^(1/32:ℝ)⌋₊
   change 4 ≤ z at hz
   have hN' : (1:ℝ) < N := by exact_mod_cast (by omega : 1 < N)
@@ -398,10 +396,9 @@ private lemma pair_count_scale : ∃ C : ℝ, 0 < C ∧ ∀ᶠ N : ℕ in atTop,
     rw [← Real.rpow_mul_natCast hN₀.le]; norm_num
   have hpow : (z:ℝ)^32 ≤ N := (pow_le_pow_left₀ (Nat.cast_nonneg _) (Nat.floor_le
     (Real.rpow_nonneg hN₀.le _)) 32).trans_eq hv
-  have hnat : (z^8)^4 ≤ N+1 := by
-    rw [← pow_mul]; exact Nat.le_succ_of_le (by exact_mod_cast hpow)
-  have h := ha b (N+1) z H hz hnat
-  let S := ∑ i ∈ range H, ((pairSeeds b (i+1) (N+1)).card:ℝ)
+  have hnat : (z^8)^4 ≤ N := by
+    rw [←pow_mul]
+    exact_mod_cast hpow
   let L := log ((z:ℝ)+1)
   have hL : 0 ≤ L := log_nonneg (by linarith)
   have hlog : log (N:ℝ) ≤ 32*L := by
@@ -415,6 +412,20 @@ private lemma pair_count_scale : ∃ C : ℝ, 0 < C ∧ ∀ᶠ N : ℕ in atTop,
           mul_le_mul (by linarith) (pow_le_pow_left₀ hL hlz _) (sq_nonneg _) (by positivity)
       _ = 2*(z:ℝ)^3 := by ring
       _ ≤ 2*N := by linarith
+  exact ⟨z,hz,hnat,hlog,hsmall⟩
+
+private lemma pair_count_scale : ∃ C : ℝ, 0 < C ∧ ∀ᶠ N : ℕ in atTop, ∀ (b : Bool) (H : ℕ),
+    (∑ i ∈ range H, ((pairSeeds b (i+1) (N+1)).card:ℝ))*(log (N:ℝ))^2 ≤ C*H*N := by
+  obtain ⟨A,hA,ha⟩ := all_offset_counts
+  refine ⟨(32:ℝ)^2 * (2+2*A),by positivity,?_⟩
+  filter_upwards [pair_sieve_cutoff,eventually_ge_atTop 2] with N data hN
+  intro b H
+  obtain ⟨z,hz,hnat,hlog,hsmall⟩ := data
+  have h := ha b (N+1) z H hz (hnat.trans (Nat.le_succ _))
+  let S := ∑ i ∈ range H, ((pairSeeds b (i+1) (N+1)).card:ℝ)
+  let L := log ((z:ℝ)+1)
+  have hN' : (1:ℝ) < N := by exact_mod_cast (by omega : 1<N)
+  have hL : 0≤L := Real.log_nonneg (by linarith [Nat.cast_nonneg (α:=ℝ) z])
   change S*L^2 ≤ (H:ℝ)*(((z:ℝ)+1)*L^2 + A*((N+1:ℕ):ℝ)) at h
   push_cast at h
   have hSN : S*L^2 ≤ (H:ℝ)*((2+2*A)*N) := h.trans (mul_le_mul_of_nonneg_left (by

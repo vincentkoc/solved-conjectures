@@ -594,6 +594,42 @@ theorem finite_residue_sieve_bound (E : Finset ℕ) (R : (q : ℕ) → Finset (Z
   nlinarith only [mul_le_mul_of_nonneg_left hmass (Nat.cast_nonneg (α := ℝ) A.card),
     mul_le_mul_of_nonneg_right hAG (show 0 ≤ 2*F by positivity)]
 
+/-- The finite iterate sieve on an affine progression of seeds. Primes
+dividing the step must be included among the discarded sieve primes. -/
+theorem finite_affine_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) (A W : ℕ) {k z N : ℕ}
+    (hI : I.card=k) (hk : 0<k) (hz : 1<z) (hE : E⊆z.primesLE)
+    (hw : ∀ q∈z.primesLE\E, ¬q∣W)
+    (hreg : ∀ q∈z.primesLE\E, 2*k<q ∧ Set.InjOn (fun i : ℕ => (2:ZMod q)^i) I)
+    (hy : (z^(4*k))^4 ≤ N) :
+    (((range N).filter fun t => z<A+W*t ∧
+      ∀ i∈I, ((if b then firstKindTerm else secondKindTerm) (A+W*t) i).Prime).card : ℝ) *
+      (Real.log ((z:ℝ)+1))^k ≤ 6*(∏ q∈E, (1-1/(q:ℝ))⁻¹)^k*N := by
+  classical
+  let R (q : ℕ) := (chainRoots b I q).image (fun x : ZMod q => (W:ZMod q)⁻¹*(x-A))
+  apply finite_residue_sieve_bound E R _ hk hz hE _ (filter_subset ..) _ hy
+  · intro q hq
+    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
+    let : Fact q.Prime := ⟨hp⟩
+    have nz := (ZMod.natCast_eq_zero_iff W q).not.mpr (hw q hq)
+    refine ⟨(hreg q hq).1,?_⟩
+    change ((chainRoots b I q).image _).card=_
+    rw [card_image_of_injective _ (fun x y h => sub_left_inj.mp (mul_left_cancel₀ (inv_ne_zero nz) h))]
+    exact (chainRoots_card b hp (hreg q hq).2).trans hI
+  · intro t ht q hq bad
+    obtain ⟨_,large,primes⟩ := mem_filter.mp ht
+    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
+    let : Fact q.Prime := ⟨hp⟩
+    have nz := (ZMod.natCast_eq_zero_iff W q).not.mpr (hw q hq)
+    obtain ⟨x,hx,eq⟩ := mem_image.mp bad
+    have val : ((A+W*t:ℕ):ZMod q)=x := by
+      push_cast
+      rw [←eq]
+      field_simp
+      ring
+    have hle := Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1
+    have gt := (hreg q hq).1
+    exact avoids_chainRoots b hp (by omega) (hle.trans_lt large) primes (val ▸ hx)
+
 /-- Sieve a finite selection of iterate indices. Distinct powers modulo each
 retained prime give the required number of distinct forbidden seed residues. -/
 theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
@@ -604,17 +640,8 @@ theorem finite_iterate_sieve_bound (b : Bool) (I E : Finset ℕ) {k z N : ℕ}
     (((range N).filter fun p => z < p ∧
       ∀ i ∈ I, ((if b then firstKindTerm else secondKindTerm) p i).Prime).card : ℝ) *
       (Real.log ((z : ℝ)+1))^k ≤ 6*(∏ q ∈ E, (1-1/(q:ℝ))⁻¹)^k*N := by
-  classical
-  apply finite_residue_sieve_bound E (chainRoots b I) _ hk hz hE _ (filter_subset ..) _ hy
-  · intro q hq
-    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
-    exact ⟨(hreg q hq).1,(chainRoots_card b hp (hreg q hq).2).trans hI⟩
-  · intro n hn q hq
-    obtain ⟨_,hnz,hprime⟩ := mem_filter.mp hn
-    have hp := Nat.prime_of_mem_primesLE (mem_sdiff.mp hq).1
-    have hc := (hreg q hq).1
-    have hle := Nat.le_of_mem_primesLE (mem_sdiff.mp hq).1
-    exact avoids_chainRoots b hp (by omega) (hle.trans_lt hnz) hprime
+  simpa only [one_mul,zero_add] using finite_affine_iterate_sieve_bound b I E 0 1 hI hk hz hE
+    (fun q h => (Nat.prime_of_mem_primesLE (mem_sdiff.mp h).1).not_dvd_one) hreg hy
 
 #print axioms finite_residue_sieve_bound
 
