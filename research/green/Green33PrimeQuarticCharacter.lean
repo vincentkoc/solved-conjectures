@@ -499,4 +499,25 @@ theorem quartic_lower {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Algebra (Z
 
 #print axioms quartic_lower
 
+/-- A large complete character sum forces a constant times a polynomial square. -/
+theorem quartic_dichotomy {p : ℕ} [Fact p.Prime] (g : (ZMod p)[X]) (deg : g.natDegree≤4)
+    (big : 400≤p) :
+    |∑ x : ZMod p, quadraticChar (ZMod p) (g.eval x)|≤80*((p.sqrt:ℤ)+1)+4 ∨
+      ∃ c : ZMod p, ∃ q : (ZMod p)[X], g=C c*q^2 := by
+  classical
+  let E:=g.SplittingField
+  let _ : Fintype E:=Fintype.ofFinite _
+  let _ : CharP E p:=charP_of_injective_ringHom (algebraMap (ZMod p) E).injective p
+  let φ:=algebraMap (ZMod p) E
+  by_cases odd : ∃ a : E, Odd ((g.map φ).rootMultiplicity a)
+  · obtain ⟨a,ha⟩:=odd
+    exact Or.inl (quartic_character_sum g deg a ha big)
+  · right
+    by_cases nf : g=0
+    · exact ⟨0,0,by simp [nf]⟩
+    · exact square_factor φ g nf (Polynomial.SplittingField.splits g) (fun a =>
+        Nat.not_odd_iff_even.mp (fun h => odd ⟨a,h⟩))
+
+#print axioms quartic_dichotomy
+
 end Green33PrimeQuarticCharacter

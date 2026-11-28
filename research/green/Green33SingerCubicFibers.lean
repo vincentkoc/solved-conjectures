@@ -190,4 +190,31 @@ theorem product_identity {K : Type*} [Field K] (φ : ZMod p→+*K)
 
 #print axioms product_identity
 
+/-- Upper count for affine triples, apart from the scalar-square pencil. -/
+theorem pairs_or_twist (P : Pencil (ZMod p)) (big : 400≤p) :
+    (∑ x : ZMod p, (fiber P x).card)≤p+80*(p.sqrt+1)+4 ∨
+      ∃ c : ZMod p, ∃ q : (ZMod p)[X], P.polynomial=C c*q^2 := by
+  classical
+  rcases Green33PrimeQuarticCharacter.quartic_dichotomy P.polynomial P.polynomial_degree big
+    with bound|twist
+  · left
+    have fld : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+    have up (x : ZMod p) : ((fiber P x).card:ℤ)≤quadraticChar (ZMod p) (P.disc x)+1 := by
+      by_cases u : P.quad x=0
+      · simp only [fiber,u,if_pos,card_empty,Nat.cast_zero]
+        by_cases z : P.disc x=0
+        · simp [z]
+        · rcases quadraticChar_dichotomy z with h|h <;> rw [h] <;> norm_num
+      · exact (fiber_size P fld x u).le
+    have hn := sum_le_sum (s:=univ) (fun x _ => up x)
+    have ev (x : ZMod p) : P.polynomial.eval x=P.disc x := by
+      simp [Pencil.polynomial,Pencil.disc,Pencil.middle,Pencil.last,Pencil.quad,Pencil.map]
+    simp only [ev] at bound
+    simp only [sum_add_distrib,sum_const,card_univ,ZMod.card,nsmul_eq_mul,mul_one,←Nat.cast_sum] at hn
+    have := (abs_le.mp bound).2
+    omega
+  · exact Or.inr twist
+
+#print axioms pairs_or_twist
+
 end Green33SingerCubicFibers
