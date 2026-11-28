@@ -1,0 +1,29 @@
+# Steiner pair designs at prime and prime-power orders
+
+For every fixed block size $k>2$, at every sufficiently large **prime** order $q$, a family $H$ with `H.IsBlockDesign 2 k` exists if and only if the two divisibility conditions in Erdős 722 hold. For **prime-power** orders the same equivalence holds when $q$ is coprime to $k$. When $k$ itself is a prime power, the equivalence covers **every sufficiently large prime-power order**, including those sharing its characteristic. [Prime-order theorem](Erdos722CyclotomicSpectrum.lean) · [Prime-power block sizes](Erdos722PrimePowerPairSpectrum.lean) · [Pinned Erdős 722](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/ErdosProblems/722.lean)
+
+The finite construction works for a field of order $q$ whenever $k\ge2$, $k(k-1)\mid q-1$ and $q>4kC^{2k+2}$, where $C=4\binom{k}{2}$. There are arbitrarily large primes in the class $1\bmod k(k-1)$, so it gives an infinite family at each block size. This formalizes the index-one case of Wilson's classical cyclotomic difference-family theorem with an explicit sufficient bound. Buratti and Pasotti obtained sharper bounds using Weil's estimates. The general existence theorem of Keevash covers every fixed rank and all sufficiently large admissible orders. [Wilson](https://www.sciencedirect.com/science/article/pii/0022314X72900091) · [Buratti and Pasotti](https://www.sciencedirect.com/science/article/pii/S1071579708000816) · [Keevash](https://arxiv.org/abs/1401.3665)
+
+## Choosing a starter
+
+Put $m=\binom{k}{2}$. The field's multiplicative group has a subgroup of index $m$ that contains $-1$. Give each pair of positions $i<j$ its own coset $D_{ij}$. A starter is a list of field elements $f_1,\ldots,f_k$ satisfying $f_j-f_i\in D_{ij}$ for every pair. [Subgroup and cosets](Erdos722CyclotomicCosets.lean) · [Starter theorem](Erdos722CyclotomicStarter.lean)
+
+To select each entry, let $S$ be the candidates for a later entry, let $D$ be their required difference class, and put $N(a,b)=|\{z\in D:az+b\in S\}|$. For distinct $z,w$, the pair $(az+b,aw+b)$ runs through all of $\mathbb F_q^2$ exactly once as $(a,b)$ varies, including $a=0$. This gives the exact identity
+$$
+\sum_{a,b}\big(qN(a,b)-|D||S|\big)^2=|D|q^2|S|(q-|S|).
+$$
+Every slope in the subgroup fixes $D$. Restricting the sum to those slopes shows that the set $B$ of shifts with at most half the expected count satisfies $|B||D|^2|S|\le4q^3$. After $t$ choices every candidate set has size at least $q/C^t$. The union of the bad shifts for the remaining positions is smaller than the next candidate set under the stated bound on $q$. [Affine second moment](Erdos722CyclotomicMoment.lean) · [Incidence identity](Erdos722CyclotomicIncidences.lean) · [Bad shifts](Erdos722CyclotomicShifts.lean) · [Successive choices](Erdos722CyclotomicEmbedding.lean)
+
+Choose one multiplier from each pair $\{u,-u\}$ in the subgroup. Multiply the starter by each representative and translate the resulting blocks by all field elements. Every nonzero field element occurs among the ordered differences of the base blocks. There are exactly $q-1$ such differences, so each occurs once. Every pair of points consequently lies in exactly one developed block. [Choice up to sign](Erdos722CyclotomicMultipliers.lean) · [Development and uniqueness](Erdos722CyclotomicDevelopment.lean)
+
+## Matching the host hypotheses
+
+At rank two the pinned conditions are $\binom{k}{2}\mid\binom{q}{2}$ and $k-1\mid q-1$. Together they imply $k(k-1)\mid q(q-1)$ and $\gcd(k-1,q)=1$. When $\gcd(k,q)=1$ this yields exactly the modulus needed above. Every prime $q>k$ is in that coprime case. Necessity follows by counting the pairs containing a fixed subset, using the notebook's general divisibility theorem. [Arithmetic and endpoint](Erdos722CyclotomicSpectrum.lean) · [Divisibility by counting](../Erdos722HananiFour.lean)
+
+When $k=p^a$ and $q=p^e$ for one prime $p$ and positive exponents, a design exists **exactly when $a\mid e$**, with no size cutoff. Necessity follows from $p^a-1\mid p^e-1$ and the gcd identity for these two integers. For sufficiency, derive at one point of the projective subline design of order $(p^a)^{e/a}+1$. For instance, blocks of size nine give a pair design on 81 points, while the replication condition rules out 27 points. [Point derivation](Erdos722DerivedAffine.lean) · [Exact criterion](Erdos722PrimePowerPairSpectrum.lean) · [Projective sublines](../ProjectiveSublines.md)
+
+## Scope and replay
+
+The notebook's [exact five-point spectrum](FiveExactSpectrum.md) covers all orders at that fixed block size. The present theorem varies the block size and restricts the orders to primes or the indicated prime powers. The live DeepMind and pinned statement files shared a Git blob on 2026-11-28. Left to Solve lists the task of formalizing the known theorem. OMA's general reduction assumes absorption inputs, and its rank-one proof constructs an equipartition. The live searches found no matching cyclotomic contribution. [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/5495) · [Left to Solve](https://lefttosolve.com/p/Erdos722.erdos_722) · [OMA reduction](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17505) · [OMA rank-one proof](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17952)
+
+The Lean 4.33.1 replay rebuilds 22 local modules and checks each separately with `leanchecker`. A type comparison unfolds the pinned rank-two declaration and checks the prime and prime-power restrictions with the same block predicate, filter and binomial conditions. The audit matched 24 named declarations and checked all 63 printed axiom reports. They use only `propext`, `Classical.choice` and `Quot.sound`. [Notebook replay](../../README.md#replay)
