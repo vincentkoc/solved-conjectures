@@ -1,0 +1,19 @@
+# An affine four-space first separates in dimension fifteen
+
+The least dimension of a binary vector space containing a set \(A\) for which \(A+A\) contains an affine four-space and no linear three-space is **15**. A set of 32 labels attains it. In every dimension through 14, avoiding a linear three-space forces the pinned `maxCosetDim` of the double to be at most three, for sets of every cardinality. The general density question in Green 51 remains open. [Lean theorems](Green51FourSpaceDimension.lean) · [Pinned Green 51 statement](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/51.lean)
+
+## Why the pairing matters
+
+Choose one pair of labels for each of the sixteen points of the affine four-space. Avoiding a linear three-space makes their 32 endpoints distinct. The even relations among the 32 endpoints have minimum weight at least eight and dimension at least \(31-n\). Jaffe’s nonexistence bound for a binary \([32,18,8]\) code rules out \(n\le13\). Cheng and Sloane constructed a binary \([32,17,8]\) code, the parameters still possible at \(n=14\). The extra restriction here comes from the prescribed sixteen pair sums. [Disjoint representatives](Green51QuadraticFlats.lean) · [Jaffe’s bound in the binary code tables](https://www.codetables.de/BKLC/BKLC.php?q=2&n=32&k=18) · [Cheng and Sloane, 1989](https://neilsloane.com/doc/cheng32.pdf)
+
+The pair sums span five dimensions. Modulo those directions, the two endpoints of each pair coincide. The even relations among the sixteen images form a binary code \(K\) of dimension at least \(20-n\) in ambient dimension \(n\). A relation on two or four sites would give a forbidden endpoint relation. For six sites, switching endpoints also gives a forbidden relation whenever the sites span the affine four-space. Thus every weight-six support lies in an affine hyperplane of the four-cube. This construction and its support restrictions work for affine flats in arbitrary dimension at least three. [Projected relations](Green51FourSpaceProjection.lean) · [Rank bound](Green51FourSpaceCode.lean)
+
+## Why the projected code has dimension at most five
+
+A code of dimension six satisfying those restrictions has a word of weight six. Otherwise, setting one coordinate to zero and then deleting it gives a code of length fifteen, dimension at least five and minimum weight eight, contradicting the binary Plotkin bound. A coordinate permutation preserving the thirty affine hyperplanes puts the six sites at positions zero through five. [Shortening](Green51FourSpaceParity.lean) · [Normalization](Green51FourSpaceNormal.lean)
+
+Split each word into two eight-coordinate halves. Fixing the sixth coordinate to zero chooses a representative modulo the weight-six word. Projection onto the upper half is then injective, so the lower half is a linear function of the upper half on a subspace of dimension at least five. That subspace is the common kernel of at most three parity checks. For every triple of checks the kernel contains one of 609 listed configurations. On each configuration the kernel verifies that no linear assignment of lower halves is compatible with the weight and hyperplane conditions. Together these exhaust all choices and give \(20-n\le5\). [Coverage of the parity checks](Green51FourSpaceChecks.lean) · [Incompatible assignments](Green51FourSpaceLifts.lean) · [Rank conclusion](Green51FourSpaceRank.lean)
+
+The matching example is the existing 32-point graph \(x\mapsto(x,x^3,x^5)\) over \(\mathbb F_{32}\). The notebook's endpoint bound also shows that 32 labels are necessary in any dimension. [Matching construction and label bound](Green51AffineMatchings.lean)
+
+From the pinned Formal Conjectures checkout, set `notebook` to the path of this repository and run `lake env python3 "$notebook/scripts/replay-research" Green51FourSpaceDimension`.
