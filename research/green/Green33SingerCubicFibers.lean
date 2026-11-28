@@ -59,29 +59,29 @@ theorem polynomial_degree (P : Pencil F) : P.polynomial.natDegree≤4 := by
 
 end Pencil
 
-variable {p : ℕ} [Fact p.Prime]
+variable {F : Type*} [Field F] [Fintype F] [DecidableEq F]
 
-private def rootsAt (P : Pencil (ZMod p)) (x : ZMod p) :=
-  univ.filter fun y : ZMod p => P.quad x*y^2+P.middle x*y+P.last x=0
+private def rootsAt (P : Pencil F) (x : F) :=
+  univ.filter fun y : F => P.quad x*y^2+P.middle x*y+P.last x=0
 
 /-- The admissible roots of the residual quadratic at the given finite parameter. -/
-def fiber (P : Pencil (ZMod p)) (x : ZMod p) : Finset (ZMod p) :=
+def fiberOver (P : Pencil F) (x : F) : Finset F :=
   if P.quad x=0 then ∅ else rootsAt P x
 
-theorem mem_fiber (P : Pencil (ZMod p)) (x y : ZMod p) :
-    y∈fiber P x ↔ P.quad x≠0 ∧ P.quad x*y^2+P.middle x*y+P.last x=0 := by
-  by_cases z : P.quad x=0 <;> simp [fiber,rootsAt,z]
+theorem mem_fiberOver (P : Pencil F) (x y : F) :
+    y∈fiberOver P x ↔ P.quad x≠0 ∧ P.quad x*y^2+P.middle x*y+P.last x=0 := by
+  by_cases z : P.quad x=0 <;> simp [fiberOver,rootsAt,z]
 
-private theorem fiber_size (P : Pencil (ZMod p)) (odd : ringChar (ZMod p)≠2)
-    (x : ZMod p) (u : P.quad x≠0) :
-    ((fiber P x).card:ℤ)=quadraticChar (ZMod p) (P.disc x)+1 := by
+private theorem fiber_size (P : Pencil F) (odd : ringChar F≠2)
+    (x : F) (u : P.quad x≠0) :
+    ((fiberOver P x).card:ℤ)=quadraticChar F (P.disc x)+1 := by
   classical
-  have two : (2:ZMod p)≠0 := Ring.two_ne_zero odd
+  have two : (2:F)≠0 := Ring.two_ne_zero odd
   have count := quadraticChar_card_sqrts odd (P.disc x)
   refine Eq.trans (congrArg (Nat.cast (R:=ℤ)) ?_) count
   apply card_nbij' (fun y => 2*P.quad x*y+P.middle x) (fun z => (z-P.middle x)/(2*P.quad x))
   · intro y hy
-    have eq := (mem_fiber P x y).mp hy |>.2
+    have eq := (mem_fiberOver P x y).mp hy |>.2
     apply Set.mem_toFinset.mpr
     change (2*P.quad x*y+P.middle x)^2=P.disc x
     unfold Pencil.disc
@@ -89,7 +89,7 @@ private theorem fiber_size (P : Pencil (ZMod p)) (odd : ringChar (ZMod p)≠2)
   · intro z hz
     have e := Set.mem_toFinset.mp hz
     change z^2=P.disc x at e
-    apply (mem_fiber P x _).mpr
+    apply (mem_fiberOver P x _).mpr
     refine ⟨u,?_⟩
     unfold Pencil.disc at e
     field_simp [two,u]
@@ -97,17 +97,17 @@ private theorem fiber_size (P : Pencil (ZMod p)) (odd : ringChar (ZMod p)≠2)
   · intro y _;field_simp [two,u];ring
   · intro z _;field_simp [two,u];ring
 
-private theorem exceptional_points (P : Pencil (ZMod p)) {K : Type*} [Field K]
-    (φ : ZMod p→+*K) (r : K) (nr : (P.map φ).quad r≠0) :
-    (univ.filter (fun x : ZMod p => P.quad x=0)).card≤2 := by
+private theorem exceptional_points (P : Pencil F) {K : Type*} [Field K]
+    (φ : F→+*K) (r : K) (nr : (P.map φ).quad r≠0) :
+    (univ.filter (fun x : F => P.quad x=0)).card≤2 := by
   classical
-  let Q := (P.map C).quad (X : (ZMod p)[X])
+  let Q := (P.map C).quad (X : F[X])
   have nv : Q≠0 := by
     intro zero
     have val : (Q.map φ).eval r=(P.map φ).quad r := by simp [Q,Pencil.quad,Pencil.map]
     exact nr (by rw [← val,zero];simp)
   have deg : Q.natDegree≤2 := by unfold Q Pencil.quad Pencil.map;compute_degree
-  have sub : univ.filter (fun x : ZMod p => P.quad x=0) ⊆ Q.roots.toFinset := by
+  have sub : univ.filter (fun x : F => P.quad x=0) ⊆ Q.roots.toFinset := by
     intro x hx
     apply Multiset.mem_toFinset.mpr
     apply (mem_roots nv).mpr
@@ -117,39 +117,38 @@ private theorem exceptional_points (P : Pencil (ZMod p)) {K : Type*} [Field K]
 
 /-- A cubic pencil with three distinct poles in an odd-degree extension has
 many ordered pairs whose residual quadratic splits. Repetitions are included. -/
-theorem many_pairs {K : Type*} [Field K] [Algebra (ZMod p) K]
-    [FiniteDimensional (ZMod p) K] (ext : Odd (Module.finrank (ZMod p) K))
-    (P : Pencil (ZMod p)) (r s t : K)
-    (one : r+s+t= -algebraMap (ZMod p) K P.i)
-    (two : r*s+r*t+s*t=algebraMap (ZMod p) K P.j)
-    (three : r*s*t= -algebraMap (ZMod p) K P.k) (st : s≠t)
-    (nz : (P.map (algebraMap (ZMod p) K)).quad r≠0) (big : 400≤p) :
-    p ≤ (∑ x : ZMod p, (fiber P x).card)+80*(p.sqrt+1)+8 := by
+theorem many_pairs_field (fld : ringChar F≠2) {K : Type*} [Field K] [Algebra F K]
+    [FiniteDimensional F K] (ext : Odd (Module.finrank F K))
+    (P : Pencil F) (r s t : K)
+    (one : r+s+t= -algebraMap F K P.i)
+    (two : r*s+r*t+s*t=algebraMap F K P.j)
+    (three : r*s*t= -algebraMap F K P.k) (st : s≠t)
+    (nz : (P.map (algebraMap F K)).quad r≠0) :
+    Fintype.card F ≤ (∑ x : F, (fiberOver P x).card)+80*((Fintype.card F).sqrt+1)+8 := by
   classical
-  let φ := algebraMap (ZMod p) K
+  let φ := algebraMap F K
   let W := (P.map φ).quad r*(s-t)
   have nw : W≠0 := mul_ne_zero nz (sub_ne_zero.mpr st)
   have val : (P.polynomial.map φ).eval r=W^2 :=
     (P.eval_polynomial φ r).trans ((P.map φ).pole_value one two three)
-  have lower := Green33PrimeQuarticCharacter.quartic_lower ext P.polynomial P.polynomial_degree r W nw val big
-  have eval (x : ZMod p) : P.polynomial.eval x=P.disc x := by
+  have lower := Green33FiniteQuarticCharacter.quartic_lower fld ext P.polynomial P.polynomial_degree r W nw val
+  have eval (x : F) : P.polynomial.eval x=P.disc x := by
     simp [Pencil.polynomial,Pencil.disc,Pencil.middle,Pencil.last,Pencil.quad,Pencil.map]
   simp only [eval] at lower
-  have fld : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
-  have cost (x : ZMod p) : quadraticChar (ZMod p) (P.disc x)+1 ≤
-      ((fiber P x).card:ℤ)+2*(if P.quad x=0 then 1 else 0) := by
+  have cost (x : F) : quadraticChar F (P.disc x)+1 ≤
+      ((fiberOver P x).card:ℤ)+2*(if P.quad x=0 then 1 else 0) := by
     by_cases u : P.quad x=0
-    · simp only [fiber,u,if_pos,card_empty,Nat.cast_zero,mul_one,zero_add]
+    · simp only [fiberOver,u,if_pos,card_empty,Nat.cast_zero,mul_one,zero_add]
       by_cases d : P.disc x=0
       · simp [d]
       · rcases quadraticChar_dichotomy d with h|h <;> rw [h] <;> norm_num
     · rw [fiber_size P fld x u,if_neg u,mul_zero,add_zero]
   have charge := sum_le_sum (s:=univ) (fun x _ => cost x)
-  simp only [sum_add_distrib,←mul_sum,sum_boole,sum_const,card_univ,ZMod.card,nsmul_eq_mul,mul_one,←Nat.cast_sum] at charge
+  simp only [sum_add_distrib,←mul_sum,sum_boole,sum_const,card_univ,nsmul_eq_mul,mul_one,←Nat.cast_sum] at charge
   have cap := exceptional_points P φ r nz
   omega
 
-#print axioms many_pairs
+#print axioms many_pairs_field
 
 namespace Pencil
 
@@ -175,11 +174,11 @@ end Pencil
 /-- Each root counted in the preceding bound gives an ordered triple with the
 prescribed projective product. The scalar is nonzero when the cubic has no
 base-field root. -/
-theorem product_identity {K : Type*} [Field K] (φ : ZMod p→+*K)
-    (P : Pencil (ZMod p)) {x y : ZMod p} (hy : y∈fiber P x) (r : K)
+theorem product_identity_field {K : Type*} [Field K] (φ : F→+*K)
+    (P : Pencil F) {x y : F} (hy : y∈fiberOver P x) (r : K)
     (pole : (P.map φ).cubic r=0) :
     (r-φ x)*(r-φ y)*(r-φ (P.mate x y))=φ (-(P.cubic x)/(P.quad x))*(P.map φ).quad r := by
-  obtain ⟨u,root⟩ := (mem_fiber P x y).mp hy
+  obtain ⟨u,root⟩ := (mem_fiberOver P x y).mp hy
   have q : (P.map φ).quad (φ x)=φ (P.quad x) := by simp [Pencil.quad,Pencil.map]
   have m : (P.map φ).middle (φ x)=φ (P.middle x) := by simp [Pencil.middle,Pencil.map]
   have c : (P.map φ).last (φ x)=φ (P.last x) := by simp [Pencil.last,Pencil.map]
@@ -188,33 +187,72 @@ theorem product_identity {K : Type*} [Field K] (φ : ZMod p→+*K)
     (by rw [q,m,c];simpa only [map_add,map_mul,map_pow,map_zero] using congrArg φ root) pole
   simpa only [Pencil.mate,m,q,M,map_sub,map_div₀,map_neg] using pair
 
-#print axioms product_identity
+#print axioms product_identity_field
 
 /-- Upper count for affine triples, apart from the scalar-square pencil. -/
-theorem pairs_or_twist (P : Pencil (ZMod p)) (big : 400≤p) :
-    (∑ x : ZMod p, (fiber P x).card)≤p+80*(p.sqrt+1)+4 ∨
-      ∃ c : ZMod p, ∃ q : (ZMod p)[X], P.polynomial=C c*q^2 := by
+theorem pairs_or_twist_field (fld : ringChar F≠2) (P : Pencil F) :
+    (∑ x : F, (fiberOver P x).card)≤Fintype.card F+80*((Fintype.card F).sqrt+1)+4 ∨
+      ∃ c : F, ∃ q : F[X], P.polynomial=C c*q^2 := by
   classical
-  rcases Green33PrimeQuarticCharacter.quartic_dichotomy P.polynomial P.polynomial_degree big
+  rcases Green33FiniteQuarticCharacter.quartic_dichotomy fld P.polynomial P.polynomial_degree
     with bound|twist
   · left
-    have fld : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
-    have up (x : ZMod p) : ((fiber P x).card:ℤ)≤quadraticChar (ZMod p) (P.disc x)+1 := by
+    have up (x : F) : ((fiberOver P x).card:ℤ)≤quadraticChar F (P.disc x)+1 := by
       by_cases u : P.quad x=0
-      · simp only [fiber,u,if_pos,card_empty,Nat.cast_zero]
+      · simp only [fiberOver,u,if_pos,card_empty,Nat.cast_zero]
         by_cases z : P.disc x=0
         · simp [z]
         · rcases quadraticChar_dichotomy z with h|h <;> rw [h] <;> norm_num
       · exact (fiber_size P fld x u).le
     have hn := sum_le_sum (s:=univ) (fun x _ => up x)
-    have ev (x : ZMod p) : P.polynomial.eval x=P.disc x := by
+    have ev (x : F) : P.polynomial.eval x=P.disc x := by
       simp [Pencil.polynomial,Pencil.disc,Pencil.middle,Pencil.last,Pencil.quad,Pencil.map]
     simp only [ev] at bound
-    simp only [sum_add_distrib,sum_const,card_univ,ZMod.card,nsmul_eq_mul,mul_one,←Nat.cast_sum] at hn
+    simp only [sum_add_distrib,sum_const,card_univ,nsmul_eq_mul,mul_one,←Nat.cast_sum] at hn
     have := (abs_le.mp bound).2
     omega
   · exact Or.inr twist
 
+#print axioms pairs_or_twist_field
+
+section PrimeField
+
+variable {p : ℕ} [Fact p.Prime]
+
+/-- Prime-field specialization of the admissible residual roots. -/
+abbrev fiber (P : Pencil (ZMod p)) (x : ZMod p) := fiberOver P x
+
+theorem mem_fiber (P : Pencil (ZMod p)) (x y : ZMod p) :
+    y∈fiber P x ↔ P.quad x≠0 ∧ P.quad x*y^2+P.middle x*y+P.last x=0 := mem_fiberOver P x y
+
+theorem many_pairs {K : Type*} [Field K] [Algebra (ZMod p) K]
+    [FiniteDimensional (ZMod p) K] (ext : Odd (Module.finrank (ZMod p) K))
+    (P : Pencil (ZMod p)) (r s t : K)
+    (one : r+s+t= -algebraMap (ZMod p) K P.i)
+    (two : r*s+r*t+s*t=algebraMap (ZMod p) K P.j)
+    (three : r*s*t= -algebraMap (ZMod p) K P.k) (st : s≠t)
+    (nz : (P.map (algebraMap (ZMod p) K)).quad r≠0) (big : 400≤p) :
+    p ≤ (∑ x : ZMod p, (fiber P x).card)+80*(p.sqrt+1)+8 := by
+  have fld : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using many_pairs_field fld ext P r s t one two three st nz
+
+#print axioms many_pairs
+
+theorem product_identity {K : Type*} [Field K] (φ : ZMod p→+*K)
+    (P : Pencil (ZMod p)) {x y : ZMod p} (hy : y∈fiber P x) (r : K)
+    (pole : (P.map φ).cubic r=0) :
+    (r-φ x)*(r-φ y)*(r-φ (P.mate x y))=φ (-(P.cubic x)/(P.quad x))*(P.map φ).quad r := product_identity_field φ P hy r pole
+
+#print axioms product_identity
+
+theorem pairs_or_twist (P : Pencil (ZMod p)) (big : 400≤p) :
+    (∑ x : ZMod p, (fiber P x).card)≤p+80*(p.sqrt+1)+4 ∨
+      ∃ c : ZMod p, ∃ q : (ZMod p)[X], P.polynomial=C c*q^2 := by
+  have fld : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using pairs_or_twist_field fld P
+
 #print axioms pairs_or_twist
+
+end PrimeField
 
 end Green33SingerCubicFibers

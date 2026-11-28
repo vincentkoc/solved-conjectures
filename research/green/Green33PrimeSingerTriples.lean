@@ -2,7 +2,7 @@ import Green33SingerCubicFibers
 import Green33PrimeSingerBasisGap
 import Mathlib.FieldTheory.Finite.GaloisField
 
-/-! Three-term representations on a projective Singer line over a prime field. -/
+/-! Three-term representations on cubic Singer lines over odd finite fields. -/
 
 open Polynomial Finset Green33SingerCubicFibers Green33PrimeSingerIncidence
 open Green33ReflectedLayers (paths walk doubleHom overlap)
@@ -152,27 +152,27 @@ theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fintype F] 
 
 
 /-- An affine parametrization of a projective Singer line, with its cubic generator. -/
-structure LineChart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Algebra (ZMod p) K]
-    [AddCommGroup G] (D : Finset G) (S : SingerMap (ZMod p) K D) where
+structure FieldLineChart {F : Type*} [Field F] {K G : Type*} [Field K] [Algebra F K]
+    [AddCommGroup G] (D : Finset G) (S : SingerMap F K D) where
   base : Kˣ
   theta : K
-  degree : (minpoly (ZMod p) theta).natDegree=3
-  parameter : ZMod p→Kˣ
-  coordinates : ∀ x, (parameter x:K)=(base:K)*(theta-algebraMap (ZMod p) K x)
-  embedding : ZMod p ↪ G
+  degree : (minpoly F theta).natDegree=3
+  parameter : F→Kˣ
+  coordinates : ∀ x, (parameter x:K)=(base:K)*(theta-algebraMap F K x)
+  embedding : F ↪ G
   tagged : ∀ x, embedding x=S.tag (parameter x)
   inside : ∀ x, embedding x∈D
 
 /-- Pick two projectively distinct points and use their ratio as affine coordinate. -/
-theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
-    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
-    (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
-    (card : Fintype.card K=(Fintype.card (ZMod p))^3) : Nonempty (LineChart D S) := by
+theorem line_chart_field {F : Type*} [Field F] [Fintype F] {K G : Type*} [Field K] [Fintype K]
+    [Algebra F K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap F K D) (twoPts : 1<D.card)
+    (card : Fintype.card K=(Fintype.card F)^3) : Nonempty (FieldLineChart D S) := by
   classical
-  let φ := algebraMap (ZMod p) K
-  have rank : Module.finrank (ZMod p) K=3 := by
-    have total := Module.card_eq_pow_finrank (K:=ZMod p) (V:=K)
-    exact Nat.pow_right_injective (Fintype.one_lt_card (α:=ZMod p)) (total.symm.trans card)
+  let φ := algebraMap F K
+  have rank : Module.finrank F K=3 := by
+    have total := Module.card_eq_pow_finrank (K:=F) (V:=K)
+    exact Nat.pow_right_injective (Fintype.one_lt_card (α:=F)) (total.symm.trans card)
   obtain ⟨u,hu,v,hv,uv⟩ := one_lt_card.mp twoPts
   obtain ⟨U,hU⟩ := S.surj u
   obtain ⟨V,hV⟩ := S.surj v
@@ -184,9 +184,9 @@ theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
     exact uv (hU.symm.trans (same.symm.trans hV))
   have ud := (S.mem U).mp (hU ▸ hu)
   have vd := (S.mem V).mp (hV ▸ hv)
-  let line (x : ZMod p) : Kˣ := Units.mk0 ((U:K)*(θ-φ x))
+  let line (x : F) : Kˣ := Units.mk0 ((U:K)*(θ-φ x))
     (mul_ne_zero U.ne_zero (sub_ne_zero.mpr (fun e => ns ⟨x,e.symm⟩)))
-  have embed : Function.Injective (fun x : ZMod p => S.tag (line x)) := by
+  have embed : Function.Injective (fun x : F => S.tag (line x)) := by
     intro x y eq
     obtain ⟨k,ke⟩ := (S.same (line x) (line y)).mp eq
     rw [Algebra.smul_def] at ke
@@ -203,7 +203,7 @@ theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
       rw [map_div₀,map_sub,map_mul,map_sub,map_one]
       apply (div_eq_iff nk).mpr
       linear_combination -rel
-  let e : ZMod p ↪ G := ⟨_,embed⟩
+  let e : F ↪ G := ⟨_,embed⟩
   have inside (x) : e x∈D := by
     apply (S.mem (line x)).mpr
     change S.form ((U:K)*(θ-φ x))=0
@@ -213,36 +213,36 @@ theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
 
 #print axioms span_quadratics
 #print axioms cubic_poles
-#print axioms line_chart
+#print axioms line_chart_field
 
-/-- Uniform lower bound for ordered triple sums on a cubic Singer line over a
-prime field. The proof counts only finite parameters in a projective chart. -/
-theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
-    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
-    (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
-    (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) (center : G) :
-    (p:ℝ)≤paths D 3 center+80*((p.sqrt:ℝ)+1)+8 := by
+/-- Uniform lower bound for ordered triple sums on a cubic Singer line over an
+odd finite field. The proof counts only finite parameters in a projective chart. -/
+theorem triple_lower_field {F : Type*} [Field F] [Fintype F] [DecidableEq F] (odd : ringChar F≠2) {K G : Type*} [Field K] [Fintype K]
+    [Algebra F K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap F K D) (twoPts : 1<D.card)
+    (card : Fintype.card K=(Fintype.card F)^3) (center : G) :
+    (Fintype.card F:ℝ)≤paths D 3 center+80*(((Fintype.card F).sqrt:ℝ)+1)+8 := by
   classical
-  let φ := algebraMap (ZMod p) K
-  obtain ⟨chart⟩ := line_chart D S twoPts card
+  let φ := algebraMap F K
+  obtain ⟨chart⟩ := line_chart_field D S twoPts card
   let U:=chart.base
   let θ:=chart.theta
   let line:=chart.parameter
   let e:=chart.embedding
   have inside:=chart.inside
-  have rank : Module.finrank (ZMod p) K=3 := by
-    have total := Module.card_eq_pow_finrank (K:=ZMod p) (V:=K)
-    exact Nat.pow_right_injective (Fintype.one_lt_card (α:=ZMod p)) (total.symm.trans card)
+  have rank : Module.finrank F K=3 := by
+    have total := Module.card_eq_pow_finrank (K:=F) (V:=K)
+    exact Nat.pow_right_injective (Fintype.one_lt_card (α:=F)) (total.symm.trans card)
   obtain ⟨W,wc⟩ := S.surj center
   have degree := chart.degree
   obtain ⟨a,b,c,coeff⟩ := span_quadratics θ card degree ((W:K)/(U:K)^3)
   obtain ⟨i,j,k,s,t,st,_,_,one,two,three,irr,root⟩ := cubic_poles θ degree
-  let P : Pencil (ZMod p) := ⟨i,j,k,a,b,c⟩
+  let P : Pencil F := ⟨i,j,k,a,b,c⟩
   have value : (P.map φ).quad θ=(W:K)/(U:K)^3 := coeff
   have nz : (P.map φ).quad θ≠0 := value.trans_ne (div_ne_zero W.ne_zero (pow_ne_zero 3 U.ne_zero))
-  have count := many_pairs (by rw [rank];decide) P θ s t one two three st nz big
-  have label (x y) (hy : y∈fiber P x) : center-e x-e y∈D := by
-    have prod := product_identity φ P hy θ root
+  have count := many_pairs_field odd (by rw [rank];decide) P θ s t one two three st nz
+  have label (x y) (hy : y∈fiberOver P x) : center-e x-e y∈D := by
+    have prod := product_identity_field φ P hy θ root
     let z := P.mate x y
     have group : S.tag (line x*line y*line z)=S.tag W := by
       apply (S.same _ _).mpr
@@ -261,9 +261,40 @@ theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
       change e x+e y+e z=center at group
       rw [←group];abel
     exact eq ▸ inside z
-  have lower := paths_three D center e inside (fiber P) label
-  have realCount : (p:ℝ)≤(∑ x : ZMod p,((fiber P x).card:ℝ))+80*((p.sqrt:ℝ)+1)+8 := by exact_mod_cast count
+  have lower := paths_three D center e inside (fiberOver P) label
+  have realCount : (Fintype.card F:ℝ)≤(∑ x : F,((fiberOver P x).card:ℝ))+80*(((Fintype.card F).sqrt:ℝ)+1)+8 := by exact_mod_cast count
   linarith
+
+#print axioms triple_lower_field
+
+/-- An affine parametrization of a projective Singer line, with its cubic generator. -/
+structure LineChart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Algebra (ZMod p) K]
+    [AddCommGroup G] (D : Finset G) (S : SingerMap (ZMod p) K D) where
+  base : Kˣ
+  theta : K
+  degree : (minpoly (ZMod p) theta).natDegree=3
+  parameter : ZMod p→Kˣ
+  coordinates : ∀ x, (parameter x:K)=(base:K)*(theta-algebraMap (ZMod p) K x)
+  embedding : ZMod p ↪ G
+  tagged : ∀ x, embedding x=S.tag (parameter x)
+  inside : ∀ x, embedding x∈D
+
+theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
+    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
+    (card : Fintype.card K=(Fintype.card (ZMod p))^3) : Nonempty (LineChart D S) := by
+  obtain ⟨c⟩ := line_chart_field D S twoPts card
+  exact ⟨⟨c.base,c.theta,c.degree,c.parameter,c.coordinates,c.embedding,c.tagged,c.inside⟩⟩
+
+#print axioms line_chart
+
+theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
+    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
+    (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) (center : G) :
+    (p:ℝ)≤paths D 3 center+80*((p.sqrt:ℝ)+1)+8 := by
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using triple_lower_field odd D S twoPts card center
 
 #print axioms triple_lower
 
@@ -273,54 +304,95 @@ open Green33PerfectDifferenceCenters (doubled_count)
 
 /-- Every point of the cyclic cubic Singer group has many ordered representations
 as a sum of three hyperplane labels, including non-distinct summands. -/
+theorem label_triples_field {F : Type*} [Field F] [Fintype F] [DecidableEq F] (odd : ringChar F≠2) {K : Type*} [Field K] [Fintype K]
+    [DecidableEq K] [Algebra F K] (h : Fintype.card K=(Fintype.card F)^3)
+    (L : K→ₗ[F] F) (onto : Function.Surjective L)
+    (c : ZMod (order F)) :
+    (Fintype.card F:ℝ)≤paths (labels h L) 3 c+80*(((Fintype.card F).sqrt:ℝ)+1)+8 := by
+  classical
+  have size : (labels h L).card=Fintype.card F+1 := by
+    rw [labels,card_map,(cubic_parameters L onto h).1]
+  obtain ⟨geom⟩ := singer_map h L onto
+  exact triple_lower_field odd (labels h L) geom (by have := Fintype.one_lt_card (α:=F);omega) h c
+
+#print axioms label_triples_field
+
+/-- Every point of the cyclic cubic Singer group has many ordered representations
+as a sum of three hyperplane labels, including non-distinct summands. -/
 theorem label_triples {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fintype K]
     [DecidableEq K] [Algebra (ZMod p) K] (h : Fintype.card K=(Fintype.card (ZMod p))^3)
     (L : K→ₗ[ZMod p] ZMod p) (onto : Function.Surjective L) (big : 400≤p)
     (c : ZMod (order (ZMod p))) :
     (p:ℝ)≤paths (labels h L) 3 c+80*((p.sqrt:ℝ)+1)+8 := by
-  classical
-  have size : (labels h L).card=p+1 := by
-    rw [labels,card_map,(cubic_parameters L onto h).1,ZMod.card]
-  obtain ⟨geom⟩ := singer_map h L onto
-  exact triple_lower (labels h L) geom (by omega) h big c
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using label_triples_field odd h L onto c
 
 /-- The reflected cyclic double misses at least a proportion tending to one
 eighth, uniformly in its reflection axis. -/
+theorem reflected_defect_field {F : Type*} [Field F] [Fintype F] [DecidableEq F] (odd : ringChar F≠2) {K : Type*} [Field K] [Fintype K]
+    [DecidableEq K] [Algebra F K] (h : Fintype.card K=(Fintype.card F)^3)
+    (L : K→ₗ[F] F) (onto : Function.Surjective L)
+    (t : ZMod (order F)) :
+    (Fintype.card F)*((Fintype.card F)+1)≤4*(reflected h L t+reflected h L t)ᶜ.card+((Fintype.card F)+1)*(80*((Fintype.card F).sqrt+1)+16) := by
+  classical
+  let D := labels h L
+  let R := reflected h L t
+  let c := 1+t+t
+  have size : D.card=(Fintype.card F)+1 := by rw [show D.card=(hyperplane L).card by simp [D,labels],
+    (cubic_parameters L onto h).1]
+  let error : ℝ := 80*(((Fintype.card F).sqrt:ℝ)+1)+8
+  have each (x : ZMod (order F)) : ((Fintype.card F):ℝ)-error≤paths D 3 (c-x) := by
+    have good := label_triples_field odd h L onto (c-x)
+    change ((Fintype.card F):ℝ)≤paths D 3 (c-x)+80*(((Fintype.card F).sqrt:ℝ)+1)+8 at good
+    dsimp [error];linarith
+  have four := sum_le_sum (s:=D) (fun x _ => each x)
+  rw [sum_const,nsmul_eq_mul,size] at four
+  change (((Fintype.card F)+1:ℕ):ℝ)*(((Fintype.card F):ℝ)-error)≤paths D 4 c at four
+  have hd := perfect_labels h L onto
+  have inter := (Green33ReflectedLayers.two_walk_overlap hd.sidon c).1
+  change paths D 4 c≤4*(overlap D c:ℝ) at inter
+  have ne : D.Nonempty := card_pos.mp (by omega)
+  have count := doubled_count (m:=positiveOrder F) hd ne t
+  change (R+R).card+overlap D c+1=2*(positiveOrder F).val+2*D.card at count
+  have total := card_add_card_compl (R+R)
+  rw [ZMod.card] at total
+  rw [size] at count
+  have mass : (R+R)ᶜ.card+2*((Fintype.card F)+1)=overlap D c+1 := by omega
+  have realMass := congrArg (Nat.cast (R:=ℝ)) mass
+  push_cast at realMass four
+  dsimp only [error] at four
+  change (Fintype.card F)*((Fintype.card F)+1)≤4*(R+R)ᶜ.card+((Fintype.card F)+1)*(80*((Fintype.card F).sqrt+1)+16)
+  exact_mod_cast (show ((Fintype.card F):ℝ)*((Fintype.card F)+1)≤4*((R+R)ᶜ.card:ℝ)+((Fintype.card F)+1)*(80*(((Fintype.card F).sqrt:ℝ)+1)+16)
+    by nlinarith only [realMass,inter,four])
+
+#print axioms reflected_defect_field
+
+/-- An odd-field reflected Singer double has a positive quadratic number of holes
+as soon as the base field has a million elements, at every axis. -/
+theorem reflected_holes_field {F K : Type*} [Field F] [Fintype F] [DecidableEq F]
+    [Field K] [Fintype K] [DecidableEq K] [Algebra F K] (odd : ringChar F≠2)
+    (h : Fintype.card K=(Fintype.card F)^3) (L : K→ₗ[F] F) (onto : Function.Surjective L)
+    (large : 1000000≤Fintype.card F) (t : ZMod (order F)) :
+    7*(Fintype.card F)^2≤32*(reflected h L t+reflected h L t)ᶜ.card := by
+  let q:=Fintype.card F
+  change 1000000≤q at large
+  have finite:=reflected_defect_field odd h L onto t
+  change q*(q+1)≤4*(reflected h L t+reflected h L t)ᶜ.card+(q+1)*(80*(q.sqrt+1)+16) at finite
+  have root : 1000≤q.sqrt := Nat.le_sqrt.mpr large
+  have cost : 8*(80*(q.sqrt+1)+16)≤q := by
+    nlinarith only [Nat.sqrt_le q,Nat.mul_le_mul_right q.sqrt root,root]
+  change 7*q^2≤_
+  nlinarith only [finite,Nat.mul_le_mul_left (q+1) cost,Nat.zero_le q]
+
+#print axioms reflected_holes_field
+
 theorem reflected_defect {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fintype K]
     [DecidableEq K] [Algebra (ZMod p) K] (h : Fintype.card K=(Fintype.card (ZMod p))^3)
     (L : K→ₗ[ZMod p] ZMod p) (onto : Function.Surjective L) (big : 400≤p)
     (t : ZMod (order (ZMod p))) :
     p*(p+1)≤4*(reflected h L t+reflected h L t)ᶜ.card+(p+1)*(80*(p.sqrt+1)+16) := by
-  classical
-  let D := labels h L
-  let R := reflected h L t
-  let c := 1+t+t
-  have size : D.card=p+1 := by rw [show D.card=(hyperplane L).card by simp [D,labels],
-    (cubic_parameters L onto h).1,ZMod.card]
-  let error : ℝ := 80*((p.sqrt:ℝ)+1)+8
-  have each (x : ZMod (order (ZMod p))) : (p:ℝ)-error≤paths D 3 (c-x) := by
-    have good := label_triples h L onto big (c-x)
-    change (p:ℝ)≤paths D 3 (c-x)+80*((p.sqrt:ℝ)+1)+8 at good
-    dsimp [error];linarith
-  have four := sum_le_sum (s:=D) (fun x _ => each x)
-  rw [sum_const,nsmul_eq_mul,size] at four
-  change ((p+1:ℕ):ℝ)*((p:ℝ)-error)≤paths D 4 c at four
-  have hd := perfect_labels h L onto
-  have inter := (Green33ReflectedLayers.two_walk_overlap hd.sidon c).1
-  change paths D 4 c≤4*(overlap D c:ℝ) at inter
-  have ne : D.Nonempty := card_pos.mp (by omega)
-  have count := doubled_count (m:=positiveOrder (ZMod p)) hd ne t
-  change (R+R).card+overlap D c+1=2*(positiveOrder (ZMod p)).val+2*D.card at count
-  have total := card_add_card_compl (R+R)
-  rw [ZMod.card] at total
-  rw [size] at count
-  have mass : (R+R)ᶜ.card+2*(p+1)=overlap D c+1 := by omega
-  have realMass := congrArg (Nat.cast (R:=ℝ)) mass
-  push_cast at realMass four
-  dsimp only [error] at four
-  change p*(p+1)≤4*(R+R)ᶜ.card+(p+1)*(80*(p.sqrt+1)+16)
-  exact_mod_cast (show (p:ℝ)*(p+1)≤4*((R+R)ᶜ.card:ℝ)+(p+1)*(80*((p.sqrt:ℝ)+1)+16)
-    by nlinarith only [realMass,inter,four])
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using reflected_defect_field odd h L onto t
 
 /-- Every balanced opposite layer leaves quadratically many holes over large
 prime fields. -/
@@ -332,11 +404,9 @@ theorem unconditional_holes {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fint
     p^2≤20*(S+S)ᶜ.card := by
   apply holes_of_reflection h L onto (by omega) _ B sizeB
   intro t
-  have finite := reflected_defect h L onto (by omega) t
-  have large : 1000≤p.sqrt := Nat.le_sqrt.mpr big
-  have cost : 8*(80*(p.sqrt+1)+16)≤p := by
-    nlinarith only [Nat.sqrt_le p,Nat.mul_le_mul_right p.sqrt large,large]
-  nlinarith only [finite,Nat.mul_le_mul_left (p+1) cost,Nat.zero_le p]
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using
+    reflected_holes_field odd h L onto (by simpa only [ZMod.card] using big) t
 
 /-- No full cyclic basis retaining the even prime Singer line attains Green's
 size coefficient, independently of the rest of the basis. -/
