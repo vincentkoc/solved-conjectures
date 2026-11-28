@@ -160,7 +160,8 @@ theorem boundary_of_one_deficit {P Q : PMF ℤ} (flat : IsUniformOnSupport (inde
     obtain ⟨low,ne⟩ := rows x (pf.mem_toFinset.mpr hx) (qf.mem_toFinset.mpr hy)
     exact ⟨lt_of_le_of_ne (pb x).1 (fun e => (lm.mp low).2 (e.trans pt)),ne⟩
 
-private theorem sum_at_occupied {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+/-- On every occupied sum the real convolution equals the product of the two endpoint probabilities. -/
+theorem sum_at_occupied {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
     (pf : P.support.Finite) {a b : ℤ} (pa : IsGreatest P.support a) (qb : IsGreatest Q.support b)
     {y : ℤ} (occ : ∃ x ∈ P.support, y-x ∈ Q.support) :
     (∑ x ∈ pf.toFinset,(P x).toReal*(Q (y-x)).toReal) = (P a).toReal*(Q b).toReal := by
@@ -333,7 +334,8 @@ private theorem times_defect {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSu
   rw [eq_sub_iff_add_eq.mpr eq]
   exact T.sub_mem one (T.sum_mem (fun x hx => low ⟨x,(rows x hx).2.1,(rows x hx).2.2.2,rfl⟩))
 
-private theorem model_weight {P : PMF ℤ} {f : ℝ[X]} {l a : ℤ} {s : ℝ}
+/-- The coefficients of a monic marginal model are the weights normalized at its rightmost support point. -/
+theorem model_weight {P : PMF ℤ} {f : ℝ[X]} {l a : ℤ} {s : ℝ}
     (m : Models P f l s) (mon : f.Monic) (top : IsGreatest P.support a) (i : ℕ) :
     weight P a (l+i) = f.coeff i := by
   have lead := m.coeff f.natDegree
@@ -410,5 +412,7 @@ theorem deficient_integer_span {P Q : PMF ℤ} (flat : IsUniformOnSupport (indep
 #print axioms uniform_of_commensurable_deficits
 #print axioms uniform_of_two_levels
 #print axioms deficient_remainder
+#print axioms sum_at_occupied
+#print axioms model_weight
 #print axioms deficient_integer_span
 end Green28DeficientFibre
