@@ -74,10 +74,10 @@ theorem degree_one_card_eq_roots {K : Type*} [Field K] [NumberField K] (θ : �
 open Finset UniqueFactorizationMonoid nonZeroDivisors Filter Topology
 variable {K : Type*} [Field K] [NumberField K]
 
-private noncomputable def idealsUpTo (K : Type*) [Field K] [NumberField K] (n : ℕ) :
+noncomputable def idealsUpTo (K : Type*) [Field K] [NumberField K] (n : ℕ) :
     Finset ((Ideal (𝓞 K))⁰) := (Ideal.finite_setOfPred_absNorm_le₀ n).toFinset
 
-private theorem mem_idealsUpTo (I : (Ideal (𝓞 K))⁰) (n : ℕ) :
+theorem mem_idealsUpTo (I : (Ideal (𝓞 K))⁰) (n : ℕ) :
     I ∈ idealsUpTo K n ↔ absNorm I.val ≤ n := Set.Finite.mem_toFinset _
 
 /-- A finite Euler product majorizes the harmonic mass of any finite family
@@ -205,15 +205,15 @@ private theorem dyadic_ideal_mass (K : Type*) [Field K] [NumberField K] :
 open IsDedekindDomain
 attribute [local instance] Int.ideal_span_isMaximal_of_prime
 
-private noncomputable abbrev abovePrime (K : Type*) [Field K] [NumberField K] (p : ℕ) :=
+noncomputable abbrev abovePrime (K : Type*) [Field K] [NumberField K] (p : ℕ) :=
   IsDedekindDomain.primesOverFinset (span {(p : ℤ)}) (𝓞 K)
 
-private theorem mem_over {p : ℕ} (hp : p.Prime) (J : Ideal (𝓞 K)) :
+theorem mem_over {p : ℕ} (hp : p.Prime) (J : Ideal (𝓞 K)) :
     J ∈ abovePrime K p ↔ J ∈ (span {(p : ℤ)}).primesOver (𝓞 K) := by
   let : Fact p.Prime := ⟨hp⟩
   exact IsDedekindDomain.mem_primesOverFinset_iff (p := span {(p : ℤ)}) (by simp [hp.ne_zero]) _
 
-private theorem norm_over {p : ℕ} (hp : p.Prime) {J : Ideal (𝓞 K)} (hJ : J ∈ abovePrime K p) :
+theorem norm_over {p : ℕ} (hp : p.Prime) {J : Ideal (𝓞 K)} (hJ : J ∈ abovePrime K p) :
     absNorm J = p ^ J.inertiaDeg ℤ ∧ 0 < J.inertiaDeg ℤ := by
   obtain ⟨hJ₁, hJ₂⟩ := (mem_over hp J).mp hJ
   exact ⟨by simpa using (Ideal.natAbs_pow_inertiaDeg (p : ℤ) J).symm, J.inertiaDeg_pos ℤ⟩
@@ -244,7 +244,7 @@ noncomputable def linearCount (K : Type*) [Field K] [NumberField K] (p : ℕ) : 
   classical
   exact ((abovePrime K p).filter fun J => J.inertiaDeg ℤ = 1).card
 
-private theorem over_disjoint (X : ℕ) :
+theorem over_disjoint (X : ℕ) :
     (↑(Nat.primesLE X) : Set ℕ).PairwiseDisjoint (abovePrime K) := by
   intro p hp q hq hn
   apply disjoint_left.mpr
@@ -254,7 +254,7 @@ private theorem over_disjoint (X : ℕ) :
   apply hn
   simpa using congrArg Ideal.absNorm (h₁.over.trans h₂.over.symm)
 
-private theorem primes_support_ideals (X : ℕ) {I : (Ideal (𝓞 K))⁰} (hI : I ∈ idealsUpTo K X)
+theorem primes_support_ideals (X : ℕ) {I : (Ideal (𝓞 K))⁰} (hI : I ∈ idealsUpTo K X)
     {J : Ideal (𝓞 K)} (hJ : J ∈ normalizedFactors I.val) :
     J ∈ (Nat.primesLE X).biUnion (abovePrime K) := by
   have hpr := prime_of_normalized_factor J hJ
