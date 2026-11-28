@@ -207,6 +207,13 @@ theorem of_quadratic_excess_formula (hAP : ProgressionMangoldt) (hq : q%4=3)
       simp only [abs_mul,abs_neg,abs_of_pos hH,abs_one,mul_one] <;>
       apply le_of_eq <;> field_simp [hsq.ne',Real.pi_ne_zero] at hD ⊢ <;> norm_num at hD ⊢ <;> nlinarith
 
+/-- The ordinary mean over primes of a nonprincipal prime Legendre character. -/
+theorem prime_character_mean (hAP : ProgressionMangoldt) (hq : q≠2) :
+    Tendsto (primeMean (fun p => (symbol q p:ℝ))) atTop (𝓝 0) := by
+  simpa only [centered q hq] using periodic_prime_mean hAP (onMod q)
+
+#print axioms prime_character_mean
+
 /-- Pairwise orthogonality of distinct odd prime Legendre characters under the
 ordinary prime mean, with unit diagonal. -/
 theorem prime_character_pair (hAP : ProgressionMangoldt) (hq : q≠2) (r : ℕ) [Fact r.Prime] :

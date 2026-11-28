@@ -155,11 +155,9 @@ theorem coefficient_limit (hAP : ProgressionMangoldt) (r : OddPrime) :
   · obtain ⟨C,H,_⟩ := correlation_size r.val hAP h
     rwa [H.limUnder_eq]
 
-/-- Absolute summability across all prime quadratic conductors. -/
-theorem summable_coefficients (hAP : ProgressionMangoldt) :
-    Summable (fun r : OddPrime => |coefficient r|) := by
-  apply Summable.of_nonneg_of_le (fun r => abs_nonneg _) _ (summable_envelope.comp_injective Subtype.val_injective)
-  intro r
+/-- Pointwise decay for the canonical prime-conductor coefficient. -/
+theorem coefficient_bound (hAP : ProgressionMangoldt) (r : OddPrime) :
+    |coefficient r| ≤ 144*(2+Real.log r.val)^2/((r.val:ℝ)*Real.sqrt r.val) := by
   have h := coefficient_limit hAP r
   have he (p : ℕ) : legendreSym r.val (p:ℤ)=symbol r.val p := by simp only [legendreSym,symbol,Int.cast_natCast]
   simp only [he] at h
@@ -167,8 +165,14 @@ theorem summable_coefficients (hAP : ProgressionMangoldt) :
   rcases (show r.val%4=1 ∨ r.val%4=3 by have hn := Nat.odd_iff.mp r.property.2; omega) with hq|hq
   · have h0 := tendsto_nhds_unique h (ThetaPrimeSpectrum.even_character_mean r.val hAP hq)
     rw [h0,abs_zero]
-    dsimp only [Function.comp_apply]; positivity
+    positivity
   · exact correlation_decay r.val hAP hq h
+
+/-- Absolute summability across all prime quadratic conductors. -/
+theorem summable_coefficients (hAP : ProgressionMangoldt) :
+    Summable (fun r : OddPrime => |coefficient r|) := by
+  apply Summable.of_nonneg_of_le (fun r => abs_nonneg _) _ (summable_envelope.comp_injective Subtype.val_injective)
+  exact coefficient_bound hAP
 
 /-- The prime quadratic component converges uniformly in the integer argument. -/
 theorem uniform_quadratic_series (hAP : ProgressionMangoldt) :
@@ -255,6 +259,7 @@ theorem orthogonal_remainder (hAP : ProgressionMangoldt) (q : OddPrime) :
 
 #print axioms orthogonal_remainder
 
+#print axioms coefficient_bound
 #print axioms coefficient_limit
 #print axioms summable_coefficients
 #print axioms uniform_quadratic_series
