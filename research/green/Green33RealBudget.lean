@@ -22,7 +22,8 @@ private lemma normalize {S : Type*} [Fintype S] (w : S → ℝ) (nonneg : ∀ i,
     rw [← ENNReal.ofReal_sum_of_nonneg (fun i _ => h i),← sum_div,div_self pos.ne',ENNReal.ofReal_one]
   exact ⟨PMF.ofFintype _ total,fun i => by simp [h]⟩
 
-private lemma realize {p : ℕ+} (A : Finset (ZMod p)) {ι : Type*} [Fintype ι] [Nonempty ι]
+/-- Normalize positive finite weights on common labels when their raw convolution is constant. -/
+theorem exact_of_constant_convolution {p : ℕ+} (A : Finset (ZMod p)) {ι : Type*} [Fintype ι] [Nonempty ι]
     (b : ι → A) (W : ι → ℝ) (g : ZMod p → ℝ)
     (hw : ∀ i, 0<W i) (hg : ∀ x, 0 ≤ g x) (onA : ∀ x ∈ A, 0<g x)
     (offA : ∀ x ∉ A, g x=0)
@@ -91,7 +92,7 @@ theorem common_seed (p : ℕ+) (n : ℕ)
     (order : p.val+1=4*(n+1) ∨ p.val=4*(n+1)+1) :
     ∃ A : Finset (ZMod p), A.card+2*n=p.val ∧ ExactSeed p A := by
   obtain ⟨A,b,W,g,card,hw,hg,onA,offA,constant⟩ := positive_constant_convolution n order
-  exact ⟨A,card,realize A b W g hw hg onA offA constant⟩
+  exact ⟨A,card,exact_of_constant_convolution A b W g hw hg onA offA constant⟩
 
 /-- At an odd prime the construction and the uncertainty lower bound put the
 minimum common budget within two labels. -/
@@ -376,6 +377,7 @@ theorem three_mod_four (p : ℕ+) [Fact p.val.Prime] (hp : p.val%4=3) :
   have h := minimum_at_three p (p.val/4) (by omega)
   omega
 
+#print axioms exact_of_constant_convolution
 #print axioms common_seed
 #print axioms prime_window
 #print axioms prime_limit
