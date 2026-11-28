@@ -20,6 +20,29 @@ private theorem twice {G : Type*} [AddCommGroup G] [Module K G] (x : G) : x + x 
 def vertical (B : U →ₗ[K] U →ₗ[K] V) : Finset (U × V) :=
   univ.image (fun p : U × U => ((0 : U), B p.1 p.2))
 
+/-- Membership in the vertical sumset is equivalent to a sum of k values of B. -/
+theorem mem_vertical_sum (B : U →ₗ[K] U →ₗ[K] V) (k : ℕ) (v : V) :
+    ((0 : U), v) ∈ k • vertical B ↔
+      ∃ x y : Fin k → U, ∑ i, B (x i) (y i) = v := by
+  rw [← Finset.mem_coe, Finset.coe_nsmul, Set.mem_nsmul_iff_sum]
+  constructor
+  · rintro ⟨f, hf, he⟩
+    have h i : ∃ z : U × U, (0, B z.1 z.2) = f i := by
+      obtain ⟨z, _, hz⟩ := mem_image.mp (hf i)
+      exact ⟨z, hz⟩
+    choose z hz using h
+    refine ⟨fun i => (z i).1, fun i => (z i).2, ?_⟩
+    simpa only [← hz, Prod.snd_sum] using congrArg Prod.snd he
+  · rintro ⟨x,y,h⟩
+    let g (i : Fin k) : U × V := (0, B (x i) (y i))
+    refine ⟨g, ?_, ?_⟩
+    · intro i
+      change g i ∈ vertical B
+      exact mem_image.mpr ⟨(x i, y i), mem_univ _, rfl⟩
+    · apply Prod.ext
+      · rw [Prod.fst_sum]; simp [g]
+      · rw [Prod.snd_sum]; exact h
+
 omit [Fintype U] [DecidableEq U] [DecidableEq V] in
 private theorem three_values (f : U → V) (B : U →ₗ[K] U →ₗ[K] V)
     (hf : ∀ a x : U, f x + f (x + a) = B a x + (f 0 + f a)) (u a x : U) :
@@ -114,3 +137,5 @@ end Green50QuadraticFibres
 #print axioms Green50QuadraticFibres.threefold
 #print axioms Green50QuadraticFibres.odd_sumset
 #print axioms Green50QuadraticFibres.even_zero_fibre
+
+#print axioms Green50QuadraticFibres.mem_vertical_sum
