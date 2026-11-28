@@ -211,6 +211,21 @@ private theorem splitting_degree_bound (F : ℚ[X]) :
   rw [Nat.card_perm, Nat.card_coe_set_eq] at hi
   exact (IsGalois.card_aut_eq_finrank ℚ K).ge.trans (hi.trans (Nat.factorial_le (F.ncard_rootSet_le K)))
 
+/-- A monic integral polynomial that splits in a number field already splits in its ring of integers. -/
+theorem splits_over_integers {K : Type*} [Field K] [NumberField K] (f : ℤ[X]) (hf : f.Monic)
+    (hK : (f.map (algebraMap ℤ K)).Splits) : (f.map (algebraMap ℤ (𝓞 K))).Splits := by
+  let g := f.map (algebraMap ℤ (𝓞 K))
+  have hg : g.map (algebraMap (𝓞 K) K) = f.map (algebraMap ℤ K) := by
+    rw [show g = f.map _ from rfl, Polynomial.map_map, ← IsScalarTower.algebraMap_eq]
+  apply Splits.of_splits_map_of_injective (IsFractionRing.injective (𝓞 K) K) (hg ▸ hK)
+  intro a ha
+  rw [hg] at ha
+  have hai : IsIntegral ℤ a := ⟨f, hf, by
+    simpa only [aeval_def, eval₂_eq_eval_map, IsRoot.def] using (isRoot_of_mem_roots ha)⟩
+  exact ⟨⟨a, hai⟩, rfl⟩
+
+#print axioms splits_over_integers
+
 /-- A monic integer polynomial has a single positive-degree monic test
 polynomial. A root of the test polynomial modulo a sufficiently large
 prime forces complete splitting of the original polynomial. -/
@@ -224,16 +239,7 @@ theorem splitting_test (f : ℤ[X]) (hf : f.Monic) :
   have hK : (f.map (algebraMap ℤ K)).Splits := by
     simpa only [F, Polynomial.map_map, ← IsScalarTower.algebraMap_eq] using
       (SplittingField.splits F)
-  let g := f.map (algebraMap ℤ (𝓞 K))
-  have hg : g.map (algebraMap (𝓞 K) K) = f.map (algebraMap ℤ K) := by
-    rw [show g = f.map _ from rfl, Polynomial.map_map, ← IsScalarTower.algebraMap_eq]
-  have hgSplit : g.Splits := by
-    apply Splits.of_splits_map_of_injective (IsFractionRing.injective (𝓞 K) K) (hg ▸ hK)
-    intro a ha
-    rw [hg] at ha
-    have hai : IsIntegral ℤ a := ⟨f, hf, by
-      simpa only [aeval_def, eval₂_eq_eval_map, IsRoot.def] using (isRoot_of_mem_roots ha)⟩
-    exact ⟨⟨a, hai⟩, rfl⟩
+  have hgSplit := splits_over_integers f hf hK
   obtain ⟨u,hu,hd,B,hB⟩ := specialization_polynomial K
   have hbound := splitting_degree_bound F
   rw [show F.natDegree = f.natDegree from hf.natDegree_map _] at hbound
@@ -241,7 +247,7 @@ theorem splitting_test (f : ℤ[X]) (hf : f.Monic) :
   intro p hp hprime hroot
   obtain ⟨φ⟩ := hB p hp hprime hroot
   have hs := hgSplit.map φ
-  simpa only [g, Polynomial.map_map, RingHom.ext_int (φ.comp (algebraMap ℤ (𝓞 K)))
+  simpa only [Polynomial.map_map, RingHom.ext_int (φ.comp (algebraMap ℤ (𝓞 K)))
     (Int.castRingHom (ZMod p))] using hs
 
 /-- A monic integer polynomial splits completely modulo arbitrarily large
