@@ -42,24 +42,28 @@ theorem avoids_iff_maxCosetDim {n : ℕ} (hn : 2 ≤ n) (A : Finset (𝔽₂ n))
       · exact ⟨S, fun _ hx => sub _ hx, rfl⟩
     omega
 
+/-- When the double avoids hyperplanes, its missing directions are nonaffine. -/
+theorem missing_nonaffine {n : ℕ} {A : Finset (𝔽₂ n)} (avoids : AvoidsAffineHyperplanes A) :
+    ¬∃ f : (𝔽₂ n) →ₗ[F] F, ∀ x ∈ (A + A)ᶜ, f x = 1 := by
+  classical
+  rintro ⟨f, one⟩
+  have sub (x) (hx : x ∈ f.ker) : x ∈ A + A := by
+    by_contra notmem
+    exact one_ne_zero ((one x (Finset.mem_compl.mpr notmem)).symm.trans (LinearMap.mem_ker.mp hx))
+  have low := avoids f.ker.toAffineSubspace ⟨0, f.ker.zero_mem⟩ (fun x hx => sub x hx)
+  rw [Submodule.toAffineSubspace_direction] at low
+  have eq := f.finrank_range_add_finrank_ker
+  have r := Submodule.finrank_le f.range
+  simp [𝔽₂, 𝔽] at eq r
+  omega
+
 /-- A density threshold bounds the number of directions missed by a double without a hyperplane. -/
 theorem missing_bound {s n : ℕ} (hs : 0 < s) (A : Finset (𝔽₂ n))
     (large : threshold (2 * s) < (A.dens : ℝ)) (avoids : AvoidsAffineHyperplanes A) :
     (A + A)ᶜ.card ≤ (2 * s + 3) * 2 ^ (n - 2 * (s + 1)) := by
   classical
   let D := (A + A)ᶜ
-  have no : ¬∃ f : (𝔽₂ n) →ₗ[F] F, ∀ x ∈ D, f x = 1 := by
-    rintro ⟨f, one⟩
-    have sub (x) (hx : x ∈ f.ker) : x ∈ A + A := by
-      by_contra notmem
-      exact one_ne_zero ((one x (by simpa [D] using notmem)).symm.trans (LinearMap.mem_ker.mp hx))
-    have low := avoids f.ker.toAffineSubspace ⟨0, f.ker.zero_mem⟩ (fun x hx => sub x hx)
-    rw [Submodule.toAffineSubspace_direction] at low
-    have eq := f.finrank_range_add_finrank_ker
-    have r := Submodule.finrank_le f.range
-    simp [𝔽₂, 𝔽] at eq r
-    omega
-  have count := geelen_bound D (2 * (s + 1) + 1) (by omega) (girth_of_density A s large) no
+  have count := geelen_bound D (2 * (s + 1) + 1) (by omega) (girth_of_density A s large) (missing_nonaffine avoids)
   simpa [𝔽₂, 𝔽, D, show 2 * (s + 1) + 1 = 2 * s + 3 by omega, show n + 1 - (2 * s + 3) = n - 2 * (s + 1) by omega] using count
 
 /-- Hamming cylinders attain the largest possible number of missing directions throughout the interval. -/
@@ -95,6 +99,7 @@ theorem sharp_missing_cosetDim {s r : ℕ} (hs : 0 < s) {α : ℝ}
 
 end Green51GirthFrame
 #print axioms Green51GirthFrame.avoids_iff_maxCosetDim
+#print axioms Green51GirthFrame.missing_nonaffine
 #print axioms Green51GirthFrame.missing_bound
 #print axioms Green51GirthFrame.sharp_missing
 #print axioms Green51GirthFrame.sharp_missing_cosetDim
