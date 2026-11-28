@@ -54,7 +54,7 @@ def jointDensity (ts : List Test) : ℚ := (shiftedMoment [] (shifts ts) : ℚ) 
 def hasCounts (ts : List Test) (p : ℕ) : Prop :=
   ∀ t∈ts, RootMoments.roots t.poly p=t.count
 
-private theorem denominator_ne_zero (ts : List Test) : denominator ts ≠ 0 := by
+theorem denominator_ne_zero (ts : List Test) : denominator ts ≠ 0 := by
   classical
   apply List.prod_ne_zero
   simp only [List.mem_map,not_exists,not_and]
@@ -75,29 +75,30 @@ private theorem test_value (t : Test) (n : ℕ) (hn : n≤t.poly.natDegree) :
   · rw [if_neg he,List.prod_eq_zero_iff]
     exact List.mem_map.mpr ⟨n,List.mem_filter.mpr ⟨List.mem_range.mpr (show n<t.poly.natDegree+1 by omega),by simpa using he⟩,sub_self _⟩
 
+/-- Lagrange interpolation on any vector of bounded integral counts. -/
+theorem interpolation_at (value : ℤ[X] → ℝ) (ts : List Test)
+    (bound : ∀ t∈ts, ∃ n≤t.poly.natDegree, value t.poly=(n : ℝ)) :
+    ((shifts ts).map fun q => value q.1-q.2).prod =
+      if ∀ t∈ts, value t.poly=(t.count : ℝ) then (denominator ts : ℝ) else 0 := by
+  classical
+  induction ts with
+  | nil => simp [shifts,denominator]
+  | cons t ts ih =>
+    obtain ⟨n,hn,hv⟩ := bound t List.mem_cons_self
+    have ht := ih (fun u hu => bound u (List.mem_cons_of_mem _ hu))
+    have head := test_value t n hn
+    rw [show shifts (t::ts)=((except t).map fun j => (t.poly,j))++shifts ts from rfl]
+    simp only [List.map_append,List.prod_append,List.map_map,Function.comp_def,hv,ht,head,
+      List.forall_mem_cons,Nat.cast_inj,denominator,List.map_cons,List.prod_cons,Int.cast_mul]
+    by_cases h : n=t.count <;> by_cases hts : ∀ u∈ts, value u.poly=(u.count : ℝ) <;> simp [h,hts]
+
 private theorem interpolation (ts : List Test) (p : ℕ)
     (bound : ∀ t∈ts, Nat.card (RootPairs.solutions t.poly (ZMod p))≤t.poly.natDegree) :
     shifted (shifts ts) p = if hasCounts ts p then (denominator ts : ℝ) else 0 := by
-  classical
-  induction ts with
-  | nil => simp [shifted,shifts,hasCounts,denominator]
-  | cons t ts ih =>
-    have htail := ih (fun u hu => bound u (List.mem_cons_of_mem _ hu))
-    have hhead := test_value t _ (bound t List.mem_cons_self)
-    have he : hasCounts (t::ts) p ↔ RootMoments.roots t.poly p=t.count ∧ hasCounts ts p := by
-      simp [hasCounts]
-    have hnat : Nat.card (RootPairs.solutions t.poly (ZMod p))=t.count ↔ RootMoments.roots t.poly p=t.count := by
-      exact (Nat.cast_inj (R:=ℝ)).symm
-    change _=ite _ _ _
-    rw [show shifts (t::ts)=((except t).map fun (j : ℕ) => (t.poly,j))++shifts ts from rfl]
-    simp only [shifted,List.map_append,List.prod_append,List.map_map,Function.comp_def] at htail ⊢
-    rw [htail]
-    change ((except t).map fun (j : ℕ) => (Nat.card (RootPairs.solutions t.poly (ZMod p)):ℝ)-j).prod * _=_
-    rw [hhead]
-    simp only [denominator,List.map_cons,List.prod_cons,Int.cast_mul] at *
-    by_cases h : RootMoments.roots t.poly p=t.count <;> by_cases ht : hasCounts ts p <;>
-      simp [he,hnat,h,ht]
-
+  have h := interpolation_at (fun f => RootMoments.roots f p) ts (fun t ht => ⟨_,bound t ht,rfl⟩)
+  unfold shifted hasCounts
+  rw [h]
+  split_ifs <;> rfl
 
 private theorem shifts_good (ts : List Test) (hg : ∀ t∈ts, Good t.poly) :
     ∀ q∈shifts ts, Good q.1 := by
@@ -133,6 +134,8 @@ theorem joint_mean (A : PrimeAverage) (ts : List Test) (hg : ∀ t∈ts, Good t.
     by_cases h : hasCounts ts p <;> simp [SplittingDensity.event,h,hd]
   · simpa [productRoots,map_smul,jointDensity,div_eq_inv_mul] using hlim
 
+#print axioms interpolation_at
+#print axioms denominator_ne_zero
 #print axioms joint_mean
 #print axioms shifted_mean
 end

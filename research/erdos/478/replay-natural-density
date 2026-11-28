@@ -28,6 +28,8 @@ ADAPTERS = {
     "gap-sieve": "Erdos478NaturalGapSieve",
     "patterns": "Erdos478NaturalPatternLaw",
     "counts": "Erdos478NaturalExactCounts",
+    "conditional-hits": "Erdos478NaturalConditionalHits",
+    "diverse-windows": "Erdos478NaturalHitWindows",
     "paired": "Erdos478NaturalPairedDensity",
     "sextic": "Erdos478NaturalSexticCounts",
     "real-gaps": "Erdos478NaturalCubicPattern",
