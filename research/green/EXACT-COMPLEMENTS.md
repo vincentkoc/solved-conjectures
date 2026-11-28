@@ -1,0 +1,17 @@
+# Additive complements and twofold sums of function graphs
+
+Green 52 is equivalent to the same question about graphs of arbitrary functions between complementary binary vector spaces. For a quadratic graph with $d$ output coordinates, its twofold sum contains an affine subspace of codimension at most $d^2$. It also contains a **linear** subspace of codimension at most $2^d-1$. The input dimension can be arbitrarily large. The qualitative question for arbitrary functions remains open. [Pinned Green 52](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/52.lean) · [Quadratic transversal theorem](Green52QuadraticFlats.lean)
+
+## From a cover to an exact tiling
+
+Suppose $A+S=G$ and choose $s_0\in S$. The space $V$ spanned by the differences $s-s_0$ has dimension at most $|S|-1$, and $A$ meets every coset of $V$. Choose a complementary space $U$ and one representative from $A$ in each coset. These representatives form a graph $T=\{u+f(u):u\in U\}\subseteq A$. Every point of $G$ is uniquely a sum of a point of $T$ and a point of $V$. Conversely, a graph with output dimension $d$ has an additive complement of size $2^d$. These two implications prove the equivalence with the original quantifiers. [Proof](Green52Complements.lean)
+
+Green observed that his partition problem implies his complement problem. The Lean proof retains the same bound for each number of colours. Assign each point to one translate of $A$ that contains it. Within a colour class, the common translating vector cancels when two points are added. [Green’s problems 52 and 53](https://people.maths.ox.ac.uk/greenbj/papers/open-problems.pdf#page=26) · [Pinned Green 53](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/53.lean)
+
+## Two sums of a quadratic graph
+
+Write $B$ for the bilinear polar form of $f$. Above an input direction $a$, the twofold graph sum contains precisely the affine space $f(0)+f(a)+B(a,U)$. Choose $a$ maximizing the dimension $r$ of $W=B(a,U)$, and choose a right inverse $j:W\to U$ of the map onto $W$. Impose $B(h,j(w))=0$ for all $w\in W$. This costs at most $rd$ input dimensions. Each map $B(a+h,\cdot)$ still hits every point of $W$, so maximality forces its image to equal $W$. On this slice $f$ is affine modulo $W$, and all $r$ vertical dimensions can be used in the flat. Its codimension is at most $rd+d-r\le d^2$. [Proof](Green52QuadraticFlats.lean)
+
+The linear subspace bound extends to **any function whose derivative images are affine spaces**. For each of the $2^d-1$ nonzero scalar output functionals, the translations preserving its Boolean graph equation form a subspace. A translation that flips the equation lies in a different coset. One linear equation can therefore exclude all flipping translations for that functional. Intersect the kernels of the resulting equations. Every point in the intersection passes every scalar test on its derivative fibre. Linear separation gives membership whenever the fibre is affine. [Proof](Green52AffineDerivatives.lean)
+
+The general logarithmic variant of Green 52 has a Hamming-ball counterexample. Green credits Kaave Hosseini and Ryan Alweiss. The existing Lean formalization uses Walsh centres. [Existing counterexample proof](https://github.com/KitaKen1/green-52-log-counterexample/blob/16cb5d0/lean/Green52LogCounterexampleFC.lean) · [Replay instructions](../README.md#replay)
