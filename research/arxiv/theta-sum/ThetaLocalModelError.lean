@@ -36,8 +36,8 @@ private theorem weight {J V N d : ℕ} (hN : 0<N) (hd : 0<d) (hJ : N*d≤J) (hJV
     by_contra! h; exact hj (mem_filter.mpr ⟨mem_Icc.mpr ⟨(mem_Icc.mp hg).1,h⟩,ho⟩)
   exact mem_Ico.mpr ⟨by omega,by have := (mem_Icc.mp hg).2; omega⟩
 
-theorem swap {N T J V : ℕ} (hN : 0<N) (hTN : T≤N) (hJ : N^2≤J) (hV : J≤V)
-    (K : ℕ → ℕ) (n : ℕ) : |low T K (commonWeight V) n-low T K (commonWeight J) n|≤3 := by
+theorem swap_ratio {N T J V : ℕ} (hN : 0<N) (hTN : T≤N) (hJ : N^2≤J) (hV : J≤V)
+    (K : ℕ → ℕ) (n : ℕ) : |low T K (commonWeight V) n-low T K (commonWeight J) n|≤3*(T:ℝ)/N := by
   unfold low
   rw [←sum_sub_distrib]
   apply (abs_sum_le_sum_abs ..).trans
@@ -54,11 +54,15 @@ theorem swap {N T J V : ℕ} (hN : 0<N) (hTN : T≤N) (hJ : N^2≤J) (hV : J≤V
              field_simp
        _ ≤ _ := by
              rw [sum_const,nsmul_eq_mul,Nat.card_Icc]
-             have hc : (T+1-2:ℕ)≤N := by omega
-             calc _ ≤ (N:ℝ)*(3*(N:ℝ)⁻¹) := mul_le_mul_of_nonneg_right (by exact_mod_cast hc) (by positivity)
-                  _ = 3 := by
-                    have hNp : 0<(N:ℝ) := by exact_mod_cast hN
-                    field_simp
+             have hc : (T+1-2:ℕ)≤T := by omega
+             calc _ ≤ (T:ℝ)*(3*(N:ℝ)⁻¹) := mul_le_mul_of_nonneg_right (by exact_mod_cast hc) (by positivity)
+                  _ = _ := by ring
+
+theorem swap {N T J V : ℕ} (hN : 0<N) (hTN : T≤N) (hJ : N^2≤J) (hV : J≤V)
+    (K : ℕ → ℕ) (n : ℕ) : |low T K (commonWeight V) n-low T K (commonWeight J) n|≤3 := by
+  apply (swap_ratio hN hTN hJ hV K n).trans
+  rw [div_le_iff₀ (by exact_mod_cast hN : (0:ℝ)<N)]
+  exact mul_le_mul_of_nonneg_left (by exact_mod_cast hTN) (by norm_num)
 
 theorem height {Y : ℕ} (hY : 1≤Y) (N n : ℕ) :
     |model Y N n|≤3*Z*(1+log Y)^2 := by
@@ -174,6 +178,7 @@ theorem exceptions {e : ℕ} (he : 32≤e) (he' : e≤48) (kernel : Kernel e) :
 #print axioms signed
 #print axioms exceptions
 
+#print axioms swap_ratio
 #print axioms swap
 #print axioms height
 end

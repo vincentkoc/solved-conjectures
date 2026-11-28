@@ -51,7 +51,7 @@ theorem cutoff_bounds {e N : ℕ} (he : 32≤e) (he48 : e≤48) (hN : 1≤N) : N
     exact (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (Nat.cast_nonneg _) hu 3)
       (pow_nonneg (Nat.cast_nonneg N) e)).trans_eq (by ring)
 
-private theorem harmonic_bound {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
+theorem harmonic_bound {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
     (harmonic k:ℝ)≤65*(levels N:ℝ) := by
   have hl := (levels_bounds hN).1
   have hb : 1≤(levels N:ℝ) := by exact_mod_cast Nat.succ_le_succ (Nat.zero_le _)
@@ -64,7 +64,7 @@ private theorem harmonic_bound {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
   norm_num at hlog
   linarith
 
-private theorem denominator_error {e N p : ℕ} (he : 32≤e) (hN : 1≤N) (hh : p≤N^64) :
+theorem denominator_error {e N p : ℕ} (he : 32≤e) (hN : 1≤N) (hh : p≤N^64) :
     2*(kernelDiscrepancy p (2*(N:ℝ)^e)+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*(cutoff e N:ℝ)+1) ≤ 2300000*(p:ℝ) := by
   let b := (levels N:ℝ)
   have hb : 1≤b := by dsimp [b]; exact_mod_cast Nat.succ_le_succ (Nat.zero_le (Nat.log 2 N))
