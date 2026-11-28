@@ -33,12 +33,12 @@ private lemma neg_odd (hp : p % 2 = 1) (a : U p) :
   have := rep_lt a
   omega
 
-private lemma sign_neg (hp : p % 2 = 1) (a : U p) : sign (-a) = -sign a := by
+theorem sign_neg (hp : p % 2 = 1) (a : U p) : sign (-a) = -sign a := by
   simp only [sign, neg_odd hp]
   split_ifs <;> simp_all
 
 /-- Negation pairs each odd representative with its complementary even representative. -/
-private lemma sum_by_sign (hp : p % 2 = 1) (f : U p → ℤ) :
+theorem sum_by_sign {M : Type*} [AddCommMonoid M] (hp : p % 2 = 1) (f : U p → M) :
     ∑ a, f a = ∑ a ∈ oddReps p, (f a + f (-a)) := by
   classical
   rw [sum_add_distrib, oddReps, ← sum_filter_add_sum_filter_not univ
@@ -49,7 +49,8 @@ private lemma sum_by_sign (hp : p % 2 = 1) (f : U p → ℤ) :
   have he := neg_odd hp a
   omega
 
-private lemma sum_units (f : ℕ → ℤ) :
+/-- Reindex a sum over the nonzero representatives by the units of the prime field. -/
+theorem sum_units {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
     ∑ n ∈ Ico 1 p, f n = ∑ a : U p, f (rep a) := by
   classical
   symm
@@ -153,7 +154,7 @@ private lemma diagonal_zero (hp : p % 2 = 1) (hp4 : p % 4 = 1) :
 
 /-- The odd representatives form one half of the nonzero residue classes. -/
 theorem card_oddReps (hp : p % 2 = 1) : (oddReps p).card = p / 2 := by
-  have hc := sum_by_sign (p := p) hp (fun _ => 1)
+  have hc := sum_by_sign (p := p) hp (fun _ => (1 : ℤ))
   simp only [sum_const, card_univ, ZMod.card_units, nsmul_eq_mul, mul_one] at hc
   omega
 
@@ -197,3 +198,7 @@ end Arxiv.«2501.03234».ThetaDiagonal
 #print axioms Arxiv.«2501.03234».ThetaDiagonal.S_mod_eight_diagonal
 #print axioms Arxiv.«2501.03234».ThetaDiagonal.S_mod_eight_of_one_mod_four
 #print axioms Arxiv.«2501.03234».ThetaDiagonal.S_ne_zero_of_five_mod_eight
+
+#print axioms Arxiv.«2501.03234».ThetaDiagonal.sign_neg
+#print axioms Arxiv.«2501.03234».ThetaDiagonal.sum_by_sign
+#print axioms Arxiv.«2501.03234».ThetaDiagonal.sum_units
