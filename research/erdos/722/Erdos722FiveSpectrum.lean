@@ -23,7 +23,7 @@ theorem of_residues {n : ℕ} (hn : 12801 ≤ n) (h : n%20=1 ∨ n%20=5) :
   rw [Fintype.card_fin,he] at hd
   exact hd.some.design
 
-private theorem residues {n : ℕ} (hn : 0<n)
+theorem residues {n : ℕ} (hn : 0<n)
     (H : ∀ i < 2, (5-i).choose (2-i) ∣ (n-i).choose (2-i)) :
     n%20=1 ∨ n%20=5 := by
   have h0 : 10 ∣ n.choose 2 := by simpa [show Nat.choose 5 2=10 by decide] using H 0 (by decide)

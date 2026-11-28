@@ -19,20 +19,26 @@ private def translate (f : Fin b → Fin k → G) (hf : ∀ k, Function.Injectiv
     (p : Fin b × G) : Fin k ↪ G :=
   ⟨fun i => f p.1 i+p.2,fun _ _ h => hf _ (add_right_cancel h)⟩
 
-/-- Develop all translates of uniform base blocks whose oriented differences
-partition the nonzero group elements. -/
-theorem development [Fintype G] (f : Fin b → Fin k → G) (hf : ∀ k, Function.Injective (f k))
-    (hd : ∀ d : G, d ≠ 0 → ∃! v : Fin b × Fin k × Fin k, f v.1 v.2.1 - f v.1 v.2.2 = d) :
-    Has (· = k) (Fintype.card G) := by
+/-- Develop a relative difference family. Pairs in a common fiber are left
+for a separate group design. -/
+noncomputable def developmentBetween {Q : Type*} [AddCommGroup Q] (col : G →+ Q)
+    (f : Fin b → Fin k → G) (hs : ∀ l, Function.Injective (col ∘ f l))
+    (hd : ∀ d : G, col d ≠ 0 → ∃! v : Fin b × Fin k × Fin k, f v.1 v.2.1 - f v.1 v.2.2 = d) :
+    Cover G (fun x y => col x ≠ col y) (· = k) := by
   classical
+  have hf (l) : Function.Injective (f l) := fun _ _ h => hs l (congrArg col h)
   let L := fun p => univ.map (translate f hf p)
   have mem (p : Fin b × G) (x : G) : x ∈ L p ↔ ∃ i, f p.1 i + p.2 = x := by
     simp only [L,mem_map,mem_univ,true_and]
     rfl
-  apply (Cover.ofLines (R := AllPairs G) (s := (· = k)) L (by simp [L])
-    (fun _ _ _ _ _ _ => trivial) _).has rfl
-  intro x y hxy _
-  obtain ⟨⟨k,i,j⟩,hv,hu⟩ := hd (x-y) (sub_ne_zero.mpr hxy)
+  apply Cover.ofLines L (by simp [L]) _ _
+  · intro p x hx y hy hxy he
+    obtain ⟨i,rfl⟩ := (mem p x).mp hx
+    obtain ⟨j,rfl⟩ := (mem p y).mp hy
+    rw [map_add,map_add] at he
+    exact hxy (congrArg (fun u => f p.1 u+p.2) (hs _ (add_right_cancel he)))
+  intro x y _ hcol
+  obtain ⟨⟨k,i,j⟩,hv,hu⟩ := hd (x-y) (by rw [map_sub]; exact sub_ne_zero.mpr hcol)
   change f k i - f k j = x-y at hv
   refine ⟨(k,x-f k i),⟨(mem _ _).mpr ⟨i,by simp⟩,(mem _ _).mpr ⟨j,by dsimp; abel_nf at hv ⊢; grind⟩⟩,?_⟩
   rintro ⟨l,g⟩ ⟨hx,hy⟩
@@ -44,6 +50,14 @@ theorem development [Fintype G] (f : Fin b → Fin k → G) (hf : ∀ k, Functio
   change f k i+g=x at hi
   rw [← hi]
   abel
+
+/-- Develop all translates of uniform base blocks whose oriented differences
+partition the nonzero group elements. -/
+theorem development [Fintype G] (f : Fin b → Fin k → G) (hf : ∀ k, Function.Injective (f k))
+    (hd : ∀ d : G, d ≠ 0 → ∃! v : Fin b × Fin k × Fin k, f v.1 v.2.1 - f v.1 v.2.2 = d) :
+    Has (· = k) (Fintype.card G) := by
+  let C := developmentBetween (AddMonoidHom.id G) f hf hd
+  exact (C.change (fun _ _ hxy => ⟨fun _ => trivial,fun _ => hxy⟩) (fun _ => id)).has rfl
 
 private def base13 : Fin 1 → Fin 4 → ZMod 13 := ![![0,1,3,9]]
 private def base25 : Fin 2 → Fin 4 → ZMod 5 × ZMod 5 :=
@@ -74,6 +88,7 @@ theorem twenty_eight : Has (· = 4) 28 := by
   obtain ⟨D,hD⟩ := HermitianUnital.prime_power_unital 3 1 (by decide)
   exact ⟨Cover.ofDesign hD⟩
 
+#print axioms developmentBetween
 #print axioms thirteen
 #print axioms twenty_five
 #print axioms thirty_seven
