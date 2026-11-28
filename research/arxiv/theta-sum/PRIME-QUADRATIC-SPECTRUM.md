@@ -46,7 +46,7 @@ Put $H_q=\sum_{j=1}^{(q-1)/2}\chi(j)$. Lean proves $P_q=-2\chi(2)H_q$. Dirichlet
   \operatorname{sign} C_q=-\chi(2),\qquad
   |C_q|\ge\frac{\pi H_q^2}{\sqrt q\,q(q-1)}.
 \]
-Thus these prime correlations are positive at conductors $3\bmod8$ and negative at conductors $7\bmod8$. Both classes contain infinitely many primes. The declaration `of_quadratic_excess_formula` checks the implication with the classical identity as an explicit premise. The unconditional kernel declarations above establish the sign through $P_q$, nonvanishing, and the finite-prefix bounds independently. [Quadratic excess formula in Göral, introduction after (1.3)](https://imar.ro/journals/Mathematical_Reports/Pdfs/2022/4/7.pdf) · [Lean implication](ThetaPrimeSpectrum.lean)
+Thus these prime correlations are positive at conductors $3\bmod8$ and negative at conductors $7\bmod8$. Both classes contain infinitely many primes. The declaration `of_quadratic_excess_formula` checks the implication with the classical identity as an explicit premise. The [quadratic-excess proof](QUADRATIC-EXCESS.md) subsequently discharges this premise and quantifies the congruence-model error. The unconditional kernel declarations above establish the sign through $P_q$, nonvanishing, and the finite-prefix bounds independently. [Quadratic excess formula in Göral, introduction after (1.3)](https://imar.ro/journals/Mathematical_Reports/Pdfs/2022/4/7.pdf) · [Lean implication](ThetaPrimeSpectrum.lean)
 
 ## Source comparison and replay
 

@@ -24,10 +24,11 @@ theorem symbol_zero {n : ℕ} (h : q∣n) : symbol q n = 0 := by
 theorem symbol_unit {n : ℕ} (h : ¬q∣n) : symbol q n = 1 ∨ symbol q n = -1 :=
   quadraticChar_dichotomy (mt (ZMod.natCast_eq_zero_iff n q).mp h)
 
-private noncomputable def dirChar : DirichletCharacter ℂ q :=
+/-- The complex-valued quadratic Dirichlet character of prime modulus. -/
+noncomputable def dirChar : DirichletCharacter ℂ q :=
   (quadraticChar (ZMod q)).ringHomComp (Int.castRingHom ℂ)
 
-private lemma nonprincipal (hq : q≠2) : dirChar q ≠ 1 :=
+theorem nonprincipal (hq : q≠2) : dirChar q ≠ 1 :=
   (MulChar.ringHomComp_ne_one_iff (Int.cast_injective (α:=ℂ))).mpr
     (quadraticChar_ne_one (by simpa [ZMod.ringChar_zmod_n] using hq))
 
@@ -371,6 +372,7 @@ theorem row_limit {d : ℕ} [NeZero d] (ho : Odd d) (hd : q∣d) {L : ℝ}
   · decide
   · exact Nat.prime_of_mem_primeFactors (mem_erase.mp hp).2
 
+#print axioms nonprincipal
 #print axioms symbol_mul
 #print axioms symbol_mod
 #print axioms symbol_zero

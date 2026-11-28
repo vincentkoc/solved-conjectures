@@ -207,6 +207,26 @@ theorem of_quadratic_excess_formula (hAP : ProgressionMangoldt) (hq : q%4=3)
       simp only [abs_mul,abs_neg,abs_of_pos hH,abs_one,mul_one] <;>
       apply le_of_eq <;> field_simp [hsq.ne',Real.pi_ne_zero] at hD ⊢ <;> norm_num at hD ⊢ <;> nlinarith
 
+/-- A correlation at a conductor coprime to the period gives a lower bound for the
+ordinary prime mean of the absolute approximation error. -/
+theorem periodic_error_of_correlation (hAP : ProgressionMangoldt) {m : ℕ} [NeZero m]
+    (hc : q.Coprime m) (hodd : q≠2) {C : ℝ}
+    (hC : Tendsto (primeMean (fun p => (symbol q p:ℝ)*residual p)) atTop (𝓝 C))
+    {g : ℕ → ℝ} (hg : OnMod m g) {a : ℝ} (ha : a < |C|) :
+    ∀ᶠ X : ℕ in atTop, a < primeMean (fun p => |residual p-g p|) X := by
+  have hper := product_onMod (Nat.dvd_mul_right q m) (Nat.dvd_mul_left m q) (onMod q) hg
+  have h0 := periodic_prime_mean hAP hper
+  rw [unitMean_mul hc (onMod q) hg,centered q hodd,zero_mul] at h0
+  have H := hC.sub h0
+  rw [sub_zero] at H
+  filter_upwards [H.abs.eventually_const_lt ha] with X hX
+  apply hX.trans_le
+  simp only [primeMean,← sub_div,← sum_sub_distrib,abs_div,abs_of_nonneg (Nat.cast_nonneg (α:=ℝ) X.primeCounting)]
+  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
+  apply (abs_sum_le_sum_abs ..).trans (sum_le_sum fun p _ => ?_)
+  rw [← mul_sub,abs_mul]
+  exact mul_le_of_le_one_left (abs_nonneg _) (bounded q p)
+
 /-- For every fixed modulus, a positive absolute-mean error persists for every choice
 of values in its residue classes. The lower bound is independent of the model. -/
 theorem fixed_period_gap (hAP : ProgressionMangoldt) (m : ℕ) [NeZero m] :
@@ -218,24 +238,14 @@ theorem fixed_period_gap (hAP : ProgressionMangoldt) (m : ℕ) [NeZero m] :
   obtain ⟨_,C,_,_,hC,hC0,_⟩ := prime_correlation q hAP hq3
   refine ⟨|C|,abs_pos.mpr hC0,?_⟩
   intro g hg a ha
-  have hc := hpr.coprime_iff_not_dvd.mpr (Nat.not_dvd_of_pos_of_lt (NeZero.pos m) hqm)
-  have hper := product_onMod (Nat.dvd_mul_right q m) (Nat.dvd_mul_left m q) (onMod q) hg
-  have h0 := periodic_prime_mean hAP hper
-  rw [unitMean_mul hc (onMod q) hg,centered q (by omega),zero_mul] at h0
-  have H := hC.sub h0
-  rw [sub_zero] at H
-  filter_upwards [H.abs.eventually_const_lt ha] with X hX
-  apply hX.trans_le
-  simp only [primeMean,← sub_div,← sum_sub_distrib,abs_div,abs_of_nonneg (Nat.cast_nonneg (α:=ℝ) X.primeCounting)]
-  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
-  apply (abs_sum_le_sum_abs ..).trans (sum_le_sum fun p _ => ?_)
-  rw [← mul_sub,abs_mul]
-  exact mul_le_of_le_one_left (abs_nonneg _) (bounded q p)
+  exact periodic_error_of_correlation q hAP
+    (hpr.coprime_iff_not_dvd.mpr (Nat.not_dvd_of_pos_of_lt (NeZero.pos m) hqm)) (by omega) hC hg ha
 
 #print axioms amplitude_nonneg
 #print axioms conductor_amplitude
 #print axioms of_quadratic_excess_formula
 #print axioms even_character_mean
 #print axioms prime_correlation
+#print axioms periodic_error_of_correlation
 #print axioms fixed_period_gap
 end Arxiv.«2501.03234».ThetaPrimeSpectrum
