@@ -9,9 +9,9 @@ noncomputable section
 
 def height (T : ℕ) := envelope*(238*(log T)^2)
 
-theorem model_mgf : ∀ᶠ T : ℕ in atTop, ∀ Y V : ℕ, [NeZero Y.factorial] → 2≤Y →
+theorem model_mgf : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (V : Window), [NeZero Y.factorial] → 2≤Y →
     ∀ v : ℝ, |v|=tilt T →
-    unitMean Y.factorial (fun n => exp (v*model Y V n)) ≤ exp (total+tilt T*height T) := by
+    unitMean Y.factorial (fun n => exp (v*rowModel Y V n)) ≤ exp (total+tilt T*height T) := by
   obtain ⟨Q,hQ⟩ := eventually_atTop.mp eventual_size
   have hlog := (Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop).eventually_ge_atTop 1
   obtain ⟨L,hL⟩ := eventually_atTop.mp hlog
@@ -51,7 +51,7 @@ theorem model_mgf : ∀ᶠ T : ℕ in atTop, ∀ Y V : ℕ, [NeZero Y.factorial]
           _ ≤ _ := mul_le_mul_of_nonneg_left (baseline hY h₀ (hL _ h₂) V x) (tilt_pos (by omega)).le
       _ = _ := by simp [ZMod.card_units_eq_totient]
   let t := max T Y.factorial
-  have hend : F t=(∑ x : (ZMod Y.factorial)ˣ,exp (v*model Y V (x:ZMod Y.factorial).val)) := by
+  have hend : F t=(∑ x : (ZMod Y.factorial)ˣ,exp (v*rowModel Y V (x:ZMod Y.factorial).val)) := by
     unfold F value
     rw [terminal (Nat.factorial_pos _) (le_max_right ..)]
     simp only [final_project]

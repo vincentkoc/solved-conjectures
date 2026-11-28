@@ -48,9 +48,9 @@ theorem card_ratio {P m : ℕ} [NeZero P] [NeZero m] (h : m∣P) (x : (ZMod P)ˣ
   simpa only [unitMean,show (∑ u : (ZMod P)ˣ,selectClass (key m x) m (u:ZMod P).val)=
       ((fiber (key (P:=P) m) (key m x)).card:ℝ) by simpa using hs.symm] using H
 
-theorem project {Y m : ℕ} [NeZero Y.factorial] [NeZero m] (h : m∣Y.factorial) (V : ℕ)
+theorem project {Y m : ℕ} [NeZero Y.factorial] [NeZero m] (h : m∣Y.factorial) (V : Window)
     (x : (ZMod Y.factorial)ˣ) :
-    proj (key m) (fun u : (ZMod Y.factorial)ˣ => model Y V (u:ZMod Y.factorial).val) x =
+    proj (key m) (fun u : (ZMod Y.factorial)ˣ => rowModel Y V (u:ZMod Y.factorial).val) x =
       ThetaSmoothConditionalModel.cond m (key m x) Y V := by
   unfold proj avg ThetaSmoothConditionalModel.cond unitMean
   rw [class_sum]
@@ -61,7 +61,7 @@ theorem project {Y m : ℕ} [NeZero Y.factorial] [NeZero m] (h : m∣Y.factorial
     exact Nat.cast_pos.mpr (card_pos.mpr ⟨x,by simp [fiber]⟩)
   field_simp at H ⊢
   linear_combination -(∑ u : (ZMod Y.factorial)ˣ,selectClass (key m x) m (u:ZMod Y.factorial).val*
-    model Y V (u:ZMod Y.factorial).val)*H
+    rowModel Y V (u:ZMod Y.factorial).val)*H
 
 theorem final_project {P : ℕ} [NeZero P] (f : (ZMod P)ˣ → ℝ) (x : (ZMod P)ˣ) :
     proj (key P) f x=f x := by

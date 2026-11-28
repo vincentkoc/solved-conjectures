@@ -45,7 +45,7 @@ private lemma counting_band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N
     _ ≤ ∑ p ∈ s, ‖F p‖^2 := sum_le_sum (fun p hp => pow_le_pow_left₀ zero_le_one (hlarge p hp) 2)
     _ ≤ _ := (sum_le_sum_of_subset_of_nonneg hsub (by intros; positivity)).trans (hvar hT H hzero N (by omega))
 
-private lemma dyadic_cover {X : ℕ} (hX : (256:ℕ)^64≤X) :
+lemma dyadic_cover {X : ℕ} (hX : (256:ℕ)^64≤X) :
     ∃ N : ℕ, 2≤N ∧ N^56≤X/2 ∧ X≤N^64 ∧ N^64≤2^64*X := by
   let r := Nat.nthRoot 64 X
   let N := r+1
