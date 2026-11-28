@@ -41,6 +41,12 @@ def compile_proof(source, out, env):
         raise SystemExit(f"{source.name}: missing #print axioms report")
 
 
+def replay_kernel(sources, env):
+    # LeanChecker starts an asynchronous replay for every selected module.
+    for source in sources:
+        subprocess.run(["leanchecker", "-v", source.stem], env=env, check=True)
+
+
 def main():
     upstream = Path.cwd().resolve()
     if not (upstream / "FormalConjectures").is_dir() or not os.environ.get("LEAN_PATH"):
@@ -73,7 +79,7 @@ def main():
         for source in order:
             print(f"Checking {source.relative_to(RESEARCH)}", flush=True)
             compile_proof(source, out, env)
-        subprocess.run(["leanchecker", "-v", *(f.stem for f in order)], env=env, check=True)
+        replay_kernel(order, env)
     print(f"Replayed {len(files)} notebook modules.")
 
 
