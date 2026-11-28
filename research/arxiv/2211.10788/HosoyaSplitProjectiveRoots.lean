@@ -102,7 +102,8 @@ private theorem upper_conjugates {K : Type*} [Field K] {a b : K}
     rw [pow_succ,pow_succ]
     ring
 
-private theorem upper_form_conjugates {K : Type*} [Field K] {a b : K}
+/-- Evaluate the upper index form at the two Fibonacci characteristic roots. -/
+theorem upper_form_conjugates {K : Type*} [Field K] {a b : K}
     (ha : a^2=a+1) (hb : b^2=b+1) (x y : K) (r d : ℕ) :
     (a-b)*upperIndexForm x y d r =
       ((3+a)*a^r)*(x+a*y)^d-((3+b)*b^r)*(x+b*y)^d := by
