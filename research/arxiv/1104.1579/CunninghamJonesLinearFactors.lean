@@ -65,16 +65,18 @@ private lemma constant_eq (t : ℕ) (ht : Odd t) : 3*jonesConstant t = 2*(2^t+1)
   unfold jonesConstant
   omega
 
-private lemma sum_succ (m j : ℕ) :
+/-- Adding the highest monomial extends the Jones sum by one degree. -/
+lemma jonesSumPolynomial_succ (m j : ℕ) :
     jonesSumPolynomial m (j+1) = X^(j+1) + jonesSumPolynomial m j := by
   simp [jonesSumPolynomial,Finset.sum_range_succ]; ring
 
-private lemma sum_shape (m j : ℕ) : (jonesSumPolynomial m j).natDegree = j ∧
+/-- The Jones sum has degree j and is monic in positive degrees. -/
+lemma jonesSumPolynomial_shape (m j : ℕ) : (jonesSumPolynomial m j).natDegree = j ∧
     (0 < j → (jonesSumPolynomial m j).Monic) := by
   induction j with
   | zero => simp [jonesSumPolynomial]
   | succ j ih =>
-    rw [sum_succ]
+    rw [jonesSumPolynomial_succ]
     have h : (jonesSumPolynomial m j).natDegree < (X^(j+1) : ℤ[X]).natDegree := by simp [ih.1]
     exact ⟨(natDegree_add_eq_left_of_natDegree_lt h).trans (by simp),
       fun _ => monic_X_pow_add (by simpa using degree_lt_degree h)⟩
@@ -83,14 +85,14 @@ private lemma sum_eval (m j : ℕ) (x : ℤ) :
     (jonesSumPolynomial m j).eval x = m + ∑ i ∈ Finset.range j, x^(i+1) := by
   induction j with
   | zero => simp [jonesSumPolynomial]
-  | succ j ih => rw [sum_succ,eval_add,eval_pow,eval_X,ih,Finset.sum_range_succ]; ring
+  | succ j ih => rw [jonesSumPolynomial_succ,eval_add,eval_pow,eval_X,ih,Finset.sum_range_succ]; ring
 
 private lemma geometric_identity (m j : ℕ) (x : ℤ) :
     (x-1)*(jonesSumPolynomial m j).eval x = x^(j+1)+((m:ℤ)-1)*x-m := by
   induction j with
   | zero => simp [jonesSumPolynomial]; ring
   | succ j ih =>
-    rw [sum_succ,eval_add,eval_pow,eval_X,pow_succ x (j+1)]
+    rw [jonesSumPolynomial_succ,eval_add,eval_pow,eval_X,pow_succ x (j+1)]
     linear_combination ih
 
 private lemma root_mod_two (m j b : ℕ) (hm : Even m) (hj : Odd j)
@@ -119,7 +121,7 @@ private lemma root_magnitude (m t j : ℕ) (ht : 3 ≤ t) (hodd : Odd t)
   have hmt : m < 2^t := by omega
   have heval : aeval x (jonesSumPolynomial m j) = 0 := by
     rw [aeval_def,eval₂_eq_eval_map]; exact hr
-  obtain ⟨z,hz,hdiv⟩ := exists_integer_of_is_root_of_monic ((sum_shape m j).2 hj) heval
+  obtain ⟨z,hz,hdiv⟩ := exists_integer_of_is_root_of_monic ((jonesSumPolynomial_shape m j).2 hj) heval
   have he : (jonesSumPolynomial m j).eval z = 0 := by
     rw [hz,aeval_def,eval₂_at_apply] at heval
     change (((jonesSumPolynomial m j).eval z : ℤ) : ℚ) = 0 at heval
@@ -181,6 +183,8 @@ theorem jones_rational_root_iff (t j : ℕ) (ht : 3 ≤ t) (ho : Odd t)
     rw [←eval_map_apply] at he'
     simpa using he'
 
+#print axioms jonesSumPolynomial_succ
+#print axioms jonesSumPolynomial_shape
 #print axioms jones_rational_root_iff
 
 private lemma minus_two_degree {t j : ℕ} (ho : Odd t)
@@ -275,8 +279,8 @@ theorem jones_irreducible_iff_in_range (t j : ℕ) (ht : 3 ≤ t) (ho : Odd t)
     (hp : ((2^t+1)/3).Prime) (hj : 2 ≤ j) (hjt : j+5 ≤ 2*t) :
     Irreducible ((jonesSumPolynomial (jonesConstant t) j).map (Int.castRingHom ℚ)) ↔ j ≠ t := by
   let f := jonesSumPolynomial (jonesConstant t) j
-  have hdeg : f.natDegree = j := (sum_shape _ _).1
-  have hm : f.Monic := (sum_shape _ _).2 (by omega)
+  have hdeg : f.natDegree = j := (jonesSumPolynomial_shape _ _).1
+  have hm : f.Monic := (jonesSumPolynomial_shape _ _).2 (by omega)
   constructor
   · intro hi h
     have hr := (jones_rational_root_iff t j ht ho (by omega) (by nlinarith) (-2)).mpr ⟨rfl,h⟩
