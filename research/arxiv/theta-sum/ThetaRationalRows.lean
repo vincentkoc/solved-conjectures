@@ -173,11 +173,16 @@ private lemma range_units (f : ℕ → ℤ) :
     have ha : rep a ≠ 0 := fun e => a.ne_zero ((ZMod.val_eq_zero _).mp e)
     congr 1; omega
 
-/-- On a common grid, a reduced positive odd fraction has exactly the reciprocal-height row. -/
-theorem row_ratio {u v d : ℕ} (hu : u%2=1) (hv : v%2=1) (hc : u.Coprime v)
-    (hd : 0 < d) (hp : p = u*v*d+1) (hp2 : p%2=1)
+/-- The two parity waves have total one over a complete coprime odd grid. -/
+theorem parity_grid_sum {u v : ℕ} (hu : u%2=1) (hv : v%2=1) (hc : u.Coprime v) :
+    (∑ t ∈ range (u*v), (-1 : ℤ)^(t/v+t/u)) = 1 := by
+  simp_rw [add_comm (_/v) (_/u), div_parity hu hv]
+  exact crt_parity hu hv hc
+
+/-- Rotate an odd rational slope into two floor functions evaluated on the same grid. -/
+theorem row_ratio_floor_sum {u v : ℕ} (hu : u%2=1) (hv : v%2=1) (hp2 : p%2=1)
     (a b : U p) (ha : (a : ZMod p) = u) (hb : (b : ZMod p) = v) :
-    row (a/b) = d := by
+    row (a/b) = ∑ k ∈ range (p-1), (-1 : ℤ)^(u*(k+1)/p+v*(k+1)/p) := by
   have hrow : row (a/b) = ∑ x : U p, sign (b*x) * sign (a*x) := by
     unfold row
     apply Fintype.sum_equiv (Equiv.mulLeft b).symm
@@ -191,7 +196,14 @@ theorem row_ratio {u v d : ℕ} (hu : u%2=1) (hv : v%2=1) (hc : u.Coprime v)
     congr 1; omega
   rw [hrow]
   simp_rw [hpow]
-  rw [range_units (fun x => (-1 : ℤ)^(u*x/p+v*x/p)), hp, Nat.add_sub_cancel]
+  exact range_units (p := p) (fun x => (-1 : ℤ)^(u*x/p+v*x/p))
+
+/-- On a common grid, a reduced positive odd fraction has exactly the reciprocal-height row. -/
+theorem row_ratio {u v d : ℕ} (hu : u%2=1) (hv : v%2=1) (hc : u.Coprime v)
+    (hd : 0 < d) (hp : p = u*v*d+1) (hp2 : p%2=1)
+    (a b : U p) (ha : (a : ZMod p) = u) (hb : (b : ZMod p) = v) :
+    row (a/b) = d := by
+  rw [row_ratio_floor_sum hu hv hp2 a b ha hb, hp, Nat.add_sub_cancel]
   exact grid_sum hu hv hc hd
 
 /-- Use the unit represented by n for the slopes below, whose coordinates lie between 3 and p. -/
@@ -213,7 +225,8 @@ private lemma lift_mem (hp : p%2=1) (a : U p) : oddLift a ∈ oddReps p := by
   · exact h
   · exact (parity_neg hp _).mpr h
 
-private lemma row_neg (hp : p%2=1) (a : U p) : row (-a) = -row a := by
+/-- Negating a slope reverses its correlation. -/
+theorem row_neg (hp : p%2=1) (a : U p) : row (-a) = -row a := by
   simp [row, neg_mul, sign_neg hp, sum_neg_distrib]
 
 private def oriented (p u v : ℕ) [Fact p.Prime] : U p :=
@@ -623,3 +636,7 @@ end Arxiv.«2501.03234».ThetaRationalRows
 #print axioms Arxiv.«2501.03234».ThetaRationalRows.rationalRows_long
 #print axioms Arxiv.«2501.03234».ThetaRationalRows.rationalRows_lower
 #print axioms Arxiv.«2501.03234».ThetaRationalRows.long_rows_arbitrarily_large
+
+#print axioms Arxiv.«2501.03234».ThetaRationalRows.parity_grid_sum
+#print axioms Arxiv.«2501.03234».ThetaRationalRows.row_ratio_floor_sum
+#print axioms Arxiv.«2501.03234».ThetaRationalRows.row_neg
