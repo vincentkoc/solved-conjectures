@@ -5,13 +5,17 @@ namespace Arxiv.«2501.03234».ThetaStrongOriginalTail
 open Finset Filter Real ThetaPrimeDensity ThetaStrongDeviation ThetaStrongPrimeTail
 noncomputable section
 
-private theorem absorb (A : ℝ) (hA : 0<A) : ∀ᶠ X : ℕ in atTop,
-    A*log X≤exp (rate X/2048) := by
+theorem absorb_log_power {A d : ℝ} (hA : 0<A) (hd : 0<d) (m : ℕ) : ∀ᶠ X : ℕ in atTop,
+    A*(1+log X)^m≤exp (rate X/d) := by
+  let D := ((m:ℝ)+1)*d
+  let B := A*2^m
+  have hD : 0<D := by dsimp [D];positivity
+  have hB : 0<B := by dsimp [B];positivity
   have hlog := tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R:=ℝ))
   have hz := tendsto_log_atTop.comp hlog
-  filter_upwards [hlog.eventually_ge_atTop 1,hz.eventually_ge_atTop (log A),
-    hz.eventually_ge_atTop (2*4096^2)] with X hL hA' hbig
-  simp only [Function.comp_apply] at hL hA' hbig
+  filter_upwards [hlog.eventually_ge_atTop 1,hz.eventually_ge_atTop (log B),
+    hz.eventually_ge_atTop (2*D^2)] with X hL hB' hbig
+  simp only [Function.comp_apply] at hL hB' hbig
   let L := log (X:ℝ)
   let z := log L
   have hLp : 0<L := by change 0<log (X:ℝ);linarith
@@ -19,16 +23,28 @@ private theorem absorb (A : ℝ) (hA : 0<A) : ∀ᶠ X : ℕ in atTop,
   have he := pow_div_factorial_le_exp z hp 2
   rw [exp_log hLp] at he
   norm_num [Nat.factorial] at he
-  have hh : 4096^2*z≤L := by
-    change 2*4096^2≤z at hbig
+  have hh : D^2*z≤L := by
+    change 2*D^2≤z at hbig
     nlinarith only [he,mul_le_mul_of_nonneg_right hbig hp]
-  have hg : 4096*z≤rate X := by
+  have hg : D*z≤rate X := by
     change _ ≤ sqrt (L*z)
     apply (le_sqrt (by positivity) (mul_nonneg hLp.le hp)).mpr
     nlinarith only [mul_le_mul_of_nonneg_right hh hp]
   calc
-    _ = exp (log A+z) := by rw [exp_add,exp_log hA,show exp z=L from exp_log hLp]
-    _ ≤ _ := exp_le_exp.mpr (by change log A≤z at hA';linarith only [hA',hg])
+    _ ≤ A*(2*L)^m := mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (by change 0≤1+log (X:ℝ);linarith)
+      (by change 1+log (X:ℝ)≤2*log (X:ℝ);linarith) m) hA.le
+    _ = exp (log B+(m:ℝ)*z) := by rw [exp_add,exp_log hB,exp_nat_mul,show exp z=L from exp_log hLp,mul_pow];dsimp [B];ring
+    _ ≤ _ := exp_le_exp.mpr (by
+      rw [le_div_iff₀ hd]
+      change log B≤z at hB'
+      dsimp only [D] at hg
+      nlinarith only [hg,mul_le_mul_of_nonneg_right hB' hd.le])
+
+private theorem absorb (A : ℝ) (hA : 0<A) : ∀ᶠ X : ℕ in atTop,
+    A*log X≤exp (rate X/2048) := by
+  filter_upwards [absorb_log_power hA (by norm_num : (0:ℝ)<2048) 1] with X hX
+  rw [pow_one] at hX
+  exact (mul_le_mul_of_nonneg_left (by linarith) hA.le).trans hX
 
 /-- For any fixed relative deviation, the proportion among primes is eventually
 at most `exp (-sqrt (log X * log (log X)) / 2048)`. -/
@@ -115,6 +131,7 @@ theorem pinned_failures (n : ℕ) : ∃ M : ℕ, ∀ᶠ X : ℕ in atTop,
     exact_mod_cast (card_le_card hsub).trans ((card_union_le ..).trans_eq (by rw [card_range]))
   exact hc.trans (add_le_add_right hX _)
 
+#print axioms absorb_log_power
 #print axioms pinned_failures
 #print axioms every_fixed_rate
 #print axioms original

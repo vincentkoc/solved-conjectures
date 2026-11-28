@@ -1,5 +1,6 @@
 import ThetaCenteredWindow
 import ThetaWindowFiniteMoments
+import ThetaIntervalPowerEndpoint
 
 /-! Finite-interval moments of the centered row sum. Centering each summand
 preserves its individual denominator period. -/
@@ -26,11 +27,11 @@ theorem smooth_bound {B : ℝ} {f : ℕ → ℝ} (hf : ∀ n,|f n|≤B) (Y T n :
        _ ≤ ∑ _u∈A,B := sum_le_sum fun u _ => hf _
        _ = _ := by simp [mul_comm]
 
-theorem finite : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window) (X k : ℕ),
-    (∑ n∈range X,(center Y T W n)^k) ≤
+theorem translated : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window) (M X k : ℕ),
+    (∑ n∈range X,(center Y T W (M+n))^k) ≤
       (X:ℝ)*(2*exp total)*((k:ℝ)/tilt T)^k+2*(12*Z*(Y:ℝ)^2)^k := by
   filter_upwards [absolute,eventually_ge_atTop 1] with T H hT
-  intro Y W X k
+  intro Y W M X k
   have ha := tilt_pos hT
   have hz : 0≤Z := tsum_nonneg (fun _ => by positivity)
   let f (d n : ℕ) := (commonWeight W.weightCutoff d/d)*row d (W.width d) n
@@ -43,7 +44,7 @@ theorem finite : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window) (X k : ℕ)
     dsimp only [center,g,rowModel,low]
     rw [sum_sub_distrib,←smooth_sum]
     rfl
-  have h := ThetaWindowPowerEndpoint.power_endpoint (Y:=Y) g X k
+  have h := ThetaIntervalPowerEndpoint.translated_power (Y:=Y) g M X k
     (show 0≤12*Z by positivity) (fun d _ => hg d) (fun d hd n =>
       (abs_sub _ _).trans (by linarith only [hb d hd n,smooth_bound (hb d hd) Y T n]))
   simp_rw [he] at h
@@ -55,6 +56,14 @@ theorem finite : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window) (X k : ℕ)
     exact mul_le_mul_of_nonneg_left (H Y W) (pow_nonneg (div_nonneg (Nat.cast_nonneg _) ha.le) _)
   exact h.trans (by linarith only [mul_le_mul_of_nonneg_left hm (Nat.cast_nonneg X)])
 
+theorem finite : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window) (X k : ℕ),
+    (∑ n∈range X,(center Y T W n)^k) ≤
+      (X:ℝ)*(2*exp total)*((k:ℝ)/tilt T)^k+2*(12*Z*(Y:ℝ)^2)^k := by
+  filter_upwards [translated] with T h
+  intro Y W X k
+  simpa only [Nat.zero_add] using h Y W 0 X k
+
+#print axioms translated
 #print axioms finite
 end
 end Arxiv.«2501.03234».ThetaCenteredMoment

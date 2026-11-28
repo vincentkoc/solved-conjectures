@@ -84,7 +84,8 @@ theorem nondivisible_prefix {p u s : ℕ} (hu : u%2=1) (hc : p.Coprime u) (hs : 
   exact prefix_bound hu _ n
 
 open ThetaCotangentTriangle (weight quotientSign)
-open ThetaReciprocalCutoff (weight_le weight_mass weighted_abs discrepancy reciprocal_interval)
+open ThetaReciprocalCutoff (weight_le weight_mass weighted_abs discrepancy kloosterman kloosterman_bound kernelDiscrepancy
+  elementary_discrepancy reciprocal_interval_of_kernel)
 
 /-- Reciprocal sign with the divisible pairs removed. -/
 noncomputable def nondivSign (p u v : ℕ) : ℤ :=
@@ -123,10 +124,11 @@ private lemma divisor_count (s v n : ℕ) (hv : 0<v) :
     exact Nat.mem_divisors.mpr ⟨(mem_filter.mp hi).2,hv.ne'⟩
   · intro i _ j _ he; dsimp at he; omega
 
-private lemma denominator_prefix {p : ℕ} [Fact p.Prime] (hp : p%2=1)
+private lemma denominator_prefix {p : ℕ} [Fact p.Prime] {B : ℝ} (hB : 0≤B)
+    (bound : ∀ a b : ZMod p,b≠0 → ‖kloosterman a b‖≤B) (hp : p%2=1)
     (l k n : ℕ) (hk : k<p/2) (hn : n≤p/2-l) :
     |∑ i ∈ range n, (nondivSign p (2*(l+i)+1) (2*k+1):ℝ)| ≤
-      discrepancy p + 2*(p.sqrt:ℝ) := by
+      kernelDiscrepancy p B + 2*(p.sqrt:ℝ) := by
   let v := 2*k+1
   let u (i : ℕ) := 2*(l+i)+1
   let f (i : ℕ) : ℝ := quotientSign p (u i) v
@@ -135,9 +137,9 @@ private lemma denominator_prefix {p : ℕ} [Fact p.Prime] (hp : p%2=1)
     rw [ZMod.val_natCast_of_lt (show v<p by dsimp [v]; omega),ZMod.val_zero] at hh
     dsimp [v] at hh; omega
   have he (i : ℕ) : u i = 2*l+1+2*i := by dsimp [u]; omega
-  have hfull : |∑ i ∈ range n, f i| ≤ discrepancy p := by
+  have hfull : |∑ i ∈ range n, f i| ≤ kernelDiscrepancy p B := by
     dsimp only [f]; simp_rw [he]
-    have h := reciprocal_interval hp (2*l+1) v n hv (by omega) (by intro i hi; constructor <;> omega)
+    have h := reciprocal_interval_of_kernel hB bound hp (2*l+1) v n hv (by omega) (by intro i hi; constructor <;> omega)
     simpa only [Int.cast_sum] using h
   let D := (range n).filter (fun i => u i ∣ v)
   have hc : D.card ≤ 2*p.sqrt := by
@@ -164,11 +166,12 @@ private lemma denominator_prefix {p : ℕ} [Fact p.Prime] (hp : p%2=1)
   exact (abs_sub _ _).trans (add_le_add hfull hd)
 
 
-private lemma denominator_tail {p : ℕ} [Fact p.Prime] (hp : p%2=1)
+private lemma denominator_tail {p : ℕ} [Fact p.Prime] {B : ℝ} (hB : 0≤B)
+    (bound : ∀ a b : ZMod p,b≠0 → ‖kloosterman a b‖≤B) (hp : p%2=1)
     {J k : ℕ} (hk : k<p/2) :
     |∑ j ∈ Ico J (p/2), weight p (2*j+1)*(nondivSign p (2*j+1) (2*k+1):ℝ)| ≤
-      (discrepancy p + 2*(p.sqrt:ℝ))*((p:ℝ)/(2*J+1)) := by
-  have hD : 0≤discrepancy p+2*(p.sqrt:ℝ) := by unfold discrepancy; positivity
+      (kernelDiscrepancy p B + 2*(p.sqrt:ℝ))*((p:ℝ)/(2*J+1)) := by
+  have hD : 0≤kernelDiscrepancy p B+2*(p.sqrt:ℝ) := by unfold kernelDiscrepancy; positivity
   by_cases h₀ : J<p/2
   · rw [sum_Ico_eq_sum_range]
     let w (i : ℕ) := weight p (2*(J+i)+1)
@@ -177,7 +180,7 @@ private lemma denominator_tail {p : ℕ} [Fact p.Prime] (hp : p%2=1)
       (ThetaCotangentTriangle.weight_pos (by omega) (by dsimp [w]; omega)).le
       (fun i hi => (ThetaCotangentTriangle.weight_pos (by omega) (by omega)).le)
       (fun i hi => ThetaCotangentTriangle.weight_antitone (by omega) (by omega) (by omega))
-      (fun m hm => denominator_prefix hp J k m hk hm)
+      (fun m hm => denominator_prefix hB bound hp J k m hk hm)
     apply H.trans
     apply mul_le_mul_of_nonneg_left _ hD
     simpa [w] using weight_le (p:=p) (u:=2*J+1) (by omega) (by omega)
@@ -206,15 +209,16 @@ lemma full_strip (p : ℕ) : ThetaDivisibleDiagonal.offDiagonal p = strip p (p/2
 
 /-- Denominators beyond the cutoff cost a single Kloosterman discrepancy plus
 a divisor count to remove the multiples. -/
-theorem denominator_cutoff {p : ℕ} [Fact p.Prime] (hp : p%2=1) {J : ℕ} (hJ : J≤p/2) :
+theorem denominator_cutoff_of_kernel {p : ℕ} [Fact p.Prime] {B : ℝ} (hB : 0≤B)
+    (bound : ∀ a b : ZMod p,b≠0 → ‖kloosterman a b‖≤B) (hp : p%2=1) {J : ℕ} (hJ : J≤p/2) :
     |ThetaDivisibleDiagonal.offDiagonal p-strip p J| ≤
-      2*(discrepancy p+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*J+1) := by
+      2*(kernelDiscrepancy p B+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*J+1) := by
   rw [full_strip]
   let w (j : ℕ) := weight p (2*j+1)
   let g (j k : ℕ) : ℝ := nondivSign p (2*j+1) (2*k+1)
-  let D := discrepancy p+2*(p.sqrt:ℝ)
+  let D := kernelDiscrepancy p B+2*(p.sqrt:ℝ)
   let E := D*((p:ℝ)/(2*J+1))
-  have hD : 0≤D := by dsimp [D,discrepancy]; positivity
+  have hD : 0≤D := by dsimp [D,kernelDiscrepancy]; positivity
   have hE : 0≤E := by dsimp [E]; positivity
   have hpr : 0<(p:ℝ) := by exact_mod_cast (Fact.out : p.Prime).pos
   change |2/(p:ℝ)*(∑ j ∈ range (p/2), w j*∑ k ∈ range (p/2), w k*g j k) -
@@ -233,9 +237,15 @@ theorem denominator_cutoff {p : ℕ} [Fact p.Prime] (hp : p%2=1) {J : ℕ} (hJ :
     have hlt := mem_range.mp hk
     have hw : 0≤w k := (ThetaCotangentTriangle.weight_pos (by omega) (by omega)).le
     rw [abs_mul,abs_of_nonneg hw]
-    exact mul_le_mul_of_nonneg_left (denominator_tail hp hlt) hw
+    exact mul_le_mul_of_nonneg_left (denominator_tail hB bound hp hlt) hw
   apply (mul_le_mul_of_nonneg_left H (by positivity : 0≤2/(p:ℝ))).trans
   dsimp [E,D]; apply le_of_eq; field_simp
+
+theorem denominator_cutoff {p : ℕ} [Fact p.Prime] (hp : p%2=1) {J : ℕ} (hJ : J≤p/2) :
+    |ThetaDivisibleDiagonal.offDiagonal p-strip p J| ≤
+      2*(discrepancy p+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*J+1) := by
+  simpa only [elementary_discrepancy] using denominator_cutoff_of_kernel (by positivity)
+    (fun a b hb => kloosterman_bound a b hb) hp hJ
 
 /-- For fixed odd width K, cutting the numerator rows at Ku loses at most
 2 p H_J / K for the entire denominator strip. -/
@@ -338,15 +348,24 @@ theorem rationalization {p J K : ℕ} (hp : 0<p) (hJ : J≤p/2) (hfit : K*(2*J) 
 
 /-- Deterministic transfer of the entire nondivisible part to a fixed-width
 rational cone. The term divided by K is the discarded numerator tail. -/
+theorem offDiagonal_cone_error_of_kernel {p : ℕ} [Fact p.Prime] {B : ℝ} (hB : 0≤B)
+    (bound : ∀ a b : ZMod p,b≠0 → ‖kloosterman a b‖≤B) (hp : p%2=1) {J K : ℕ}
+    (hK : K%2=1) (hJ : J≤p/2) (hfit : K*(2*J) ≤ p) :
+    |ThetaDivisibleDiagonal.offDiagonal p - (8*p/Real.pi^2)*(rationalCone p J K:ℝ)| ≤
+    2*(kernelDiscrepancy p B+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*J+1) + 2*(p:ℝ)*harmonic J/K +
+      2*(J:ℝ)^2*(2*(harmonic (K*J):ℝ)+(K:ℝ)^2)/p := by
+  apply (abs_sub_le _ (cotCone p J K) _).trans
+  apply add_le_add _ (rationalization (Fact.out : p.Prime).pos hJ hfit)
+  exact (abs_sub_le _ (strip p J) _).trans (add_le_add (denominator_cutoff_of_kernel hB bound hp hJ) (width_cutoff hK hJ hfit))
+
+
 theorem offDiagonal_cone_error {p : ℕ} [Fact p.Prime] (hp : p%2=1) {J K : ℕ}
     (hK : K%2=1) (hJ : J≤p/2) (hfit : K*(2*J) ≤ p) :
     |ThetaDivisibleDiagonal.offDiagonal p - (8*p/Real.pi^2)*(rationalCone p J K:ℝ)| ≤
     2*(discrepancy p+2*(p.sqrt:ℝ))*p*harmonic (p/2)/(2*J+1) + 2*(p:ℝ)*harmonic J/K +
       2*(J:ℝ)^2*(2*(harmonic (K*J):ℝ)+(K:ℝ)^2)/p := by
-  apply (abs_sub_le _ (cotCone p J K) _).trans
-  apply add_le_add _ (rationalization (Fact.out : p.Prime).pos hJ hfit)
-  exact (abs_sub_le _ (strip p J) _).trans (add_le_add (denominator_cutoff hp hJ) (width_cutoff hK hJ hfit))
-
+  simpa only [elementary_discrepancy] using offDiagonal_cone_error_of_kernel (by positivity)
+    (fun a b hb => kloosterman_bound a b hb) hp hK hJ hfit
 
 end Arxiv.«2501.03234».ThetaNondivisibleCone
 #print axioms Arxiv.«2501.03234».ThetaNondivisibleCone.nondivisible_prefix
@@ -355,3 +374,5 @@ end Arxiv.«2501.03234».ThetaNondivisibleCone
 #print axioms Arxiv.«2501.03234».ThetaNondivisibleCone.width_cutoff
 #print axioms Arxiv.«2501.03234».ThetaNondivisibleCone.rationalization
 #print axioms Arxiv.«2501.03234».ThetaNondivisibleCone.offDiagonal_cone_error
+
+#print axioms Arxiv.«2501.03234».ThetaNondivisibleCone.offDiagonal_cone_error_of_kernel
