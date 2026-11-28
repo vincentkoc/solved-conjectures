@@ -35,7 +35,7 @@ private lemma symbol_mul {M : ℕ} [NeZero M] {a : ℤ} (hd : 4*a.natAbs ∣ M)
   apply (ZMod.natCast_eq_natCast_iff ..).mp
   simp
 
-private theorem symbol_sign {M : ℕ} {a : ℤ} (hd : 4*a.natAbs ∣ M) (u : (ZMod M)ˣ) :
+theorem symbol_sign {M : ℕ} {a : ℤ} (hd : 4*a.natAbs ∣ M) (u : (ZMod M)ˣ) :
     unitSymbol a u = 1 ∨ unitSymbol a u = -1 := by
   apply jacobiSym.eq_one_or_neg_one
   exact (Nat.Coprime.of_dvd_right ((dvd_mul_left a.natAbs 4).trans hd)
@@ -83,7 +83,7 @@ theorem large_negative_symbol {a : ℤ} (ha : ¬IsSquare a) (N : ℕ) :
       have hneg := (ZMod.exists_sq_eq_neg_one_iff (p := p)).mpr (by omega : p%4≠3)
       exact hn (by simpa using hneg.mul hs)
 
-private theorem sum_symbol_zero {M : ℕ} [NeZero M] {a : ℤ}
+theorem sum_symbol_zero {M : ℕ} [NeZero M] {a : ℤ}
     (hd : 4*a.natAbs ∣ M) (ha : ¬IsSquare a) : ∑ u : (ZMod M)ˣ, unitSymbol a u = 0 := by
   obtain ⟨p,hp,pp,hn⟩ := large_negative_symbol ha M
   have hc := pp.coprime_iff_not_dvd.mpr (Nat.not_dvd_of_pos_of_lt (NeZero.pos M) hp)
@@ -117,6 +117,8 @@ theorem quarter_negative_classes {M : ℕ} [NeZero M] {a b : ℤ}
     simpa [negativeClasses,mul_comm] using e
   exact_mod_cast hc
 
+#print axioms sum_symbol_zero
+#print axioms symbol_sign
 #print axioms symbol_at_unit
 #print axioms large_negative_symbol
 #print axioms quarter_negative_classes
