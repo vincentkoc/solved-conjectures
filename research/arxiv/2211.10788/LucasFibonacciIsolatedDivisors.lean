@@ -78,10 +78,10 @@ open Finset
 def shiftDetProduct (H : ℕ) : ℕ :=
   ∏ h ∈ range (H+1), ∏ s : HosoyaNeighbor, ∏ t : HosoyaNeighbor, max 1 (shiftDet s t h)
 
-private theorem shiftDetProduct_pos (H : ℕ) : 0 < shiftDetProduct H :=
+theorem shiftDetProduct_pos (H : ℕ) : 0 < shiftDetProduct H :=
   prod_pos fun _ _ => prod_pos fun _ _ => prod_pos fun _ _ => (le_max_left 1 _).trans_lt' Nat.zero_lt_one
 
-private theorem shiftDetProduct_le (H : ℕ) : shiftDetProduct H ≤ 2^((H+1)*(4*(H+10))) := by
+theorem shiftDetProduct_le (H : ℕ) : shiftDetProduct H ≤ 2^((H+1)*(4*(H+10))) := by
   have base {h : ℕ} (hh : h ∈ range (H+1)) (s t : HosoyaNeighbor) :
       max 1 (shiftDet s t h) ≤ 2^(H+10) := by
     apply max_le Nat.one_le_two_pow
@@ -131,7 +131,7 @@ private theorem consecutive_coprime (s : HosoyaNeighbor) (n : ℕ) :
   | zero => cases s <;> decide
   | succ n ih => simpa [s.value_step, Nat.Coprime, Nat.gcd_comm] using ih.symm
 
-private theorem supportBounds (s : HosoyaNeighbor) : FibonacciSupportBounds s.value := by
+theorem supportBounds (s : HosoyaNeighbor) : FibonacciSupportBounds s.value := by
   constructor
   · intro n
     have hf := Nat.fib_mono (show n ≤ n+2 by omega)
@@ -353,6 +353,9 @@ end HosoyaNeighbor
 #print axioms HosoyaNeighbor.isolated_primes_at_moving_cutoffs
 #print axioms HosoyaNeighbor.isolated_primes_on_both_diagonals
 #print axioms HosoyaNeighbor.dvd_shiftDetProduct_of_shared
+#print axioms HosoyaNeighbor.shiftDetProduct_pos
+#print axioms HosoyaNeighbor.shiftDetProduct_le
+#print axioms HosoyaNeighbor.supportBounds
 #print axioms HosoyaNeighbor.shiftDet_pos
 #print axioms HosoyaNeighbor.dvd_shiftDet_of_dvd
 
