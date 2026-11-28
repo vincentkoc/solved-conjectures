@@ -22,7 +22,8 @@ theorem specialize_linear {x v : ℝ} {q N : ℤ} (int : IsIntegral ℤ x)
   have d := eval_dvd (x := q) (minpoly.isIntegrallyClosed_dvd int zero)
   simpa [f] using d
 
-private theorem total {P : PMF ℤ} (finite : P.support.Finite) (a : ℤ) :
+/-- The sum of all weights normalized by an occupied endpoint equals its reciprocal probability. -/
+theorem sum_normalized_weights {P : PMF ℤ} (finite : P.support.Finite) (a : ℤ) :
     (∑ i ∈ finite.toFinset,weight P a i) = 1/(P a).toReal := by
   have eq := congrArg ENNReal.toReal P.tsum_coe
   have off (i : ℤ) (hi : i ∉ finite.toFinset) : P i = 0 :=
@@ -30,7 +31,8 @@ private theorem total {P : PMF ℤ} (finite : P.support.Finite) (a : ℤ) :
   rw [tsum_eq_sum off,ENNReal.toReal_sum (fun i _ => P.apply_ne_top i),ENNReal.toReal_one] at eq
   simp only [weight,←sum_div,eq]
 
-private theorem peak {P Q : PMF ℤ} {S : Finset ℤ} (sn : S.Nonempty)
+/-- The product of the two rightmost probabilities times the number of uniform outputs is one. -/
+theorem endpoint_product_card {P Q : PMF ℤ} {S : Finset ℤ} (sn : S.Nonempty)
     (sum : indepSum P Q = PMF.uniformOfFinset S sn) (pf : P.support.Finite)
     {a b : ℤ} (pa : IsGreatest P.support a) (qb : IsGreatest Q.support b) :
     (P a).toReal*(Q b).toReal*(S.card:ℝ) = 1 := by
@@ -99,10 +101,10 @@ theorem outcome_count {P Q : PMF ℤ} {S : Finset ℤ} (sn : S.Nonempty)
     rw [eq,nsmul_eq_mul,mul_one]
     change _+u = _
     linarith only [z,comp]
-  have vp : v = 1/(P w.a).toReal := total pf _
-  have vq := total qf w.b
+  have vp : v = 1/(P w.a).toReal := sum_normalized_weights pf _
+  have vq := sum_normalized_weights qf w.b
   rw [qsum] at vq
-  have mass := peak sn sum pf w.topP w.topQ
+  have mass := endpoint_product_card sn sum pf w.topP w.topQ
   apply specialize_linear (x := x) (v := v) (isIntegral_one.sub uint) vr
   push_cast
   rw [vp,vq]
@@ -242,6 +244,8 @@ theorem sparse_outcome_sizes (q N : ℕ) (T : Finset ℕ)
     _ ≤ D*(N/D) := Nat.mul_le_mul_right _ (Nat.le_succ _)
     _ ≤ N := Nat.mul_div_le _ _
 
+#print axioms sum_normalized_weights
+#print axioms endpoint_product_card
 #print axioms specialize_linear
 #print axioms outcome_count
 #print axioms three_level_count

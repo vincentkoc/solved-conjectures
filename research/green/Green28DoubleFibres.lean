@@ -71,7 +71,8 @@ theorem complementary_cell {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum 
   obtain ⟨ji,jm⟩ := mem_erase.mp hj
   exact ⟨j,(spec.mp jm).1,i+d-j,(spec.mp jm).2,ji,by omega,by omega,eq⟩
 
-private theorem weight_mem_ring {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
+/-- Every normalized row weight belongs to any real subring containing all normalized column weights. -/
+theorem weight_mem_ring {P Q : PMF ℤ} (flat : IsUniformOnSupport (indepSum P Q))
     {a b : ℤ} (pa : IsGreatest P.support a) (qb : IsGreatest Q.support b) (R : Subring ℝ)
     (inc : ∀ d ∈ Q.support, weight Q b d ∈ R) {i : ℤ} (hi : i ∈ P.support) : weight P a i ∈ R := by
   obtain ⟨pf,qf⟩ := finite_of_uniform_sum flat
@@ -469,6 +470,7 @@ theorem uniform_of_two_level_quadratic {P Q : PMF ℤ} (flat : IsUniformOnSuppor
 
 #print axioms complementary_cell
 #print axioms deficient_partner
+#print axioms weight_mem_ring
 #print axioms unit_ideal_pair
 #print axioms uniform_of_one_deficit_double
 #print axioms two_level_transition
