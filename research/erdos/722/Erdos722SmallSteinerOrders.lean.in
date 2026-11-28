@@ -1,0 +1,123 @@
+import Erdos722SmallOrderSpectrum
+import Erdos722RepunitProducts
+import Erdos722WittMinimumOrders
+import Erdos722InversiveBruckRyser
+import FormalConjectures.ErdosProblems.«722»
+
+/-!
+# The finite rank-three spectrum and mixed repunit orders
+
+The twice-derived Witt design supplies order 22. The projective-plane
+obstruction uses Dugongue's proof of Bruck–Ryser for order six.
+-/
+
+namespace Erdos722.SmallOrders
+
+/-- The only undetermined entries here are the three named incidence propositions. -/
+theorem spectrum {k n : ℕ} (hk : 3<k) (hkn : k<n) (hn : n≤50) :
+    (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 k) ↔ realized k n ∨
+      (k=5 ∧ n=41 ∧ TripleDesign 5 41) ∨ (k=6 ∧ n=46 ∧ TripleDesign 6 46) ∨
+      (k=5 ∧ n=50 ∧ TripleDesign 5 50) :=
+  spectrum_of_inputs MinimumOrder.six_minimum.1.2
+    (fun _ hv ⟨_,hH⟩ => InversiveOrder.seven_lower hv hH) hk hkn hn
+
+theorem spectrum_away_from_three {k n : ℕ} (hk : 3<k) (hkn : k<n) (hn : n≤50)
+    (h : ¬remaining k n) :
+    (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 k) ↔ realized k n := by
+  rw [spectrum hk hkn hn]
+  constructor
+  · rintro (hr|⟨h₅,h₄₁,_⟩|⟨h₆,h₄₆,_⟩|⟨h₅,h₅₀,_⟩)
+    · exact hr
+    · exact (h (Or.inl ⟨h₅,Or.inl h₄₁⟩)).elim
+    · exact (h (Or.inr ⟨h₆,h₄₆⟩)).elim
+    · exact (h (Or.inl ⟨h₅,Or.inr h₅₀⟩)).elim
+  · exact Or.inl
+
+/-- Away from the three explicit pairs the upstream binomial conditions suffice
+precisely after excluding block size seven. -/
+theorem divisibility_spectrum {k n : ℕ} (hk : 3<k) (hkn : k<n) (hn : n≤50)
+    (h : ¬remaining k n) :
+    (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 k) ↔
+      k≠7 ∧ ∀ i<3, (k-i).choose (3-i) ∣ (n-i).choose (3-i) := by
+  constructor
+  · rintro ⟨H,hH⟩
+    have hr := (spectrum_away_from_three hk hkn hn h).mp ⟨H,hH⟩
+    unfold realized at hr
+    exact ⟨by omega,fun i hi => Quartet.design_divisibility hH (by omega) hi.le⟩
+  · rintro ⟨h₇,ha⟩
+    by_cases h₄ : k=4
+    · subst k; exact Fourfold.quadruples_of_divisibility n (by omega) ha
+    apply (spectrum_away_from_three hk hkn hn h).2
+    have ht := (higher_admissible_iff (by omega) hkn hn).mp ha
+    unfold higherParameters at ht
+    unfold remaining at h
+    unfold realized
+    omega
+
+theorem spectrum_through_forty {k n : ℕ} (hk : 3<k) (hkn : k<n) (hn : n≤40) :
+    (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 k) ↔ realized k n :=
+  spectrum_away_from_three hk hkn (by omega) (by unfold remaining; omega)
+
+theorem six_through_forty_five {n : ℕ} (hn : 6<n) (hmax : n≤45) :
+    (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 6) ↔ n=22 ∨ n=26 ∨ n=42 := by
+  rw [spectrum_away_from_three (by decide) hn (by omega) (by unfold remaining; omega)]
+  simp [realized]
+
+/-- Every finite product of powers of base-four repunits, times a power of 41,
+gives an ordinary six-block design on one more point. -/
+theorem repunit_products (a : ℕ) (s : Finset ℕ) (e : ℕ → ℕ) :
+    ∃ H : Finset (Finset (Fin (41^a * (∏ d ∈ s, repunit d ^ e d) + 1))),
+      H.IsBlockDesign 3 6 :=
+  products_of_witt MinimumOrder.six_minimum.1.2 a s e
+
+theorem infinitely_many_prime_divisors :
+    Set.Infinite {q : ℕ | q.Prime ∧ ∀ N, ∃ n>N,
+      (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 6) ∧ q ∣ n-1} :=
+  prime_divisors_of_witt MinimumOrder.six_minimum.1.2
+
+-- Compare the ambient theorem and each finite boundary directly in the host types.
+open Filter in
+example : (type_of% Erdos722.erdos_722) = (∀ r k : ℕ, 1≤r → r<k → ∀ᶠ n : ℕ in atTop,
+    (∀ i<r, (k-i).choose (r-i) ∣ (n-i).choose (r-i)) →
+    ∃ H : Finset (Finset (Fin n)), H.IsBlockDesign r k) := rfl
+
+example : (type_of% @OMA.solution) = (type_of% @Erdos723.erdos_723.variants.bruck_ryser) := rfl
+
+example : ∃ H : Finset (Finset (Fin 42)), H.IsBlockDesign 3 6 :=
+  (six_through_forty_five (by decide) (by decide)).2 (by decide)
+
+example : ¬∃ H : Finset (Finset (Fin 37)), H.IsBlockDesign 3 7 := by
+  rw [spectrum_through_forty (by decide) (by decide) (by decide)]
+  unfold realized
+  decide
+
+example : ¬∃ H : Finset (Finset (Fin 22)), H.IsBlockDesign 3 7 := by
+  rw [spectrum_through_forty (by decide) (by decide) (by decide)]
+  unfold realized
+  decide
+
+example {k n : ℕ} (hk : 3<k) (hkn : k<n) (hn : n≤40)
+    (h : ∀ i<3, (k-i).choose (3-i) ∣ (n-i).choose (3-i)) (h₇ : k≠7) :
+    ∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 k := by
+  exact (divisibility_spectrum hk hkn (by omega) (by unfold remaining; omega)).2 ⟨h₇,h⟩
+
+example : ∃ H : Finset (Finset (Fin 206)), H.IsBlockDesign 3 6 := by
+  have h := repunit_products 1 {2} (fun _ => 1)
+  change TripleDesign 6 (41^1 * (∏ d ∈ ({2} : Finset ℕ), repunit d^1) + 1) at h
+  simpa [repunit,TwoStem.orbit] using h
+
+example : ∃ H : Finset (Finset (Fin 1)), H.IsBlockDesign 3 6 := by
+  have h := repunit_products 0 {0} (fun _ => 1)
+  change TripleDesign 6 (41^0 * (∏ d ∈ ({0} : Finset ℕ), repunit d^1) + 1) at h
+  simpa [repunit,TwoStem.orbit] using h
+
+example : (41 : ℕ).Coprime (repunit 13) := (coprime_forty_one 13 (by decide)).symm
+
+#print axioms infinitely_many_prime_divisors
+#print axioms spectrum
+#print axioms divisibility_spectrum
+#print axioms spectrum_away_from_three
+#print axioms spectrum_through_forty
+#print axioms six_through_forty_five
+#print axioms repunit_products
+end Erdos722.SmallOrders
