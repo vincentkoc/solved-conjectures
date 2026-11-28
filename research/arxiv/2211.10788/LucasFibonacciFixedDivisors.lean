@@ -99,7 +99,8 @@ private lemma scalar_powers_split {p d : ℕ} (hp : p.Prime) (h5 : p ≠ 5)
   rw [hz] at h₂
   exact (pow_ne_zero d hab) (by simpa [z,sub_eq_neg_add] using h₂.symm)
 
-private lemma roots_mod_five {p : ℕ} (hp : p.Prime) (h5 : p≠5) :
+/-- Residue classes where the Fibonacci quadratic is irreducible over the prime field. -/
+theorem fibonacci_nonsplit_mod_five {p : ℕ} (hp : p.Prime) (h5 : p≠5) :
     (∀ a : ZMod p, a^2 ≠ 1+1*a) ↔ p%5=2 ∨ p%5=3 := by
   by_cases h2 : p=2
   · subst p
@@ -361,14 +362,14 @@ theorem upperIndexForm_fixed_prime_power (r d k : ℕ) {p : ℕ} (hp : p.Prime) 
           exact_mod_cast (Nat.dvd_one.mp.mt hp.ne_one)
         exact principal_order hp (hp.odd_of_ne_two h2) hd b hb (h _)
     have cop : (p+1).Coprime (p^k) := (show (p+1).Coprime p by simp).pow_right k
-    exact Or.inr ⟨(roots_mod_five hp h5).mp hi,cop.mul_dvd_of_dvd_of_dvd hbase hpk⟩
+    exact Or.inr ⟨(fibonacci_nonsplit_mod_five hp h5).mp hi,cop.mul_dvd_of_dvd_of_dvd hbase hpk⟩
   · rintro ⟨hu,hdv⟩
     refine ⟨hu,fun z => ?_⟩
     rcases hdv with ⟨rfl,e,rfl⟩ | ⟨hres,e,rfl⟩
     · rw [Nat.mul_comm,pow_mul]
       exact scalar_five_suff _ _
     · have h5 : p≠5 := by rintro rfl; norm_num at hres
-      have hi := (roots_mod_five hp h5).mpr hres
+      have hi := (fibonacci_nonsplit_mod_five hp h5).mpr hres
       have hs := (scalar_integral p (p+1)).mp
         ((scalar_powers_inert hp (Nat.succ_pos _) hi).mpr dvd_rfl)
       rw [Nat.mul_comm ((p+1)*p^k) e,pow_mul]
@@ -514,6 +515,7 @@ theorem upper_primitive_forms_unbounded_fixed_powers (k : ℕ) :
   · exact (upperIndexPolynomial_fixed_prime_power r d (k+1) (p:=3) (by decide) hd).mpr
       ⟨hu,Or.inr ⟨by decide,dvd_rfl⟩⟩
 
+#print axioms fibonacci_nonsplit_mod_five
 #print axioms upperIndexForm_power
 #print axioms upperIndexForm_fixed_prime_power
 #print axioms upperIndexPolynomial_fixed_prime_power
