@@ -51,7 +51,7 @@ theorem two_tests_in_odd (k : ℕ) (hk : 0 < k) (dim : Module.finrank F K = 2*k+
   exact ⟨p,W,by omega,inside⟩
 
 omit [CharP K 2] in
-private theorem units_coprime_seven (h : ¬3 ∣ Module.finrank F K) : (Nat.card Kˣ).Coprime 7 := by
+theorem units_coprime_seven (h : ¬3 ∣ Module.finrank F K) : (Nat.card Kˣ).Coprime 7 := by
   have prime : Nat.Prime 7 := by decide
   rw [Nat.coprime_comm,prime.coprime_iff_not_dvd,Nat.card_units,Nat.card_eq_fintype_card,
     Module.card_eq_pow_finrank (K := F),ZMod.card]
@@ -82,3 +82,4 @@ theorem odd_maximum [FiniteDimensional F H] {k : ℕ} (hk : 0 < k) (dim : Module
 end Green51OddPencils
 #print axioms Green51OddPencils.two_tests_in_odd
 #print axioms Green51OddPencils.odd_maximum
+#print axioms Green51OddPencils.units_coprime_seven

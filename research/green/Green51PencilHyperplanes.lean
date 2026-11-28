@@ -17,13 +17,11 @@ private theorem orthogonal_sup (B : LinearMap.BilinForm F V) (alt : B.IsAlt) (P 
   rw [hP hp q hq,hR hr s hs,cross hr q hq,alt.isRefl p s (cross hs p hp)]
   simp
 
-/-- Given a common isotropic space whose first orthogonal annihilates both forms
-and whose intersection with the first radical is nontrivial, any containing
-hyperplane contains a common isotropic subspace of half-rounded-up dimension. -/
-theorem in_hyperplane (A B : LinearMap.BilinForm F V) (altA : A.IsAlt) (altB : B.IsAlt)
-    {k : ℕ} (dimension : Module.finrank F V=2*k+1)
+/-- Extend a common isotropic space inside a hyperplane using its intersection with the first radical. -/
+theorem of_radical_dimension (A B : LinearMap.BilinForm F V) (altA : A.IsAlt) (altB : B.IsAlt)
+    {k : ℕ}
     (D : Submodule F V) (small : Module.finrank F D≤k+1)
-    (rad : 1≤Module.finrank F (D ⊓ A.ker : Submodule F V))
+    (room : 2*k+2≤Module.finrank F V + Module.finrank F (D ⊓ A.ker : Submodule F V))
     (D0 : D≤A.orthogonal D) (D1 : D≤B.orthogonal D)
     (cross : A.orthogonal D≤B.orthogonal D) (l : V →ₗ[F] F) (zero : D≤l.ker) :
     ∃ U : Submodule F V, D≤U ∧ U≤l.ker ∧ Module.finrank F U=k+1 ∧
@@ -78,5 +76,19 @@ theorem in_hyperplane (A B : LinearMap.BilinForm F V) (altA : A.IsAlt) (altB : B
     orthogonal_sup A altA D R D0 ownA oa,orthogonal_sup B altB D R D1 ownB (oa.trans cross)⟩
   dsimp only [r] at dimR
   omega
+/-- Given a common isotropic space whose first orthogonal annihilates both forms
+and whose intersection with the first radical is nontrivial, any containing
+hyperplane contains a common isotropic subspace of half-rounded-up dimension. -/
+theorem in_hyperplane (A B : LinearMap.BilinForm F V) (altA : A.IsAlt) (altB : B.IsAlt)
+    {k : ℕ} (dimension : Module.finrank F V=2*k+1)
+    (D : Submodule F V) (small : Module.finrank F D≤k+1)
+    (rad : 1≤Module.finrank F (D ⊓ A.ker : Submodule F V))
+    (D0 : D≤A.orthogonal D) (D1 : D≤B.orthogonal D)
+    (cross : A.orthogonal D≤B.orthogonal D) (l : V →ₗ[F] F) (zero : D≤l.ker) :
+    ∃ U : Submodule F V, D≤U ∧ U≤l.ker ∧ Module.finrank F U=k+1 ∧
+      U≤A.orthogonal U ∧ U≤B.orthogonal U :=
+  of_radical_dimension A B altA altB D small (by omega) D0 D1 cross l zero
+
 end Green51PencilHyperplanes
+#print axioms Green51PencilHyperplanes.of_radical_dimension
 #print axioms Green51PencilHyperplanes.in_hyperplane
