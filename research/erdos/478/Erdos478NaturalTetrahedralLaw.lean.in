@@ -1,0 +1,37 @@
+import Erdos478TetrahedralCompositum
+import Erdos478GrowingPrimeProfiles
+import Erdos478NaturalDensity
+
+/-! # Ordinary-prime laws for the sixth factorial gap and the growing-deficit family -/
+
+namespace Erdos478.TetrahedralGap
+open Finset Filter Topology FirstCollision GapDensity GapSieve MeanDeficit LowGapAction FrobeniusCounts SplittingDensity
+open scoped Classical
+noncomputable section
+
+theorem ordinary_sextic_joint (a b c d e : ℕ → Bool) :
+    Tendsto (fun X => fraction X (endpointFiveBox a b c d e)) atTop (𝓝 (fiveLaw a b c d e)) ∧
+    Tendsto (fun X => fraction X (fun p => endpointFiveBox a b c d e p ∧ growingPrime p))
+      atTop (𝓝 (fiveLaw a b c d e)) := by
+  have h := endpoint_five_limit degree_one_prime_ideal_theorem a b c d e
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+theorem ordinary_sixth_atom :
+    Tendsto (fun X => fraction X (fun p => First p 6)) atTop (𝓝 (55/3456:ℝ)) ∧
+    Tendsto (fun X => fraction X (fun p => First p 6 ∧ growingPrime p)) atTop (𝓝 (55/3456:ℝ)) := by
+  have h := first_limit degree_one_prime_ideal_theorem (by decide : 2≤6)
+  rw [first_six_density] at h
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+theorem ordinary_avoid_six :
+    Tendsto (fun X => fraction X (fun p => NoShort p 6)) atTop (𝓝 (77/3456:ℝ)) ∧
+    Tendsto (fun X => fraction X (fun p => NoShort p 6 ∧ growingPrime p)) atTop (𝓝 (77/3456:ℝ)) := by
+  have h := survival_limit degree_one_prime_ideal_theorem 6
+  rw [no_six_density] at h
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+#print axioms ordinary_sextic_joint
+#print axioms ordinary_sixth_atom
+#print axioms ordinary_avoid_six
+end
+end Erdos478.TetrahedralGap
