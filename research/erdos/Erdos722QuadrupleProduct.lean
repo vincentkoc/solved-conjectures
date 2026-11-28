@@ -87,6 +87,13 @@ private theorem unique_coordinate {H : Finset (Finset V)} (hH : H.IsBlockDesign 
   have hmem : v ∈ insert w S := hi ▸ mem_insert_self v S
   exact (mem_insert.mp hmem).resolve_right (fresh hvB)
 
+/-- The symmetric fourth-coordinate relation used by the product construction,
+stated directly in terms of the original blocks and multiplicities. -/
+theorem unique_fourth {H : Finset (Finset V)} (hH : H.IsBlockDesign 3 4) (a b c : V) :
+    ∃! d, let m : Multiset V := a ::ₘ b ::ₘ c ::ₘ d ::ₘ 0
+          m.toFinset ∈ H ∨ ∀ x, Even (m.count x) :=
+  unique_coordinate hH a b c
+
 private theorem mapped_quad {A D : Type*} [DecidableEq A] (f : A → D) {a b c w : A}
     (hab : a ≠ b) (hac : a ≠ c) (hbc : b ≠ c) (hw : w ∉ ({a,b,c} : Finset A)) :
     ((insert w {a,b,c} : Finset A).val.map f) = four (f a) (f b) (f c) (f w) := by
@@ -214,6 +221,7 @@ theorem arbitrarily_large_mixed_orders (N : ℕ) :
   have := Nat.lt_pow_self (n := N + 3) (by decide : 1 < (10 : ℕ))
   exact ⟨10 ^ (N + 3), by omega, h2, h3, exists_ten_power (N + 2)⟩
 
+#print axioms unique_fourth
 #print axioms blocks_isBlockDesign
 #print axioms exists_product
 #print axioms ten_power_new_orders
