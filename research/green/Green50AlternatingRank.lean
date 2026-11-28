@@ -36,7 +36,8 @@ private def wedgeMap : Dual →ₗ[K] Dual →ₗ[K] alternatingForms K V :=
     (by intros; apply Subtype.ext; ext x y; simp [pair_apply]; ring)
     (by intros; apply Subtype.ext; ext x y; simp [pair_apply]; ring)
 
-private def quotientPair (T : Submodule K (alternatingForms K V)) :
+/-- Exterior product of two functionals, projected to the chosen quotient. -/
+def quotientPair (T : Submodule K (alternatingForms K V)) :
     Dual →ₗ[K] Dual →ₗ[K] (alternatingForms K V ⧸ T) :=
   (LinearMap.llcomp K Dual (alternatingForms K V) (alternatingForms K V ⧸ T) T.mkQ).comp wedgeMap
 
@@ -74,6 +75,33 @@ private theorem pair_sum_rank [FiniteDimensional K V] {k : ℕ} (a b : Fin k →
   simp only [Module.finrank_prod, Module.finrank_pi, Fintype.card_fin] at hcod
   change Module.finrank K F.range ≤ 2 * k
   omega
+
+
+/-- The alternating product modulo T generates the full quotient. -/
+theorem quotient_span [FiniteDimensional K V] (T : Submodule K (alternatingForms K V)) :
+    Green50QuadraticDiameter.valueSpan (quotientPair T) = ⊤ := by
+  refine top_unique fun w _ => ?_
+  obtain ⟨J, rfl⟩ := T.mkQ_surjective w
+  obtain ⟨m, _, _, a, b, h⟩ := Green50SymplecticSpaces.alternating_decomposition K
+    (Module.finrank K V) J.val J.property rfl
+  rw [sum_representative a b J h, map_sum]
+  exact Submodule.sum_mem _ (fun i _ => Submodule.subset_span ⟨(a i, b i), rfl⟩)
+
+/-- An m-term representation supplies a form of rank at most 2m in its class. -/
+theorem class_rank_of_rep [FiniteDimensional K V] (T : Submodule K (alternatingForms K V))
+    (J : alternatingForms K V) {m : ℕ} (h : Green50QuadraticDiameter.Represented
+      (quotientPair T) m (T.mkQ J)) :
+    ∃ F : alternatingForms K V, F - J ∈ T ∧ Module.finrank K F.val.range ≤ 2 * m := by
+  obtain ⟨a, b, h⟩ := h
+  let F := ∑ i, exteriorPair (a i) (b i)
+  have he : T.mkQ F = T.mkQ J := by dsimp only [F]; rw [map_sum]; exact h
+  exact ⟨F, (Submodule.Quotient.eq T).mp he, pair_sum_rank a b⟩
+
+theorem quotient_alt (T : Submodule K (alternatingForms K V)) (a : Dual) :
+    quotientPair T a a = 0 := by
+  change T.mkQ (exteriorPair a a) = 0
+  have ha : exteriorPair a a = 0 := by apply Subtype.ext; ext x y; simp [pair_apply]
+  rw [ha, map_zero]
 
 /-- An affine space of alternating forms of codimension d contains a form of rank
 at most 2⌊√d⌋ over any finite field. -/
@@ -328,3 +356,6 @@ end Green50AlternatingRank
 #print axioms Green50AlternatingRank.codimension_of_lower_rank
 #print axioms Green50AlternatingRank.sharp_family
 #print axioms Green50AlternatingRank.minimum_rank_at_codimension
+#print axioms Green50AlternatingRank.quotient_span
+#print axioms Green50AlternatingRank.class_rank_of_rep
+#print axioms Green50AlternatingRank.quotient_alt

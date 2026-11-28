@@ -1,0 +1,25 @@
+# A finite sieve for missing nonzero factorial residues
+
+Let $A_p=\{j!\bmod p:1\le j<p\}$, $F_p=p-1-|A_p|$ and $T=\log\log p$. For each $\varepsilon>0$, arbitrarily large primes satisfy
+$$
+T\le F_p\bigl(\log T-\log\log T+\varepsilon\bigr),\qquad \log T\ge e.
+$$
+In particular, $F_p\log T/T\ge1$ infinitely often. This reaches the leading constant of Banks, Luca, Shparlinski and Stichtenoth's Theorem 3 with an elementary construction that forces collisions at several lengths at the same prime. Their proof uses effective Chebotarev for a single splitting field. The preceding notebook estimate gave $2/3$ and counted zero among the missing classes. The limit $|A_p|/p\to1-1/e$ along all primes in Erdős 478 remains open. [Lean statements](Erdos478SievedFactorialDeficit.lean) · [Banks et al., Theorem 3 and proof](https://mospace.umsystem.edu/server/api/core/bitstreams/5b756a2f-14b6-4cd7-b23e-f57366effec4/content) · [Previous even-gap estimate](EvenGapDeficit.md) · [Pinned conjecture](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/ErdosProblems/478.lean)
+
+## One prime for every even length through $2n$
+
+For each $n\ge1$, there is a prime $2n<p\le 2^{(2n+4)^{2n+17}}$ at which each even gap $2,4,\ldots,2n$ has two distinct collision endpoints. The product of the gap polynomials is separable modulo $p$, so endpoints at different lengths are distinct. Each endpoint has an earlier factorial with the same residue. Consequently $|A_p|+2n\le p-1$. The construction supplies the explicit prime ceiling and gap geometry together. [Bounded witness](Erdos478SievedFactorialDeficit.lean) · [Reflection and joint endpoint count](Erdos478EvenGapFamily.lean)
+
+The common-root polynomial encodes one root from each of the $n$ gap polynomials, so its degree is $D=2^n n!$. To find a prime outside the divisors of a bad integer $B$, start with a Schur polynomial value and vary its evaluation point. Multiplying the step by $D!$ handles all primes through $D$. Each remaining prime divisor of $B$ either divides the step or forbids at most $D$ residue classes of the parameter. The bound for this shift uses $L=\lceil\log_2\max(D+1,\lfloor\log_2 B\rfloor+1)\rceil$. [General sieved root prime](Erdos478SievedSchurPrime.lean) · [Common-root polynomial](Erdos478JointRootBound.lean)
+
+## Why the shorter shift suffices
+
+For $s$ distinct primes $q>D$ and at most $D$ forbidden residues per prime, the product of the local surviving densities is at least $(s+1)^{-D}$. Order the primes and telescope the loss from inserting the largest one. When $s+1,D+1\le2^L$, odd Bonferroni truncation at $2(2DL+1)+1$, together with the symmetric-tail bound, retains at least half the independent density. The CRT estimate pays at most one point per residue class in each intersection. A window of length at most $2^{32(D+1)(L+1)^2}$ then contains at least two survivors, one of them positive. [Local density and discrepancy budget](Erdos478SchurLocalMass.lean) · [Weighted Bonferroni](Erdos478WeightedBonferroni.lean) · [Interval comparison](Erdos478SievedIntervals.lean) · [Positive survivor](Erdos478ShortSieve.lean) · [CRT and symmetric-tail estimates](../../arxiv/1104.1579/CunninghamBrunSieve.lean)
+
+Put $b=2n+4$ and $m=b^n$. The resulting bound on the base-two logarithm of the prime is $b^{17}m^2$. With $x=2n$ the double logarithm therefore satisfies $T\le(x+17)\log(x+4)$. If $T$ and $x$ are large, inverting this inequality gives $T\le x(\log T-\log\log T+\varepsilon)$. Both can be made arbitrarily large since the witness satisfies $p>2n$. [Quadratic degree estimate](Erdos478SievedEvenScale.lean) · [Real logarithm inversion](Erdos478SievedLogInversion.lean)
+
+## Scope and verification
+
+The theorem uses the pinned factorial image and the filter of primes tending to infinity. A separate Lean type comparison unfolds the type of the upstream declaration and checks both expressions against the notebook endpoint. The contribution is a formal proof of this simultaneous-gap bound and subsequence estimate. The classical literature already supplies the leading constant. The 2026-11-28 search found the DeepMind statement, its tracking issue and an open Left to Solve problem. The OMA factorial-residue search returned two unrelated targets. [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/4078) · [Tracking issue](https://github.com/google-deepmind/formal-conjectures/issues/750) · [Left to Solve](https://lefttosolve.com/p/Erdos478.erdos_478) · [OMA factorial sum](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/4056) · [OMA divisor count](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/7450)
+
+The scoped Lean 4.33.1 replay builds the 24 modules required by this endpoint and one more for the earlier single-gap endpoint. It checks all 25 separately with `leanchecker`. The 19 named axiom audits permit `propext`, `Classical.choice` and `Quot.sound`. [Notebook replay](../../README.md#replay)

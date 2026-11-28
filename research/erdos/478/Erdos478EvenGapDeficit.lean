@@ -23,18 +23,22 @@ theorem explicit_even_gap_prime (n : ℕ) (hn : 0<n) :
   obtain ⟨p,hp,h⟩ := simultaneous_even_prime n hn
   exact ⟨p,hp.trans (evenWitnessBound_le n hn),h⟩
 
-private theorem loglog_bound {n p : ℕ} (hn : 2≤n) (hp : n<p) (h : p≤2^((2*n+4)^(3*n+9))) :
-    Real.log (Real.log p) ≤ (3*(n:ℝ)+9)*Real.log (2*n+4) := by
-  have hr : (p:ℝ) ≤ (2:ℝ)^((2*n+4)^(3*n+9)) := by exact_mod_cast h
+theorem loglog_power_ceiling {b k p : ℕ} (hp : 1<p) (h : p≤2^(b^k)) :
+    Real.log (Real.log p) ≤ (k:ℝ)*Real.log b := by
+  have hr : (p:ℝ) ≤ (2:ℝ)^(b^k) := by exact_mod_cast h
   have hl := Real.log_le_log (by exact_mod_cast (by omega : 0<p)) hr
   rw [Real.log_pow] at hl
   have h₂ : Real.log 2 ≤ 1 := by
     linarith [Real.log_le_sub_one_of_pos (by norm_num : 0<(2:ℝ))]
-  have hl' : Real.log p ≤ (((2*n+4)^(3*n+9) : ℕ):ℝ) :=
+  have hl' : Real.log p ≤ ((b^k : ℕ):ℝ) :=
     hl.trans (by simpa only [mul_one] using mul_le_mul_of_nonneg_left h₂ (Nat.cast_nonneg _))
-  have hx := Real.log_le_log (Real.log_pos (by exact_mod_cast (by omega : 1<p))) hl'
+  have hx := Real.log_le_log (Real.log_pos (by exact_mod_cast hp)) hl'
   push_cast at hx
   simpa [Real.log_pow] using hx
+
+private theorem loglog_bound {n p : ℕ} (hn : 2≤n) (hp : n<p) (h : p≤2^((2*n+4)^(3*n+9))) :
+    Real.log (Real.log p) ≤ (3*(n:ℝ)+9)*Real.log (2*n+4) := by
+  simpa using loglog_power_ceiling (by omega : 1<p) h
 
 /-- For each positive `ε`, arbitrarily large primes miss at least
 `log log p / ((3/2+ε) log log log p)` residues from the upstream factorial image. -/
