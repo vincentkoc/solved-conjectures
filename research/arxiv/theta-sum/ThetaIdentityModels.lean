@@ -10,7 +10,7 @@ open scoped Topology
 noncomputable section
 
 def Z : ℝ := ∑' g : ℕ,((g:ℝ)^2)⁻¹
-private theorem weight_one {d Y : ℕ} (hd : 0< d) (hY : d≤ Y) : 1≤ commonWeight Y d := by
+theorem weight_one {d Y : ℕ} (hd : 0< d) (hY : d≤ Y) : 1≤ commonWeight Y d := by
   have h : 1∈(Icc 1 (Y/d)).filter (·%2=1) := mem_filter.mpr ⟨mem_Icc.mpr ⟨le_rfl,Nat.div_pos hY hd⟩,by decide⟩
   unfold commonWeight
   calc (1:ℝ) = (((1:ℕ):ℝ)^2)⁻¹ := by norm_num

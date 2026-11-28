@@ -95,7 +95,7 @@ theorem reflect_period {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     exact (smul_eq_zero.mp htwo).resolve_left (by norm_num)
   rwa [sum_range_succ',hz,add_zero] at hzero
 
-private lemma period_prefix {E : Type*} [NormedAddCommGroup E] {d : ℕ} (hd : 0<d)
+theorem period_prefix {E : Type*} [NormedAddCommGroup E] {d : ℕ} (hd : 0<d)
     (v : ℕ → E) {M : ℝ} (hv : ∀ j, ‖v j‖≤M) (hp : ∀ j, v (2*d+j)=v j)
     (hz : ∑ i ∈ range (2*d), v (i+1)=0) (n : ℕ) :
     ‖∑ i ∈ range n, v (i+1)‖ ≤ (2*d:ℕ)*M := by

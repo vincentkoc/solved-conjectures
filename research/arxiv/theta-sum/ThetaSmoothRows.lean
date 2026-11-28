@@ -54,8 +54,8 @@ theorem logWeight_nonneg (g : ℕ) : 0≤logWeight g := by
     have h := Real.log_nonneg (by exact_mod_cast Nat.succ_pos g : (1:ℝ)≤g+1)
     push_cast; linarith
 
-theorem envelope {m d P : ℕ} [NeZero P] (hm : 1 < m) (hd : 1 < d) (hmP : m∣P) (hdP : d∣P) (K : ℕ) :
-    |rowMean m d P K|/d ≤ 1080*logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) := by
+theorem residue_envelope {r m d P : ℕ} [NeZero P] (hm : 1 < m) (hr : r < m) (hcop : r.Coprime m) (hd : 1 < d) (hmP : m∣P) (hdP : d∣P) (K : ℕ) :
+    |residueMean r m d P K|/d ≤ 1080*logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) := by
   let g := m.gcd d
   let s := d/g
   have hg : 0<g := Nat.gcd_pos_of_pos_left _ (by omega)
@@ -70,7 +70,7 @@ theorem envelope {m d P : ℕ} [NeZero P] (hm : 1 < m) (hd : 1 < d) (hmP : m∣P
   rw [hds] at ham
   have he : (s:ℝ)^(1/16:ℝ)*(s:ℝ)^(19/16:ℝ)=(s:ℝ)^(5/4:ℝ) := by rw [←Real.rpow_add (by positivity)]; norm_num
   calc _ ≤ (3*(harmonic d:ℝ)*s.divisors.card/s.totient)/d :=
-             div_le_div_of_nonneg_right (bound hm hd hmP hdP K) (Nat.cast_nonneg _)
+             div_le_div_of_nonneg_right (residue_bound hm hr hcop hd hmP hdP K) (Nat.cast_nonneg _)
        _ = (3/(g:ℝ))*(((harmonic d:ℝ)*s.divisors.card/(s:ℝ)^2)*((s:ℝ)/s.totient)) := by
              rw [hreal]; field_simp
        _ ≤ (3/(g:ℝ))*((10*(1+Real.log g)*((s:ℝ)^(5/4:ℝ))⁻¹)*(36*(s:ℝ)^(1/16:ℝ))) := by
@@ -79,6 +79,10 @@ theorem envelope {m d P : ℕ} [NeZero P] (hm : 1 < m) (hd : 1 < d) (hmP : m∣P
              change _ = 1080*((1+Real.log g)/g)*((s:ℝ)^(19/16:ℝ))⁻¹
              rw [←he]; field_simp
              <;> ring
+
+theorem envelope {m d P : ℕ} [NeZero P] (hm : 1 < m) (hd : 1 < d) (hmP : m∣P) (hdP : d∣P) (K : ℕ) :
+    |rowMean m d P K|/d ≤ 1080*logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) :=
+  residue_envelope hm hm (Nat.coprime_one_left _) hd hmP hdP K
 
 /-- The finite tail is bounded uniformly in its upper cutoff. -/
 theorem tail {Q : ℕ} (hQ : 0<Q) (s : Finset ℕ) (hs : ∀ n∈s,Q≤n) :

@@ -7,7 +7,7 @@ open Finset Filter MeasureTheory ThetaNaturalPrimeMeans ThetaCharacterPrimeMeans
 open ThetaDiagonalConstant ThetaDyadicLaw ThetaLargeIdentityMeans ThetaFactorialSequence ThetaPrimeLaw ThetaProfiniteUnits
 open scoped Topology
 
-private theorem count_from_mean (X : ℕ) (C a : ℝ) (ha : 0≤ a)
+theorem count_from_mean (X : ℕ) (C a : ℝ) (ha : 0≤ a)
     (f : ℕ → ℝ) (D : Finset ℕ) (hD : D⊆Nat.primesLE X)
     (hmean : D.card*(a+1) ≤ ∑ p∈D,f p)
     (henergy : ∑ p∈Nat.primesLE X,(f p)^2 ≤ C*X.primeCounting) :

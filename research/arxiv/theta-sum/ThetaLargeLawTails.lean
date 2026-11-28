@@ -30,20 +30,17 @@ private theorem modulus_log {T : ℕ} (hT : 0< T) : Real.log (modulus T:ℝ) ≤
   nlinarith only [mul_le_mul_of_nonneg_left hl (Nat.cast_nonneg T),
     mul_le_mul_of_nonneg_left hx (sq_nonneg (T:ℝ))]
 
-/-- A double exponential in the square root of height bounds both tails from below. -/
-theorem tails (hAP : ProgressionMangoldt) :
-    ∀ᶠ b : ℝ in atTop, ∀ F : G →₁[haar] ℝ, Represents residual F →
-      let e := ENNReal.ofReal (Real.exp (-(Real.exp (32*Real.pi*Real.sqrt b))))
-      e ≤ (haarLaw F : Measure ℝ) (Set.Ioi (diagonalConstant+b)) ∧
-      e ≤ (haarLaw F : Measure ℝ) (Set.Iio (diagonalConstant-b)) := by
-  obtain ⟨C,hC,H⟩ := sequence_mass hAP
+/-- Convert a factorial sequence estimate to a bound at every sufficiently
+large real height, with a double exponential lower fraction. -/
+theorem height_scale {C : ℝ} (hC : 0 < C) (P : ℕ → Prop) (H : ∀ᶠ T in atTop, P T) :
+    ∀ᶠ b : ℝ in atTop, ∃ T : ℕ, P T ∧ b < (Real.log T)^2/(32*Real.pi^2) ∧
+      Real.exp (-(Real.exp (32*Real.pi*Real.sqrt b))) ≤ 1/(C*(modulus T:ℝ)^2) := by
   let u (b : ℝ) := Real.exp (8*Real.pi*Real.sqrt b)
   let t (b : ℝ) := ⌈u b⌉₊
   have hu : Tendsto u atTop atTop := Real.tendsto_exp_atTop.comp
     ((tendsto_const_mul_atTop_of_pos (by positivity : 0<8*Real.pi)).mpr Real.tendsto_sqrt_atTop)
   have ht : Tendsto t atTop atTop := tendsto_nat_ceil_atTop.comp hu
   filter_upwards [ht.eventually H,hu.eventually_ge_atTop (max 17 (Real.log C)),eventually_gt_atTop (0:ℝ)] with b h hlarge hb
-  intro F hF
   let T := t b
   have h1 := (le_max_left 17 (Real.log C)).trans hlarge
   have hlogC := (le_max_right 17 (Real.log C)).trans hlarge
@@ -70,6 +67,18 @@ theorem tails (hAP : ProgressionMangoldt) :
   have he : Real.exp (-(Real.exp (32*Real.pi*Real.sqrt b))) ≤ 1/(C*(modulus T:ℝ)^2) := by
     rw [one_div,←Real.exp_log (show 0< C*(modulus T:ℝ)^2 by positivity),←Real.exp_neg]
     gcongr
+  exact ⟨T,h,hheight,he⟩
+
+/-- A double exponential in the square root of height bounds both tails from below. -/
+theorem tails (hAP : ProgressionMangoldt) :
+    ∀ᶠ b : ℝ in atTop, ∀ F : G →₁[haar] ℝ, Represents residual F →
+      let e := ENNReal.ofReal (Real.exp (-(Real.exp (32*Real.pi*Real.sqrt b))))
+      e ≤ (haarLaw F : Measure ℝ) (Set.Ioi (diagonalConstant+b)) ∧
+      e ≤ (haarLaw F : Measure ℝ) (Set.Iio (diagonalConstant-b)) := by
+  obtain ⟨C,hC,H⟩ := sequence_mass hAP
+  filter_upwards [height_scale hC _ H] with b hb
+  obtain ⟨T,h,hheight,he⟩ := hb
+  intro F hF
   have hbase := (ENNReal.ofReal_le_ofReal he).trans (h F hF)
   constructor
   · exact hbase.trans (measure_mono (fun x hx => by change diagonalConstant+b< x; change diagonalConstant+_≤ x at hx; linarith))
@@ -82,6 +91,7 @@ theorem tails (hAP : ProgressionMangoldt) :
          _ = (reflectedLaw diagonalConstant (haarLaw F) : Measure ℝ) (Set.Iio (diagonalConstant-b)) := by
            rw [reflectedLaw,ProbabilityMeasure.toMeasure_map,Measure.map_apply hr measurableSet_Iio]
          _ = _ := by rw [law_symmetric hAP hF]
+#print axioms height_scale
 #print axioms sequence_mass
 #print axioms tails
 end Arxiv.«2501.03234».ThetaLargeLawTails
