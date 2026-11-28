@@ -28,7 +28,8 @@ private theorem degree_add {i : ℕ} {f g : U → 𝔽} (hf : Degree i f) (hg : 
   | zero => intro x; change f x+g x=f 0+g 0; rw [hf x,hg x]
   | succ i ih => intro a; rw [fwdDiff_add]; exact ih (hf a) (hg a)
 
-private theorem shift_degree {i : ℕ} {f : U → 𝔽} (hf : Degree i f) (a : U) :
+/-- Translation preserves a Boolean degree bound. -/
+theorem shift_degree {i : ℕ} {f : U → 𝔽} (hf : Degree i f) (a : U) :
     Degree i (fun x => f (x+a)) := by
   induction i generalizing f with
   | zero => intro x; exact (hf (x+a)).trans (hf (0+a)).symm
@@ -38,6 +39,10 @@ private theorem shift_degree {i : ℕ} {f : U → 𝔽} (hf : Degree i f) (a : U
       funext x; simp only [fwdDiff,add_right_comm x b a]
     rw [eq]
     exact ih (hf b)
+
+/-- Taking the other Boolean value preserves the degree bound. -/
+theorem degree_complement {d : ℕ} {g : U → 𝔽} (hg : Degree d g) :
+    Degree d (fun x => 1+g x) := degree_add (degree_const d 1) hg
 
 private theorem mul_const {d : ℕ} {f : U → 𝔽} (hf : Degree d f) (c : 𝔽) :
     Degree d ((fun _ => c) * f) := by
@@ -320,6 +325,8 @@ theorem common_popular_differences {n d : ℕ} (f : Cube n → (Fin d → 𝔽))
 
 end Green53PolynomialColours
 
+#print axioms Green53PolynomialColours.shift_degree
+#print axioms Green53PolynomialColours.degree_complement
 #print axioms Green53PolynomialColours.degree_mul
 #print axioms Green53PolynomialColours.support_shifts
 #print axioms Green53PolynomialColours.cubic_degree
