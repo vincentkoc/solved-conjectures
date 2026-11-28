@@ -256,7 +256,8 @@ theorem prime_exception_bound {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
       ((exceptions c X).card : ℝ) ≤ C*X/(Real.log X)^2 :=
   count_from_variance _ (fun N => extension (2*N^52)) interval_variance (bad_forces_large hc)
 
-private lemma prime_count_lower : ∀ᶠ X : ℕ in atTop,
+/-- An eventual Chebyshev lower bound for the prime-counting denominator. -/
+theorem prime_count_lower : ∀ᶠ X : ℕ in atTop,
     Real.log 2/2*(X:ℝ) ≤ Nat.primeCounting X*Real.log X := by
   have htwo : 0<Real.log 2 := Real.log_pos (by norm_num)
   have h := (Real.isLittleO_log_id_atTop.bound (show 0<Real.log 2/4 by positivity))
@@ -348,3 +349,4 @@ end Arxiv.«2501.03234».ThetaPrimeDensity
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.scale_discrepancy
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.count_from_variance
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.density_from_count
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.prime_count_lower

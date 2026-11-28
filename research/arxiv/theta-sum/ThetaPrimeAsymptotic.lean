@@ -8,7 +8,8 @@ namespace Arxiv.«2501.03234».ThetaPrimeAsymptotic
 open Finset Filter ThetaCotangentTriangle ThetaReciprocalCutoff ThetaNondivisibleCone
 open ThetaReciprocalInversion ThetaReciprocalVariance ThetaDivisibleDiagonal ThetaPrimeDensity
 
-private lemma cone_interpolation {p J K : ℕ} (hK : K%2=1) (hp : p.Prime) (hJ : 2*J<p) :
+/-- The window interpolation reproduces the nondivisible cone at primes above its cutoff. -/
+theorem cone_interpolation {p J K : ℕ} (hK : K%2=1) (hp : p.Prime) (hJ : 2*J<p) :
     windowExtension (coneWindow K) (2*J) p = (rationalCone p J K : ℂ) := by
   have hc (d : ℕ) (hd : d ∈ Icc 1 (2*J)) : p.Coprime d := hp.coprime_iff_not_dvd.mpr
     (fun h => (lt_of_le_of_lt (mem_Icc.mp hd).2 hJ).not_ge (Nat.le_of_dvd (mem_Icc.mp hd).1 h))
@@ -32,7 +33,8 @@ private lemma cone_interpolation {p J K : ℕ} (hK : K%2=1) (hp : p.Prime) (hJ :
   apply sum_congr rfl; intro k _
   dsimp [f]; push_cast; ring
 
-private lemma uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%2=1)
+/-- Uniform error in approximating the off-diagonal by the variable-width rational cone. -/
+theorem uniform_approximation {K N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hK : K%2=1)
     (hKN : K≤N) (hl : N^56≤p) (hh : p≤N^64) (ho : p%2=1) :
     |offDiagonal p - (8*p/Real.pi^2)*(rationalCone p (N^52) K:ℝ)| ≤
       2300000*(p:ℝ) + (2*(p:ℝ)/K)*(1+Real.log p) := by
@@ -184,3 +186,5 @@ end Arxiv.«2501.03234».ThetaPrimeAsymptotic
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.deviation_mem
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.prime_asymptotic_exception_bound
 #print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.prime_density_asymptotic
+#print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.cone_interpolation
+#print axioms Arxiv.«2501.03234».ThetaPrimeAsymptotic.uniform_approximation
