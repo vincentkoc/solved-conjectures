@@ -239,7 +239,8 @@ theorem scaledOff_prime_mean (hAP : ProgressionMangoldt) :
   rw [sub_add_cancel] at ht
   linarith
 
-private theorem mean_const_correct {f : ℕ → ℝ} {L : ℝ}
+/-- A function converging along the primes has the same ordinary prime mean limit. -/
+theorem prime_mean_of_convergence {f : ℕ → ℝ} {L : ℝ}
     (hf : ∀ ε : ℝ, 0 < ε → ∀ᶠ n : ℕ in atTop, n.Prime → |f n - L| < ε) :
     Tendsto (primeMean f) atTop (𝓝 L) := by
   classical
@@ -273,7 +274,7 @@ theorem S_second_order_prime_mean (hAP : ProgressionMangoldt) :
       atTop (𝓝 diagonalConstant) := by
   let f (p : ℕ) := (S p : ℝ)/p - Real.log p/2 - (8/Real.pi^2) * scaledOff p
   have hbase : Tendsto (primeMean f) atTop (𝓝 diagonalConstant) := by
-    apply mean_const_correct
+    apply prime_mean_of_convergence
     intro ε hε
     filter_upwards [Metric.tendsto_nhds.mp diagonal_second_order ε hε, eventually_gt_atTop 2] with p h hp hprime
     let : Fact p.Prime := ⟨hprime⟩
@@ -324,6 +325,7 @@ theorem S_half_log_lower_densities (hAP : ProgressionMangoldt) :
   ⟨lower_density_of_witness hAP S_half_log_witnesses.1,
    lower_density_of_witness hAP S_half_log_witnesses.2⟩
 
+#print axioms prime_mean_of_convergence
 #print axioms lower_density_of_witness
 #print axioms S_half_log_lower_densities
 
