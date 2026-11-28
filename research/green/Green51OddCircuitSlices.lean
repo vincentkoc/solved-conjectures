@@ -9,7 +9,8 @@ open scoped Classical Pointwise symmDiff
 namespace Green51GirthFrame
 variable {G : Type*} [AddCommGroup G] [Module F G] [DecidableEq G]
 omit [AddCommGroup G] [Module F G] in
-private theorem card_change (P Q : Finset G) :
+/-- Cardinalities and parity for binary symmetric difference. -/
+theorem card_symmDiff_parts (P Q : Finset G) :
     (P ∆ Q).card = (P \ Q).card + (Q \ P).card ∧
     (P ∆ Q).card + 2 * (P ∩ Q).card = P.card + Q.card := by
   have dis : Disjoint (P \ Q) (Q \ P) := by
@@ -31,7 +32,7 @@ private theorem change_subset {P Q D : Finset G} (p : P ⊆ D) (q : Q ⊆ D) : P
 theorem word_bound {C D : Finset G} (minC : ShortestOddCircuit D C) {P Q : Finset G}
     (pd : P ⊆ D) (qd : Q ⊆ D) (odd : Odd (P.card + Q.card))
     (eq : (∑ x ∈ P, x) = ∑ x ∈ Q, x) : C.card ≤ P.card + Q.card := by
-  have wt := (card_change P Q).2
+  have wt := (card_symmDiff_parts P Q).2
   have even := Green51FourSpace.subset_sum_add id P Q
   change (∑ x ∈ P ∆ Q, x) = (∑ x ∈ P, x) + ∑ x ∈ Q, x at even
   rw [eq, ZModModule.add_self] at even
@@ -43,7 +44,7 @@ theorem slice_size {D C S Q : Finset G} (m : ShortestOddCircuit D C) (sc : S ⊆
     (odd : Odd (S.card + Q.card)) {x : G} (hx : x ∈ D)
     (rep : (∑ s ∈ S, s) + (∑ q ∈ Q, q) = x) : S.card ≤ Q.card + 1 := by
   let E := Q ∆ {x}
-  have size := (card_change Q {x}).2
+  have size := (card_symmDiff_parts Q {x}).2
   change E.card + 2 * (Q ∩ {x}).card = Q.card + ({x} : Finset G).card at size
   rw [card_singleton] at size
   dsimp only [E] at size
@@ -63,7 +64,7 @@ theorem slice_dist {D C S R Q : Finset G} (m : ShortestOddCircuit D C) (sc : S �
     (rx : (∑ s ∈ S, s) + (∑ q ∈ Q, q) = x) (ry : (∑ s ∈ R, s) + (∑ q ∈ Q, q) = y) :
     (S \ R).card + (R \ S).card ≤ 2 := by
   let E := ({x} : Finset G) ∆ {y}
-  have sz := (card_change {x} {y}).2
+  have sz := (card_symmDiff_parts {x} {y}).2
   change E.card + 2 * (({x} : Finset G) ∩ {y}).card = ({x} : Finset G).card + ({y} : Finset G).card at sz
   simp only [card_singleton, E] at sz
   have ss := change_subset sc rc
@@ -74,7 +75,7 @@ theorem slice_dist {D C S R Q : Finset G} (m : ShortestOddCircuit D C) (sc : S �
   simp only [id_eq] at left
   have same : (∑ a ∈ C \ (S ∆ R), a) = ∑ a ∈ E, a := by
     rw [circuit_complement_sum ss m.2.2.1, left, eq, ←rx, ←ry, add_add_add_comm, ZModModule.add_self, add_zero]
-  obtain ⟨sumSize, parSize⟩ := card_change S R
+  obtain ⟨sumSize, parSize⟩ := card_symmDiff_parts S R
   have co := card_sdiff_add_card_eq_card ss
   have par := m.2.1
   have low := word_bound m (sdiff_subset.trans m.1 : C \ (S ∆ R) ⊆ D)
@@ -167,3 +168,4 @@ end Green51GirthSlices
 #print axioms Green51GirthSlices.maximal_slice
 #print axioms Green51GirthSlices.unused_pair
 #print axioms Green51GirthSlices.powerset_budget
+#print axioms Green51GirthFrame.card_symmDiff_parts
