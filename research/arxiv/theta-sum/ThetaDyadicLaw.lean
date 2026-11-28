@@ -8,7 +8,7 @@ open ThetaConditionalRows ThetaPrimeTailTransfer ThetaPrimeDensity
 open scoped Topology NNReal
 noncomputable section
 
-private lemma odd_model_period (T V : ℕ) : ∃ M : ℕ, Odd M ∧ OnMod M (residualModel T V) := by
+theorem odd_model_period (T V : ℕ) : ∃ M : ℕ, Odd M ∧ OnMod M (residualModel T V) := by
   classical
   let s := (Icc 2 T).filter Odd
   let M := ∏ d∈s,d
