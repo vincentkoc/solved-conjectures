@@ -54,7 +54,8 @@ private theorem wallis_strict (k : ℕ) : Wallis.W k < π/2 := by
   rw [div_mul_div_comm,lt_div_iff₀ (by positivity)]
   nlinarith
 
-private theorem past_odd_layer (k m : ℕ) (hm : 2*k+1 ≤ m) :
+/-- At or above the odd dimension, the finite Wallis lower bound for the middle layer is strict. -/
+theorem past_odd_layer (k m : ℕ) (hm : 2*k+1 ≤ m) :
     1/Real.sqrt (2*π)/Real.sqrt m<halfLayer k := by
   have identity := wallis_identity k
   have positive := halfLayer_pos k
@@ -129,5 +130,6 @@ theorem critical_codimension :
 end Green51CriticalWindow
 #print axioms Green51CriticalWindow.two_coordinates_above
 #print axioms Green51CriticalWindow.guaranteed_odd_next_interval
+#print axioms Green51CriticalWindow.past_odd_layer
 #print axioms Green51CriticalWindow.critical_value
 #print axioms Green51CriticalWindow.critical_codimension
