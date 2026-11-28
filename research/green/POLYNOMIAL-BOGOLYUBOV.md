@@ -17,3 +17,5 @@ For each positive integer r and each real base c > 1, the bound `codimension ≤
 To see why balls detect the constant, pick a maximum-weight vector in an affine flat. Projection onto its support is injective on the direction space. Any nonzero kernel vector would add support outside the chosen vector and increase its weight. It follows that every flat in an r-fold sum of radius-k balls has dimension at most rk.
 
 Write `B(n,k)` for the radius-k ball. If the proposed bound works on these balls, then `|B(n,k)| cⁿ ≤ 2ⁿ c^(rk)`. Weight level k by `t^k` with `t = c^(−r)`. Summing over the n+1 levels gives `(1+t)ⁿ ≤ (n+1)(2/c)ⁿ` by the weight enumerator of the cube. Exponential growth now forces `1+t ≤ 2/c`. The argument still applies after discarding finitely many dimensions. For n > rk, these balls are instances of the Daykin families in the combinatorial literature. [Frankl and Tokushige, Definition 4.2](https://www.renyi.hu/~pfrankl/F_T_Invitation.pdf#page=15)
+
+The same pinned notebook runner rebuilds the downset proof and its sharpness converse. [Replay command](AFFINE-SPANNING-DIAMETER.md#replay)
