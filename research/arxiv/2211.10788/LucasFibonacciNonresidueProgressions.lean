@@ -1,7 +1,7 @@
 import Mathlib
 import research.arxiv.«2211.10788».LucasFibonacciExcludedPrimes
 import research.arxiv.«2211.10788».NeighboringLucasFibonacciPrimes
-import research.arxiv.«2211.10788».LucasFibonacciSmoothBlocks
+import research.arxiv.«2211.10788».LucasFibonacciAffineGCD
 
 /-! Quadratic nonresidue prime divisors on progressions of Hosoya upper indices. -/
 
@@ -292,46 +292,40 @@ theorem infinite_nonvalue_prime_divisors_iff (r d : ℕ) (hd : 0 < d) :
     refine ⟨p 0,⟨hq,h4,hnr,absent,s,fun hprime => ?_,hs⟩,hB⟩
     exact absent _ ((hprime.eq_one_or_self_of_dvd _ hs).resolve_left hq.ne_one).symm
 
-private lemma large_prime_cannot_hit_two_shifts {q : ℕ} (hq : q.Prime)
-    (s a b H : ℕ) (ha : a < b) (hb : b ≤ H) (hlarge : Nat.fib H < q)
-    (h₁ : q ∣ lucasFibonacciSum (s+a)) (h₂ : q ∣ lucasFibonacciSum (s+b)) : False := by
-  let : NeZero q := ⟨hq.ne_zero⟩
-  have hh : q ∣ Nat.fib (b-a) := common_divisor_lucasFibonacciSum_dvd_fib h₁ (by
-    simpa only [show s+a+(b-a) = s+b by omega] using h₂)
-  have hbound := Nat.le_of_dvd (Nat.fib_pos.mpr (by omega)) hh
-  exact hlarge.not_ge (hbound.trans (Nat.fib_mono (by omega)))
-
-/-- For distinct fixed shifts with a simultaneous even parameter, one subprogression
-makes every nonempty subset product nonsquare at every step. An arbitrarily large
-nonresidue prime with odd valuation witnesses each failed square condition. -/
-theorem shifted_upper_products_nonsquare {k : ℕ} (r d B : ℕ) (hd : 0 < d)
-    (h : Fin k → ℕ) (hdist : Function.Injective h)
-    (heven : ∃ t : ℕ, ∀ i, Even (r+h i+d*t)) :
+/-- For pairwise distinct positive-step affine forms, one subprogression
+makes every nonempty subset product nonsquare whenever a simultaneous even
+parameter exists. The slopes may differ. -/
+theorem affine_upper_products_nonsquare {k : ℕ} (r d : Fin k → ℕ) (B : ℕ)
+    (hd : ∀ i, 0 < d i) (hdist : Function.Injective (fun i => (r i,d i)))
+    (heven : ∃ t : ℕ, ∀ i, Even (r i+d i*t)) :
     ∃ s e : ℕ, 0 < e ∧ ∀ (j : ℕ) (S : Finset (Fin k)), S.Nonempty →
-      let N := ∏ i ∈ S, lucasFibonacciSum (r+h i+d*(s+e*j))
+      let N := ∏ i ∈ S, lucasFibonacciSum (r i+d i*(s+e*j))
       ¬ IsSquare N ∧ ∃ q : ℕ, B < q ∧ q.Prime ∧ ¬IsSquare (q : ZMod 11) ∧
         Odd (N.factorization q) := by
-  let H := ∑ i, h i
-  have hh (i : Fin k) : h i ≤ H := single_le_sum (fun i _ => Nat.zero_le (h i)) (mem_univ i)
-  obtain ⟨s,e,he,p,_,hp⟩ :=
-    (nonresidue_divisor_patterns_iff (fun i => r+h i) (fun _ => d) (fun _ => hd)
-      (max B (Nat.fib H))).mp heven
+  classical
+  have sep (i l : Fin k) : ∃ M > 0, i ≠ l → ∀ t,
+      (lucasFibonacciSum (r i+d i*t)).gcd (lucasFibonacciSum (r l+d l*t)) ∣ M := by
+    by_cases h : i = l
+    · exact ⟨1,by decide,fun hn => (hn h).elim⟩
+    · obtain ⟨M,hM,hg⟩ := affine_upper_gcd_bound _ _ _ _ (fun eq => h (hdist eq))
+      exact ⟨M,hM,fun _ => hg⟩
+  choose M hM hsep using sep
+  let H := ∑ i, ∑ l, M i l
+  have hbound (i l : Fin k) : M i l ≤ H :=
+    (single_le_sum (fun j _ => Nat.zero_le (M i j)) (mem_univ l)).trans
+      (single_le_sum (fun j _ => Nat.zero_le (∑ a, M j a)) (mem_univ i))
+  obtain ⟨s,e,he,p,_,hp⟩ := (nonresidue_divisor_patterns_iff r d hd (max B H)).mp heven
   refine ⟨s,e,he,fun j S hS => ?_⟩
   obtain ⟨i,hi⟩ := hS
   obtain ⟨hbig,hq,_,hnr,v,hodd,hval⟩ := hp i
-  let a (l : Fin k) := lucasFibonacciSum (r+h l+d*(s+e*j))
+  let a (l : Fin k) := lucasFibonacciSum (r l+d l*(s+e*j))
   change ¬IsSquare (∏ l ∈ S, a l) ∧ _
   have hpriv (l : Fin k) (hl : l ≠ i) : ¬p i ∣ a l := by
     intro hdv
-    let b := r+d*(s+e*j)
-    have h₁ : p i ∣ lucasFibonacciSum (b+h i) := by
-      simpa only [b,add_right_comm] using dvd_of_odd_val ((hval j).symm ▸ hodd)
-    have h₂ : p i ∣ lucasFibonacciSum (b+h l) := by
-      simpa only [a,b,add_right_comm] using hdv
-    have hne : h l ≠ h i := fun hli => hl (hdist hli)
-    rcases lt_or_gt_of_ne hne with hlt|hgt
-    · exact large_prime_cannot_hit_two_shifts hq b _ _ H hlt (hh i) (by omega) h₂ h₁
-    · exact large_prime_cannot_hit_two_shifts hq b _ _ H hgt (hh l) (by omega) h₁ h₂
+    have hit : p i ∣ a i := dvd_of_odd_val ((hval j).symm ▸ hodd)
+    have common := (Nat.dvd_gcd hit hdv).trans (hsep i l (Ne.symm hl) (s+e*j))
+    exact (lt_of_le_of_lt (le_max_right B H) hbig).not_ge
+      ((Nat.le_of_dvd (hM i l) common).trans (hbound i l))
   have hprodval : (∏ l ∈ S, a l).factorization (p i) = v := by
     rw [Nat.factorization_prod (fun l _ => (upper_positive _).ne')]
     simp only [Finsupp.finsetSum_apply]
@@ -346,10 +340,26 @@ theorem shifted_upper_products_nonsquare {k : ℕ} (r d B : ℕ) (hd : 0 < d)
   obtain ⟨m,hm⟩ := hP
   omega
 
+/-- For distinct fixed shifts with a simultaneous even parameter, one subprogression
+makes every nonempty subset product nonsquare at every step. An arbitrarily large
+nonresidue prime with odd valuation witnesses each failed square condition. -/
+theorem shifted_upper_products_nonsquare {k : ℕ} (r d B : ℕ) (hd : 0 < d)
+    (h : Fin k → ℕ) (hdist : Function.Injective h)
+    (heven : ∃ t : ℕ, ∀ i, Even (r+h i+d*t)) :
+    ∃ s e : ℕ, 0 < e ∧ ∀ (j : ℕ) (S : Finset (Fin k)), S.Nonempty →
+      let N := ∏ i ∈ S, lucasFibonacciSum (r+h i+d*(s+e*j))
+      ¬ IsSquare N ∧ ∃ q : ℕ, B < q ∧ q.Prime ∧ ¬IsSquare (q : ZMod 11) ∧
+        Odd (N.factorization q) := by
+  apply affine_upper_products_nonsquare (fun i => r+h i) (fun _ => d) B (fun _ => hd) _ heven
+  intro i l hpair
+  apply hdist
+  exact Nat.add_left_cancel (congrArg Prod.fst hpair)
+
 #print axioms upper_square_mod_eleven
 #print axioms nonresidue_prime_index
 #print axioms nonresidue_divisor_patterns_iff
 #print axioms infinite_nonvalue_prime_divisors_iff
+#print axioms affine_upper_products_nonsquare
 #print axioms shifted_upper_products_nonsquare
 
 end Arxiv.«2211.10788»
