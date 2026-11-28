@@ -87,10 +87,12 @@ theorem choose_slices {r : ℕ} (hr : 0 < r) {c : ℝ} (hc : 1 < c)
 
 abbrev Cube (n : ℕ) := Fin n → ZMod 2
 
-private def slice {n : ℕ} (A : Finset (Cube (n + 1))) (b : ZMod 2) : Finset (Cube n) :=
+/-- The fibre of a family above its first coordinate. -/
+def slice {n : ℕ} (A : Finset (Cube (n + 1))) (b : ZMod 2) : Finset (Cube n) :=
   univ.filter fun x => Fin.cons b x ∈ A
 
-private theorem slice_card {n : ℕ} (A : Finset (Cube (n + 1))) :
+/-- The two first-coordinate fibres partition a binary family. -/
+theorem slice_card {n : ℕ} (A : Finset (Cube (n + 1))) :
     (slice A 0).card + (slice A 1).card = A.card := by
   classical
   let e := Fin.consEquiv (fun _ : Fin (n + 1) => ZMod 2)
@@ -106,6 +108,8 @@ private theorem slice_card {n : ℕ} (A : Finset (Cube (n + 1))) :
     _ = ∑ y : Cube (n + 1), if y ∈ A then (1 : ℕ) else 0 :=
       Equiv.sum_comp e (fun y => if y ∈ A then (1 : ℕ) else 0)
     _ = _ := by simp
+
+#print axioms slice_card
 
 private def holes {r n : ℕ} (x : Fin r → Cube n) : ℕ :=
   (univ.filter fun j => ∀ i, x i j = 0).card
