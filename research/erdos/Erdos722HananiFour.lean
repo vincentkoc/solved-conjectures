@@ -22,30 +22,8 @@ private theorem seed {s : ℕ} (hs : Allowed s) : Has (· = 4) (3*s+1) := by
   · exact Seeds.thirty_seven
 
 private theorem inflate {V : Type*} [Fintype V] (C : Cover V (AllPairs _) Allowed) :
-    Has (· = 4) (3*Fintype.card V+1) := by
-  classical
-  let I := {B : Finset V // B ∈ C.blocks}
-  let P := fun (B : I) (x y : V × Fin 3) => x.1 ∈ B.val ∧ y.1 ∈ B.val ∧ x.1 ≠ y.1
-  have localCover (B : I) : Nonempty (Cover (V × Fin 3) (P B) (· = 4)) := by
-    let G := (delete_point (Fintype.card_coe B.val) (seed (C.size _ B.property))).some
-    let e := (Function.Embedding.subtype (· ∈ B.val)).prodMap (Function.Embedding.refl (Fin 3))
-    refine ⟨(G.map e).change ?_ (fun _ => id)⟩
-    intro x y _
-    constructor
-    · rintro ⟨⟨⟨x,hx⟩,u⟩,⟨⟨y,hy⟩,v⟩,rfl,rfl,hxy⟩
-      exact ⟨hx,hy,fun h => hxy (Subtype.ext h)⟩
-    · rintro ⟨hx,hy,hxy⟩
-      exact ⟨(⟨x.1,hx⟩,x.2),(⟨y.1,hy⟩,y.2),rfl,rfl,fun he => hxy (congrArg Subtype.val he)⟩
-  let between : Cover (V × Fin 3) (fun x y => x.1 ≠ y.1) (· = 4) :=
-    Cover.assemble (P := P) (fun B => (localCover B).some) (fun _ _ _ _ h => h.2.2) (by
-      intro x y _ hxy
-      obtain ⟨B,⟨hB,hx,hy⟩,hu⟩ := C.through x.1 y.1 hxy trivial
-      exact ⟨⟨B,hB⟩,⟨hx,hy,hxy⟩,fun T hT => Subtype.ext (hu _ ⟨T.property,hT.1,hT.2.1⟩)⟩)
-  apply (Cover.adjoin Prod.fst between _).has (by simp [Nat.mul_comm])
-  intro x
-  let e : Fin 3 ≃ {y : V × Fin 3 // y.1 = x} :=
-    ⟨fun j => ⟨(x,j),rfl⟩,fun y => y.val.2,fun _ => rfl,by rintro ⟨⟨_,j⟩,rfl⟩; rfl⟩
-  exact (Has.single (s := (· = 4)) rfl).realize (by simp [← Fintype.card_congr e])
+    Has (· = 4) (3*Fintype.card V+1) :=
+  inflate_uniform (by decide) C (fun _ => seed)
 
 /-- The complete positive admissible residue classes for four-point blocks. -/
 theorem hanani {n : ℕ} (hn : n%12=1 ∨ n%12=4) :
