@@ -1,0 +1,68 @@
+import Erdos722WittMinimumOrders
+import Erdos722HananiSpectrum
+
+/-!
+# Ordinary six-point-block designs from Hanani's construction
+
+The 22-point seed is the twice-derived large Witt design, using
+danielpuri1901's finite witness. All design conclusions below use
+the canonical Finset.IsBlockDesign predicate.
+-/
+
+namespace Erdos722.TwoStem
+open Finset PointedProduct
+
+/-- Hanani's 4v+2 theorem, with the Witt input discharged. -/
+theorem hanani {v : ℕ} (master : ∃ H : Finset (Finset (Fin (v+1))), H.IsBlockDesign 3 6) :
+    ∃ H : Finset (Finset (Fin (4*v+2))), H.IsBlockDesign 3 6 :=
+  hanani_of_seed MinimumOrder.six_minimum.1.2 master
+
+theorem witt_iterates (d : ℕ) :
+    ∃ H : Finset (Finset (Fin ((4^(d+2)+2)/3))), H.IsBlockDesign 3 6 := by
+  have six : ExistsDesign 5 (5+1) := by
+    exact PrimePower.mixed_orders (a:=21) ((by decide : Nat.Prime 5).isPrimePow) MinimumOrder.six_minimum.1.2 1 0
+  change ExistsDesign 5 ((4^(d+2)+2)/3)
+  simpa [pow_add] using iterated_order MinimumOrder.six_minimum.1.2 six d
+
+theorem witt_four_generators (u v w z : ℕ) :
+    ∃ H : Finset (Finset (Fin (5^u*21^v*85^w*341^z+1))), H.IsBlockDesign 3 6 :=
+  four_generator_orders MinimumOrder.six_minimum.1.2 u v w z
+
+theorem witt_infinite_extension :
+    Set.Infinite {n | (∃ H : Finset (Finset (Fin n)), H.IsBlockDesign 3 6) ∧
+      ∀ u v : ℕ, n≠5^u*21^v+1} :=
+  infinite_extension MinimumOrder.six_minimum.1.2
+
+/-- Over fields of size 2^e, the finite-pencil seed exists precisely at
+sizes two and four. The potential order-ten plane lies outside this family. -/
+theorem even_seed_iff (e : ℕ) (he : 0<e) :
+    ExistsDesign (2^e+1) ((2^e+1)*2^e+2) ↔ e=1 ∨ e=2 := by
+  constructor
+  · intro seed
+    let m := 2^e
+    have hm : 2 ≤ m := Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) he
+    have hkv : m+2<(m+1)*m+2 := by nlinarith
+    have heq : (m+1)*m+2=(m+2-3+1)*(m+2-3+2)+(3-1 : ℕ) := by
+      rw [show m+2-3+1=m by omega,show m+2-3+2=m+1 by omega,Nat.mul_comm]
+    have hc := MinimumOrder.equality_cases (r:=3) (k:=m+2) (by decide) (by omega) hkv heq ⟨hkv,seed⟩
+    unfold MinimumOrder.attained at hc
+    have hsmall : m=2 ∨ m=4 ∨ m=10 := by omega
+    have hd : e<4 := by
+      by_contra! h
+      have hlo : 2^4 ≤ m := Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) h
+      omega
+    have casesE : e=1 ∨ e=2 ∨ e=3 := by omega
+    rcases casesE with h|h|rfl
+    · exact Or.inl h
+    · exact Or.inr h
+    · norm_num [m] at hsmall
+  · rintro (rfl|rfl)
+    · exact MinimumOrder.four_minimum.1.2
+    · exact MinimumOrder.six_minimum.1.2
+
+#print axioms even_seed_iff
+#print axioms hanani
+#print axioms witt_iterates
+#print axioms witt_four_generators
+#print axioms witt_infinite_extension
+end Erdos722.TwoStem
