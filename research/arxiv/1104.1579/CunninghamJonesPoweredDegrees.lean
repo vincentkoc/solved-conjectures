@@ -5,7 +5,9 @@ import Mathlib.NumberTheory.Multiplicity
 
 namespace CunninghamChain
 
-private lemma power_order_lift {a p k N : ℕ} (ha : 1 < a) (hp : p.Prime)
+/-- Lifting a square-order congruence at a prime power bounds the missing
+valuation by a constant depending on the base and prime. -/
+theorem jones_power_order_lift {a p k N : ℕ} (ha : 1 < a) (hp : p.Prime)
     (hc : a.Coprime p) (he : a^(2*N) ≡ 1 [MOD p^k]) :
     p^k ∣ (a^(2*(p-1))-1)*(2*N) := by
   have hpos (e : ℕ) : 1 ≤ a^e := Nat.one_le_pow _ _ (by omega)
@@ -44,30 +46,39 @@ private lemma power_order_lift {a p k N : ℕ} (ha : 1 < a) (hp : p.Prime)
 factor orders. It depends only on the original base. -/
 def jonesOrderMultiple (m : ℕ) : ℕ := 2 * (m^(2*m)).factorial
 
-private lemma complementary_power_dvd {m a b h j p k : ℕ} (ha : 1<a) (hb : 1<b)
-    (hab : a*b=m) (hp : p.Prime) (hk : 0<k) (hc : (a^h).Coprime (b^h))
-    (hh : 0<h) (hd : p^k ∣ b^h) (hs : (((a^h : ℕ) : ZMod (b^h))^2)^j=1) :
-    p^k ∣ jonesOrderMultiple m * h * j := by
-  have hpb : p ∣ b := hp.dvd_of_dvd_pow ((dvd_pow_self p hk.ne').trans hd)
-  have hca : a.Coprime b := (hc.of_dvd_left (dvd_pow_self a hh.ne')).of_dvd_right
-    (dvd_pow_self b hh.ne')
-  have hap : a.Coprime p := hca.of_dvd_right hpb
-  have ham : a ≤ m := Nat.le_of_dvd (by rw [←hab]; positivity) (hab ▸ dvd_mul_right ..)
-  have hpm : p ≤ m := Nat.le_of_dvd (by rw [←hab]; positivity) (hab ▸ hpb.trans (dvd_mul_left ..))
-  have he : a^(2*(h*j)) ≡ 1 [MOD b^h] := by
-    apply (ZMod.natCast_eq_natCast_iff ..).mp
-    simpa only [Nat.cast_pow,Nat.cast_one,←pow_mul,show h*2*j=2*(h*j) by ring] using hs
-  have hl := power_order_lift ha hp hap (he.of_dvd hd)
-  have small : a^(2*(p-1))-1 ∣ (m^(2*m)).factorial := by
+/-- The modulus in a complementary order congruence can have arbitrary prime
+multiplicities. Bounding the prime divisors and the exponential base suffices. -/
+theorem jones_complementary_power_bound {u v a j B : ℕ} (hu : 1<u) (hub : u ≤ B)
+    (hc : u.Coprime v) (hB : ∀ p : ℕ, p.Prime → p ∣ v → p ≤ B)
+    (he : u^(2*(a*j)) ≡ 1 [MOD v]) : v ∣ jonesOrderMultiple B * a * j := by
+  apply (Nat.dvd_iff_prime_pow_dvd_dvd ..).mpr
+  intro p k hp hd
+  rcases Nat.eq_zero_or_pos k with rfl|hk
+  · simp
+  have hpv := (dvd_pow_self p hk.ne').trans hd
+  have hpb := hB p hp hpv
+  have hl := jones_power_order_lift hu hp (hc.of_dvd_right hpv) (he.of_dvd hd)
+  have small : u^(2*(p-1))-1 ∣ (B^(2*B)).factorial := by
     apply Nat.dvd_factorial
     · have := hp.two_le
-      have := Nat.one_lt_pow (by omega : 2*(p-1) ≠ 0) ha
+      have := Nat.one_lt_pow (by omega : 2*(p-1) ≠ 0) hu
       omega
-    · exact (Nat.sub_le _ _).trans ((Nat.pow_le_pow_left ham _).trans
+    · exact (Nat.sub_le _ _).trans ((Nat.pow_le_pow_left hub _).trans
         (Nat.pow_le_pow_right (by omega) (by omega)))
-  refine hl.trans ?_
-  simpa only [jonesOrderMultiple,mul_assoc,mul_left_comm,mul_comm] using
-    mul_dvd_mul_right small (2*(h*j))
+  exact hl.trans (by simpa only [jonesOrderMultiple,mul_assoc,mul_left_comm,mul_comm] using
+    mul_dvd_mul_right small (2*(a*j)))
+
+private lemma complementary_power_dvd {m a b h j p k : ℕ} (ha : 1<a) (hb : 1<b)
+    (hab : a*b=m) (hc : (a^h).Coprime (b^h))
+    (hh : 0<h) (hd : p^k ∣ b^h) (hs : (((a^h : ℕ) : ZMod (b^h))^2)^j=1) :
+    p^k ∣ jonesOrderMultiple m * h * j := by
+  have hm : 0 < m := hab ▸ Nat.mul_pos (by omega) (by omega)
+  refine hd.trans (jones_complementary_power_bound ha (Nat.le_of_dvd hm (hab ▸ dvd_mul_right ..))
+    (hc.of_dvd_left (dvd_pow_self a hh.ne')) ?_ ?_)
+  · intro q hq hdq
+    exact Nat.le_of_dvd hm (hab ▸ (hq.dvd_of_dvd_pow hdq).trans (dvd_mul_left ..))
+  · apply (ZMod.natCast_eq_natCast_iff ..).mp
+    simpa only [Nat.cast_pow,Nat.cast_one,←pow_mul,show h*2*j=2*(h*j) by ring] using hs
 
 /-- Reducibility in degree j with coefficient m^h forces exponential divisibility
 of the product h*j, uniformly over all positive exponents. -/
@@ -92,8 +103,8 @@ theorem jones_powered_coefficient_dvd {m h j : ℕ} (hm : 2 ≤ m) (hh : 0<h) (h
     have hs := (hc.isPrimePow_dvd_mul ((isPrimePow_nat_iff _).mpr ⟨p,k,hp,hk,rfl⟩)).mp (huv ▸ hd)
     rcases hs with hl|hr
     · exact complementary_power_dvd (gt _ hv) (gt _ hu) ((Nat.mul_comm ..).trans hab)
-        hp hk hc.symm hh hl h₂
-    · exact complementary_power_dvd (gt _ hu) (gt _ hv) hab hp hk hc hh hr h₁
+        hc.symm hh hl h₂
+    · exact complementary_power_dvd (gt _ hu) (gt _ hv) hab hc hh hr h₁
   · have := Nat.one_lt_pow hh.ne' (show 1 < m by omega)
     rw [show m^h=2 by omega]
     exact ((dvd_mul_right 2 _).trans (dvd_mul_right _ h)).trans (dvd_mul_right _ j)
@@ -147,6 +158,8 @@ theorem jones_powered_exceptional_degrees {m : ℕ} (hm : 2 ≤ m) (k : ℕ) :
     exact (hred (jones_irreducible_of_large_degree _ _
       (Nat.one_lt_pow hh.ne' (by omega)) (by omega))).elim
 
+#print axioms jones_power_order_lift
+#print axioms jones_complementary_power_bound
 #print axioms jones_powered_coefficient_dvd
 #print axioms jones_powered_exceptional_degrees
 
