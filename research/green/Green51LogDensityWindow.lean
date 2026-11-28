@@ -8,12 +8,11 @@ open scoped Classical Pointwise symmDiff
 namespace Green51GirthFrame
 open Green51Hyperplane
 
-/-- Every double above the lower threshold contains the kernel of two linear coordinates. -/
-theorem kernel_above (s n d : ℕ) (rank : n ≤ 2 * (s + 1) + d) (room : 2 ^ d * (d + 2) + 4 ≤ 2 * (2 * (s + 1)))
-    (A : Finset (𝔽₂ n)) (large : threshold (2 * s) < (A.dens : ℝ)) :
-    ∃ f : (𝔽₂ n) →ₗ[F] F × F, ∀ x ∈ f.ker, x ∈ A + A := by
+/-- Above the density threshold every odd relation among missing directions has length at least `2s + 3`. -/
+theorem girth_of_density {n : ℕ} (A : Finset (𝔽₂ n)) (s : ℕ)
+    (large : threshold (2 * s) < (A.dens : ℝ)) :
+    ∀ R ⊆ (A + A)ᶜ, Odd R.card → (∑ a ∈ R, a) = 0 → 2 * (s + 1) + 1 ≤ R.card := by
   classical
-  let D := (A + A)ᶜ
   have size : Fintype.card (𝔽₂ n) * 2 ^ (2 * s) <
       2 * A.card * 2 ^ (2 * s) + Fintype.card (𝔽₂ n) * (2 * s).choose s := by
     rw [threshold, Nat.mul_div_cancel_left _ (by decide : 0 < 2), nnratCast_dens] at large
@@ -22,18 +21,25 @@ theorem kernel_above (s n d : ℕ) (rank : n ≤ 2 * (s + 1) + d) (room : 2 ^ d 
     field_simp at large
     exact_mod_cast (show (Fintype.card (𝔽₂ n) : ℝ) * 2 ^ (2 * s) <
       2 * (A.card : ℝ) * 2 ^ (2 * s) + (Fintype.card (𝔽₂ n) : ℝ) * ((2 * s).choose s : ℝ) by linarith)
-  have short (R : Finset (𝔽₂ n)) (rd : R ⊆ D) (odd : Odd R.card) (zero : (∑ a ∈ R, a) = 0) :
-      2 * (s + 1) + 1 ≤ R.card := by
-    rw [Nat.odd_iff] at odd
-    obtain ⟨p, hp⟩ := card_pos.mp (show 0 < R.card by omega)
-    have eq := circuit_complement_sum (singleton_subset_iff.mpr hp) zero
-    have total : (∑ x ∈ R.erase p, x) = p := by simpa [sdiff_singleton_eq_erase] using eq
-    have card := card_erase_of_mem hp
-    by_contra! small
-    have bad := no_short_relation A s size (R.erase p)
-      (fun x hx => Finset.mem_compl.mp (rd (mem_erase.mp hx).2)) (by omega) (by omega)
-    rw [total] at bad
-    exact bad (Finset.mem_compl.mp (rd hp))
+  intro R rd odd zero
+  rw [Nat.odd_iff] at odd
+  obtain ⟨p, hp⟩ := card_pos.mp (show 0 < R.card by omega)
+  have eq := circuit_complement_sum (singleton_subset_iff.mpr hp) zero
+  have total : (∑ x ∈ R.erase p, x) = p := by simpa [sdiff_singleton_eq_erase] using eq
+  have card := card_erase_of_mem hp
+  by_contra! small
+  have bad := no_short_relation A s size (R.erase p)
+    (fun x hx => Finset.mem_compl.mp (rd (mem_erase.mp hx).2)) (by omega) (by omega)
+  rw [total] at bad
+  exact bad (Finset.mem_compl.mp (rd hp))
+
+/-- Every double above the lower threshold contains the kernel of two linear coordinates. -/
+theorem kernel_above (s n d : ℕ) (rank : n ≤ 2 * (s + 1) + d) (room : 2 ^ d * (d + 2) + 4 ≤ 2 * (2 * (s + 1)))
+    (A : Finset (𝔽₂ n)) (large : threshold (2 * s) < (A.dens : ℝ)) :
+    ∃ f : (𝔽₂ n) →ₗ[F] F × F, ∀ x ∈ f.ker, x ∈ A + A := by
+  classical
+  let D := (A + A)ᶜ
+  have short := girth_of_density A s large
   have rk : Module.finrank F (𝔽₂ n) ≤ (2 * (s + 1) + 1) - 1 + d := by simpa [𝔽₂, 𝔽] using rank
   obtain ⟨f, nz⟩ := linear_four_colouring D (2 * (s + 1) + 1) d rk (by simpa using room) short
   exact ⟨f, fun x hx => by
@@ -108,6 +114,7 @@ theorem logarithmic_interval {n : ℕ} (hn : 16 ≤ n) {α : ℝ}
 
 end Green51GirthFrame
 
+#print axioms Green51GirthFrame.girth_of_density
 #print axioms Green51GirthFrame.kernel_above
 #print axioms Green51GirthFrame.exact_interval
 #print axioms Green51GirthFrame.log_room
