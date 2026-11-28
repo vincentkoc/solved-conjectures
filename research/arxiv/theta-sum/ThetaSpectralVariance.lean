@@ -18,7 +18,7 @@ instance (u : Mode) : NeZero u.modulus := ⟨u.positive.ne'⟩
 
 def Mode.mass (u : Mode) : ℝ := ‖value u.character‖^2
 
-private def descend {m : ℕ} [NeZero m] (χ : DirichletCharacter ℂ m) : Mode :=
+def descend {m : ℕ} [NeZero m] (χ : DirichletCharacter ℂ m) : Mode :=
   ⟨χ.conductor,Nat.pos_of_ne_zero χ.conductor_ne_zero,χ.primitiveCharacter,χ.primitiveCharacter_isPrimitive⟩
 
 private theorem same_of_lifts {m : ℕ} [NeZero m] {u v : Mode} (hu : u.modulus∣m) (hv : v.modulus∣m)
@@ -34,7 +34,7 @@ private theorem same_of_lifts {m : ℕ} [NeZero m] {u v : Mode} (hu : u.modulus�
   subst ψ
   rfl
 
-private theorem descend_injective {m : ℕ} [NeZero m] :
+theorem descend_injective {m : ℕ} [NeZero m] :
     Function.Injective (descend (m:=m)) := by
   classical
   let lift (u : Mode) : DirichletCharacter ℂ m := if h:u.modulus∣m then changeLevel h u.character else 1
@@ -48,19 +48,21 @@ private theorem descend_lift {m : ℕ} [NeZero m] (u : Mode) (hd : u.modulus∣m
   let χ := changeLevel hd u.character
   exact same_of_lifts (m:=m) χ.conductor_dvd_level hd χ.changeLevel_primitiveCharacter
 
+theorem value_descend {m : ℕ} [NeZero m] (χ : DirichletCharacter ℂ m) (hAP : ProgressionMangoldt) :
+    value (descend χ).character=value χ := by
+  let : NeZero χ.conductor := ⟨χ.conductor_ne_zero⟩
+  change value χ.primitiveCharacter = value χ
+  apply tendsto_nhds_unique (coefficient_limit χ.primitiveCharacter hAP)
+  apply replace_at_primes (g:=fun p => symbol χ p*(centered p:ℂ)) _ (coefficient_limit χ hAP)
+  filter_upwards [eventually_gt_atTop m] with p hp hprime
+  have hg := hprime.coprime_iff_not_dvd.mpr (fun h => hp.not_ge (Nat.le_of_dvd (NeZero.pos m) h))
+  have h := χ.primitiveCharacter_apply_of_isCoprime (a:=(p:ℤ))
+    (by exact_mod_cast Nat.isCoprime_iff_coprime.mpr hg)
+  simpa only [symbol,Int.cast_natCast] using congrArg (·*(centered p:ℂ)) h
+
 private theorem mass_descend {m : ℕ} [NeZero m] (χ : DirichletCharacter ℂ m) (hAP : ProgressionMangoldt) :
     (descend χ).mass=‖value χ‖^2 := by
-  have eq : value (descend χ).character=value χ := by
-    let : NeZero χ.conductor := ⟨χ.conductor_ne_zero⟩
-    change value χ.primitiveCharacter = value χ
-    apply tendsto_nhds_unique (coefficient_limit χ.primitiveCharacter hAP)
-    apply replace_at_primes (g:=fun p => symbol χ p*(centered p:ℂ)) _ (coefficient_limit χ hAP)
-    filter_upwards [eventually_gt_atTop m] with p hp hprime
-    have hg := hprime.coprime_iff_not_dvd.mpr (fun h => hp.not_ge (Nat.le_of_dvd (NeZero.pos m) h))
-    have h := χ.primitiveCharacter_apply_of_isCoprime (a:=(p:ℤ))
-      (by exact_mod_cast Nat.isCoprime_iff_coprime.mpr hg)
-    simpa only [symbol,Int.cast_natCast] using congrArg (·*(centered p:ℂ)) h
-  exact congrArg (fun z : ℂ => ‖z‖^2) eq
+  exact congrArg (fun z : ℂ => ‖z‖^2) (value_descend χ hAP)
 
 def modesAt (m : ℕ) [NeZero m] : Finset Mode := by classical exact univ.image (descend (m:=m))
 

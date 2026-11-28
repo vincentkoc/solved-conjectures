@@ -6,7 +6,7 @@ open Finset Complex DirichletCharacter ThetaPrimitiveSpectrum ThetaConductorDeca
 open ThetaSpectralVariance ThetaNaturalPrimeMeans ThetaLevelCoefficients
 noncomputable section
 
-private def liftAt (q : ℕ) (u : Mode) : DirichletCharacter ℂ q :=
+def liftAt (q : ℕ) (u : Mode) : DirichletCharacter ℂ q :=
   if h : u.modulus=q then h ▸ u.character else 1
 
 private theorem at_level (q : ℕ) [NeZero q] (u : Mode) (he : u.modulus=q) :
@@ -17,7 +17,7 @@ private theorem at_level (q : ℕ) [NeZero q] (u : Mode) (he : u.modulus=q) :
   simp only [liftAt,Mode.mass]
   exact ⟨hχ,rfl⟩
 
-private theorem inj_level (q : ℕ) (u v : Mode) (hu : u.modulus=q) (hv : v.modulus=q)
+theorem inj_level (q : ℕ) (u v : Mode) (hu : u.modulus=q) (hv : v.modulus=q)
     (he : liftAt q u=liftAt q v) : u=v := by
   rcases u with ⟨r,hr,χ,hχ⟩
   rcases v with ⟨t,ht,ψ,hψ⟩
