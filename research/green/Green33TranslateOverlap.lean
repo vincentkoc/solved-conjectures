@@ -1,8 +1,9 @@
 import Green33SidonProfile
+import Green33ReflectionRigidity
 
 /-! Translation overlaps and excess unordered sum representations. -/
 
-open Finset Filter Green33SidonProfile Green33TailEnergy
+open Finset Filter Green33SidonProfile Green33TailEnergy Green33ReflectionRigidity
 open scoped Pointwise Topology
 
 namespace Green33TranslateOverlap
@@ -278,24 +279,9 @@ theorem optimal_coefficient {c : ℝ} (hc : c < 4) (L : ℕ) :
     nlinarith [mul_lt_mul_of_pos_right hh hk']
   exact ⟨⟨2*M.val,by positivity⟩,A,t,hL,ht,strict⟩
 
-private def partners (A : Finset G) (s : G) := A.filter fun x => s-x ∈ A
-
-private lemma partners_card (A : Finset G) (s : G) :
-    (partners A s).card = Green33Multiplicity.reps A s := by
-  apply card_bij (fun x _ => (x,s-x))
-  · intro x hx
-    obtain ⟨ha,hb⟩ := mem_filter.mp hx
-    exact mem_filter.mpr ⟨mem_product.mpr ⟨ha,hb⟩,by change x + (s-x) = s; abel⟩
-  · intro x _ y _ h
-    exact congrArg Prod.fst h
-  · rintro ⟨x,y⟩ hp
-    obtain ⟨hxy,he⟩ := mem_filter.mp hp
-    have h : s-x=y := by rw [← he]; abel
-    exact ⟨x,mem_filter.mpr ⟨(mem_product.mp hxy).1,h ▸ (mem_product.mp hxy).2⟩,Prod.ext rfl h⟩
-
 private lemma partners_inter [Fintype G] (A : Finset G) {s t : G} (hne : s ≠ t) :
-    ((partners A s) ∩ (partners A t)).card ≤ maxDifference A := by
-  have h : ((partners A s) ∩ (partners A t)).card ≤ (starts A (t-s)).card := by
+    ((reflectedPart A s) ∩ (reflectedPart A t)).card ≤ maxDifference A := by
+  have h : ((reflectedPart A s) ∩ (reflectedPart A t)).card ≤ (starts A (t-s)).card := by
     apply card_le_card_of_injOn (fun x => s-x)
     · intro x hx
       obtain ⟨hs,ht⟩ := mem_inter.mp hx
@@ -310,7 +296,7 @@ private lemma partners_inter [Fintype G] (A : Finset G) {s t : G} (hne : s ≠ t
 small overlap. The ordered mass at any set of centers obeys a finite bound. -/
 theorem reflection_mass [Fintype G] (A : Finset G) (C : Finset G) :
     ∑ s ∈ C, Green33Multiplicity.reps A s ≤ A.card + C.card.choose 2 * maxDifference A := by
-  let P := partners A
+  let P := reflectedPart A
   let D := maxDifference A
   have bound (T : Finset G) :
       ∑ s ∈ T, (P s).card ≤ (T.biUnion P).card + T.card.choose 2 * D := by
@@ -337,7 +323,7 @@ theorem reflection_mass [Fintype G] (A : Finset G) (C : Finset G) :
     intro x hx
     obtain ⟨s,_,hp⟩ := mem_biUnion.mp hx
     exact (mem_filter.mp hp).1)
-  simpa only [P,partners_card] using (bound C).trans (Nat.add_le_add_right hle _)
+  simpa only [P,card_reflectedPart] using (bound C).trans (Nat.add_le_add_right hle _)
 
 /-- Uniformly over every set of at most r reflection centers, the normalized
 total ordered mass has asymptotic upper bound √2. -/
