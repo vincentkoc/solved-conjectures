@@ -1,0 +1,24 @@
+# Large factors inside prescribed prime-index classes
+
+Write `U(n) = Fₙ + Lₙ₊₁ = 2Fₙ + Fₙ₊₂`. Fix a positive modulus m, a residue a coprime to m, a bound B and a count k. Put g = gcd(m,120).
+
+- If a is congruent to 41 or 89 modulo g, the class contains a reduced subprogression on which **every U(n) is coprime to F₁₂₀ and divisible by the same k distinct primes greater than B**. Dirichlet’s theorem gives infinitely many prime indices in that subprogression. Compatibility modulo g is necessary and sufficient.
+- If a matches neither residue modulo g, the only possible prime indices with prime U(n) are 2 and 5.
+
+This localizes the earlier recurring-divisor result to any prescribed class that survives the period-120 sieve. The earlier result selected its own class. The pinned DeepMind question allows arbitrary natural indices and asks whether infinitely many primes equal U(n). It remains open. [Local factor theorems](HosoyaLocalPrimeFactors.lean) · [Previous prime-index theorem](PrimeIndexDivisors.md) · [Pinned definition and question](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2211.10788/LucasFibonacciSumPrimes.lean) · [Ching et al., introduction](https://arxiv.org/pdf/2211.10788#page=3)
+
+## Choosing a divisor that can recur
+
+Given a finite set S of primes, first choose a prime index s in the desired class, larger than each prime in S and its Fibonacci return rank. At a prime power, the rank either stays fixed or gains a factor of the same prime. Thus s is coprime to the return ranks at every power of each prime in S. Choose L divisible by m and by the return rank of `q^(v_q(U(s))+1)` for each q in S, with s still coprime to L. Set A = gcd(U(s),F_L). Throughout the class s modulo L the gcd with F_L equals A. It follows that U(t) = AC with no prime in S dividing C. Both the class and A are independent of the future index t. [Fixed cofactor](HosoyaReducedPrimeCofactors.lean) · [Rank lifting](PrimePowerLifts.md)
+
+Now take S to contain all primes up to the desired cutoff. In a class where U at prime indices is coprime to 6, A is coprime to 6. Choose a prime p in the refined class with p > max(A²,16). Modulo p the Fibonacci roots are fixed or interchanged by Frobenius, giving `U(p) ≡ 4 or −3 (mod p)`. If every prime q dividing the cofactor C satisfied `q² ≡ 1 (mod p)`, then A² would be 16 or 9 modulo p. The size bound would force A = 4 or 3. Both contradict coprimality. Thus some prime q above the cutoff divides U(p) with p coprime to q²−1. This last quantity is a period of U modulo q. The refinement at p with this extra period stays reduced and forces q to divide every term. Iterating with increasing cutoffs supplies the k distinct primes. [Frobenius identity](HosoyaPrimeIndexFrobenius.lean) · [Iteration and compatibility test](HosoyaLocalPrimeFactors.lean)
+
+## Prime-parameter mass
+
+Normalize a set of prime indices by summing `log(p)/pˣ` and multiplying by x−1 as x decreases to 1. A reduced class modulo m has limiting mass 1/φ(m). In **every** reduced class the normalized mass of indices with prime U(p) is eventually less than `1/φ(m) − δ` for some δ > 0. In a compatible class take two fixed divisors on the reduced subprogression. Its positive mass supplies the deficit. An incompatible class has only the two possible exceptions above. [Mass gap in each class](HosoyaPrimeClassMassGaps.lean)
+
+An explicit bound for the whole prime-index set follows from the divisor 67. Its Fibonacci return rank is 68, and it divides U(n) exactly when n ≡ 41 modulo 68. Among the period-120 survivors it removes the classes 41 and 449 modulo 2,040. There are 512 reduced classes at that modulus. The 32 surviving the previous sieve become 30, so the new sieve has exact mass **15/256**. For every c > 15/256 the normalized mass of actual prime-index prime values is eventually below c. Whether that mass has a limit remains open here. [Numerical mass theorem](HosoyaPrimeClassMassGaps.lean) · [Period-120 sieve and mass convention](PrimeParameterSieve.md)
+
+Moree and Stevenhagen study the density of factor primes across the unrestricted recurrence with initial pair 3,1, one index earlier. Here the progression is specified for the prime index, and the large factors are fixed on a reduced subclass. The local results use no unproved conjecture. [Moree and Stevenhagen](https://jtnb.centre-mersenne.org/item/JTNB_2001__13_1_241_0/)
+
+Lean 4.33.1 rebuilt and independently kernel-replayed 13 notebook modules. The 47 named axiom reports used only the standard axioms `propext`, `Classical.choice` and `Quot.sound`. Independent modular Fibonacci arithmetic checked the Frobenius congruence at all 5,130 primes between 5 and 50,000, the 4,960 compatibility tests for m ≤ 90, and all reduced classes modulo 2,040. [Notebook replay](../../README.md#replay)
