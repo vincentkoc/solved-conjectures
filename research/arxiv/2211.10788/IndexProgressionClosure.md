@@ -1,0 +1,19 @@
+# Which index classes survive every congruence test?
+
+Write U(z) = 2F_z + F_{z+2} at every integer index z. Fix a positive integer step d, a nonnegative offset r and any integer candidate y. The following conditions are equivalent.
+
+1. For every positive modulus M, some forward term U(r+dt), t ≥ 0, is congruent to y modulo M.
+2. Some integer w congruent to r modulo d satisfies U(w) = y.
+3. For the single modulus M = lcm(11, L_H), one of the first 40b progression terms is congruent to y, where b = 1 + ⌊log₂(20y²+40000)⌋, H = 2db and L_H is the ordinary Lucas number.
+
+The third test uses the same modulus for all offsets r at a given step. Its number of progression terms is independent of both d and r. A hit recovers an exact witness with |w| ≤ H. Negative exact witnesses matter. The prime 5 occurs at indices 2 and −3, and it therefore passes the tests on either index class. Those two classes coincide exactly when d divides 5. Every other forward term U(n) passes the tests precisely in the index class of n. [Finite test and lift](LucasFibonacciProgressionClosure.lean) · [Index recovery](HosoyaProgressionIndexRecovery.lean)
+
+## How the window recovers the index
+
+At an even index H, Cassini's identity gives L_H² − 5F_H² = 4. The addition formula gives U(z+2H) = L_H U(z+H) − U(z). Translation by 2H thus negates a term modulo L_H. Reduce a modular witness to an index w between −H and H. Since d divides H, reduction preserves its class modulo d. In the interior, |w| + 6 ≤ H implies 2|U(w)| ≤ L_H. The modulus exceeds 2|y|, so a congruence up to sign gives equality up to sign over the integers. Every signed term has fifth power 1 modulo 11, which rules out the opposite sign. [Lucas shift identities](HosoyaLucasShiftIdentities.lean) · [Lifting proof](HosoyaProgressionDetection.lean)
+
+At a window end translate to H+j with |j| ≤ 6. Put V_j = 2U(j+1)−U(j). Doubling the addition identity gives 2U(H+j) ≡ F_H V_j modulo L_H. A modular hit would then force L_H to divide 4(5y²+V_j²), a positive integer at most 20y²+40000. The choice of H makes L_H larger. For the converse, the Fibonacci pair evolves by a permutation modulo every positive M, so every bilateral hit recurs on the forward progression. The 40b bound comes from period 4H modulo L_H and period 5 modulo 11. [Window estimates](HosoyaLucasWindowBounds.lean) · [Bilateral recurrence](LucasFibonacciCongruenceClosure.lean)
+
+The pinned DeepMind declaration asks for infinitely many **prime** values of U(n) at nonnegative indices. The theorem here decides congruence membership in a fixed index class for an individual candidate. It gives no infinitude conclusion. The unrestricted nonnegative-candidate closure and its prime-modulus variant were proved earlier in this notebook. The general local-global question for reversible recurrences is known as the Skolem conjecture. [Pinned declaration](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2211.10788/LucasFibonacciSumPrimes.lean) · [Ching et al., §5](https://arxiv.org/abs/2211.10788) · [Unrestricted closure](UpperCongruenceClosure.md) · [Prime tests](CofinitePrimeTests.md) · [Lipton et al.](https://livrepository.liverpool.ac.uk/3169327/)
+
+An independent recurrence calculation compared the full modular period with exact bilateral witnesses for all −100 ≤ y ≤ 100, all steps from 1 through 10 and every offset class. All 11,055 cases agreed. A clean Lean 4.33.1 replay checked eight modules and 32 named axiom reports within `propext`, `Classical.choice` and `Quot.sound`. [Kernel replay instructions](../../README.md#replay)
