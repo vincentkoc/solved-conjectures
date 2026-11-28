@@ -1,6 +1,6 @@
 # DeepMind proof notebook
 
-These Lean files develop partial results for six problems in [Formal Conjectures](https://github.com/google-deepmind/formal-conjectures/tree/f606af160664c5a10952e9a957b100a1cd45bbeb). Codex assisted with the proofs. Each file prints its theorem’s axioms. The notes link the original question, prior work and the proof.
+These Lean files develop partial results for seven problems in [Formal Conjectures](https://github.com/google-deepmind/formal-conjectures/tree/f606af160664c5a10952e9a957b100a1cd45bbeb). Codex assisted with the proofs. Each file prints its theorem’s axioms. The notes link the original question, prior work and the proof.
 
 | Problem | Kernel-checked result | What remains |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 | [Green 33 · stability under deletion](green/HEREDITARY-TAIL.md) | In any family at the proposed density, every subset of size at least `α√q`, for fixed `α > 1`, has diverging maximum ordered multiplicity. Its own energy above a fixed cutoff is at least `(2α² − 2 − o(1))q`, uniformly in the subset. | Existence of the ambient family remains open. |
 | [Green 33 · small self-sumsets](green/PIECE-OBSTRUCTION.md) | If a basis family is covered by a fixed number `r ≥ 2` of pieces with total self-sumset size `o(q)`, its limiting normalized size is at least `√(2r/(r−1))`. The four-progression bound is sharp. | Bases without such covers remain eligible for Green’s constant. |
 | [Green 33 · maximal cyclic orders](green/MAXIMAL-ORDERS.md) | Graham–Sloane’s strict and ordinary largest orders divided by `k²` converge for every size budget to the supremum of finite strict cover densities. This common limit lies in `[7/18, 1/2]`. | Green 33 is equivalent to the upper endpoint. |
+| [Green 54 · Gaussian convexity](green/GAUSSIAN-PROJECTIONS.md) | The finite Hua–Song–Tudose estimate is equivalent to its countable version. Mazhar’s finite theorem yields a compact convex set of mass at least `1/2` in three Minkowski summands of any compact input of mass greater than `2/3`. | The transfer is proved in Lean. The finite analytic results are explicit hypotheses. |
 | [Cunningham chains](arxiv/NOTES.md) | Dickson’s prime-tuples conjecture implies infinitely many first-kind chains of every positive **exact** length. The proof forces the next term to be composite. | Dickson’s conjecture is an explicit hypothesis. The unconditional first-kind statement remains open. |
 | [First-kind chains in residue classes](arxiv/1104.1579/FirstKindProgressions.md) | Under Dickson, a class contains infinitely many exact length-`k` seeds iff each of its first `k` terms is coprime to the modulus. A failed test leaves at most one seed unconditionally. | Infinitude in admissible classes remains conditional. |
 | [Second-kind Cunningham chains](arxiv/1104.1579/CunninghamSecondKindDickson.md) | Under Dickson, infinitely many seeds have each positive exact length for the recurrence `p ↦ 2p − 1`. | Unconditional infinitude remains open. |
