@@ -168,26 +168,18 @@ private theorem rounded_pair {J : Type*} [Fintype J] {r : ℕ} (A : Fin r → J 
     (fun j hj => by simp [zero j hj,p j hj]) (fun j hj => by simp [D,spin_add,f j hj])
   rw [fst,snd]; exact loss i
 
-/-- On an affine slice, the same threshold cell meets both endpoints of every
-direction that vanishes on a bounded number of coordinates. -/
-theorem slice_differences {J V : Type*} [Fintype J] [AddCommGroup V] [Module F V]
+/-- A signing on the slice with sufficient margin realizes every displacement vanishing on the pinned coordinates. -/
+theorem slice_of_margin {J V : Type*} [Fintype J] [AddCommGroup V] [Module F V]
     [FiniteDimensional F V] {r : ℕ} (Q : (J → F) →ₗ[F] V) (anchor : J → F)
-    (A : Fin r → J → ℝ) (b : Fin r → ℝ) :
-    ∃ (t : Finset J) (y : Fin r → Bool),
-      t.card ≤ 2*r*(2^(Module.finrank F V)*r*(2*r+2*Module.finrank F V+2))^2 ∧
-      ∀ z : J → F, Q z=0 → (∀ j∈t, z j=0) →
+    (A : Fin r → J → ℝ) (b : Fin r → ℝ)
+    (t : Finset J) (x₀ : J → F) (feasible : Q x₀=Q anchor)
+    (mg : ∀ i j, j∉t → ((2*r+2*Module.finrank F V+1 : ℕ):ℝ)*|A i j| ≤
+      |b i+∑ l∈t,A i l*spin (x₀ l)|) :
+    ∃ y : Fin r → Bool, ∀ z : J → F, Q z=0 → (∀ j∈t, z j=0) →
         ∃ x : J → F, Q x=Q anchor ∧ Q (x+z)=Q anchor ∧
           readings A b (fun j => spin (x j))=y ∧ readings A b (fun j => spin ((x+z) j))=y := by
   classical
   let s := Module.finrank F V
-  let c := 2*r+2*s+1
-  let G := univ.filter (fun x : J → Bool => Q (cube x)=Q anchor)
-  obtain ⟨t,a,card,ha,mg⟩ := dense_margins r c s G (slice_size Q anchor) A b
-  let x₀ := cube a
-  have feasible : Q x₀=Q anchor := (mem_filter.mp ha).2
-  have same (j : J) : spin (x₀ j)=signBit (a j) := by
-    change spin (decode (a j))=signBit (a j)
-    cases a j <;> norm_num [decode,spin,signBit]
   let B (i : Fin r) := b i+∑ j∈t, A i j*spin (x₀ j)
   let U := univ\t
   choose M nonneg cap attained using fun i => row_cap U (A i)
@@ -197,13 +189,11 @@ theorem slice_differences {J V : Type*} [Fintype J] [AddCommGroup V] [Module F V
     · rw [h,mul_zero]; exact abs_nonneg _
     · have e := mg i j (mem_sdiff.mp mem).2
       dsimp only [B]
-      simp only [same]
-      dsimp only [c] at e
+      dsimp only [s]
       push_cast at e ⊢
       rw [←h]
       exact e
-  refine ⟨t,fun i => decide (0≤B i),?_,?_⟩
-  · simpa [c,s,Nat.add_assoc] using card
+  refine ⟨fun i => decide (0≤B i),?_⟩
   intro z hz zero
   obtain ⟨p,pin,round⟩ := rounded_pair A t x₀ z zero M nonneg bound
   obtain ⟨T,v,dis,ts,supp,h₁,h₂⟩ := correct_pair Q t x₀ p z pin hz
@@ -226,21 +216,45 @@ theorem slice_differences {J V : Type*} [Fintype J] [AddCommGroup V] [Module F V
   have second := side (p+z) (fun i => by simpa [R,B] using (round i).2)
   exact ⟨p+v,h₁.trans feasible,h₂.trans feasible,first,by simpa only [add_right_comm p z v] using second⟩
 
-/-- Allow a common collection of affine parities with arbitrary dependencies.
-The codimension bound depends on the number of threshold rows and the number
-of linear relations among the parities. -/
-theorem parity_threshold_subspace {n N r : ℕ} {C : Type*}
+/-- On an affine slice, the same threshold cell meets both endpoints of every
+direction that vanishes on a bounded number of coordinates. -/
+theorem slice_differences {J V : Type*} [Fintype J] [AddCommGroup V] [Module F V]
+    [FiniteDimensional F V] {r : ℕ} (Q : (J → F) →ₗ[F] V) (anchor : J → F)
+    (A : Fin r → J → ℝ) (b : Fin r → ℝ) :
+    ∃ (t : Finset J) (y : Fin r → Bool),
+      t.card ≤ 2*r*(2^(Module.finrank F V)*r*(2*r+2*Module.finrank F V+2))^2 ∧
+      ∀ z : J → F, Q z=0 → (∀ j∈t, z j=0) →
+        ∃ x : J → F, Q x=Q anchor ∧ Q (x+z)=Q anchor ∧
+          readings A b (fun j => spin (x j))=y ∧ readings A b (fun j => spin ((x+z) j))=y := by
+  classical
+  let s := Module.finrank F V
+  let c := 2*r+2*s+1
+  let G := univ.filter (fun x : J → Bool => Q (cube x)=Q anchor)
+  obtain ⟨t,a,card,ha,mg⟩ := dense_margins r c s G (slice_size Q anchor) A b
+  let x₀ := cube a
+  have feasible : Q x₀=Q anchor := (mem_filter.mp ha).2
+  have same (j : J) : spin (x₀ j)=signBit (a j) := by
+    change spin (decode (a j))=signBit (a j)
+    cases a j <;> norm_num [decode,spin,signBit]
+  obtain ⟨y,cover⟩ := slice_of_margin Q anchor A b t x₀ feasible (fun i j hj => by
+    simpa only [same] using mg i j hj)
+  exact ⟨t,y,by simpa [c,s,Nat.add_assoc] using card,cover⟩
+
+/-- Pull the coordinate displacements of a cell back through its affine parity map. -/
+theorem subspace_of_coordinates {n N r : ℕ} {C : Type*}
     (E : Green52Complements.Cube n →ₗ[F] Green52Complements.Cube N)
     (h : Green52Complements.Cube N) (A : Fin r → Fin N → ℝ) (b : Fin r → ℝ)
-    (colour : (Fin r → Bool) → C) :
-    let s := Module.finrank F ((Green52Complements.Cube N) ⧸ E.range)
+    (colour : (Fin r → Bool) → C)
+    (t : Finset (Fin N)) (y : Fin r → Bool)
+    (cover : ∀ z : Green52Complements.Cube N, E.range.mkQ z=0 → (∀ j∈t,z j=0) →
+      ∃ x, E.range.mkQ x=E.range.mkQ h ∧ E.range.mkQ (x+z)=E.range.mkQ h ∧
+        readings A b (fun j => spin (x j))=y ∧ readings A b (fun j => spin ((x+z) j))=y) :
     ∃ (i : C) (W : Submodule F (Green52Complements.Cube n)),
-      n ≤ Module.finrank F W + 2*r*(2^s*r*(2*r+2*s+2))^2 ∧
+      n ≤ Module.finrank F W + t.card ∧
       (W : Set _) ⊆ {x | colour (readings A b (fun j => spin ((E x+h) j)))=i} +
         {x | colour (readings A b (fun j => spin ((E x+h) j)))=i} := by
   classical
   let Q := E.range.mkQ
-  obtain ⟨t,y,size,cover⟩ := slice_differences Q h A b
   let P : Green52Complements.Cube N →ₗ[F] (t → F) := LinearMap.pi (fun i => LinearMap.proj i.val)
   let L := P.comp E
   refine ⟨colour y,L.ker,?_,?_⟩
@@ -266,6 +280,24 @@ theorem parity_threshold_subspace {n N r : ℕ} {C : Type*}
     · simp only [Set.mem_ofPred_eq,xz,second]
     · funext j
       exact (by decide : ∀ a b : F,a+(a+b)=b) (u j) (z j)
+
+/-- Allow a common collection of affine parities with arbitrary dependencies.
+The codimension bound depends on the number of threshold rows and the number
+of linear relations among the parities. -/
+theorem parity_threshold_subspace {n N r : ℕ} {C : Type*}
+    (E : Green52Complements.Cube n →ₗ[F] Green52Complements.Cube N)
+    (h : Green52Complements.Cube N) (A : Fin r → Fin N → ℝ) (b : Fin r → ℝ)
+    (colour : (Fin r → Bool) → C) :
+    let s := Module.finrank F ((Green52Complements.Cube N) ⧸ E.range)
+    ∃ (i : C) (W : Submodule F (Green52Complements.Cube n)),
+      n ≤ Module.finrank F W + 2*r*(2^s*r*(2*r+2*s+2))^2 ∧
+      (W : Set _) ⊆ {x | colour (readings A b (fun j => spin ((E x+h) j)))=i} +
+        {x | colour (readings A b (fun j => spin ((E x+h) j)))=i} := by
+  classical
+  let Q := E.range.mkQ
+  obtain ⟨t,y,size,cover⟩ := slice_differences Q h A b
+  obtain ⟨i,W,dim,sub⟩ := subspace_of_coordinates E h A b colour t y cover
+  exact ⟨i,W,dim.trans (Nat.add_le_add_left size _),sub⟩
 
 open Green52Complements in
 /-- The Green 53 conclusion when the row count and number of parity relations
