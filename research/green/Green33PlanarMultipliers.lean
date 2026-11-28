@@ -397,6 +397,39 @@ theorem centroid_peak (D : Finset G) (perfect : Perfect D) {q : ℕ}
 
 open Green33SingerAllCharacteristics Green33SingerKloosterman Green33PrimeSingerIncidence Green33PrimeSingerBasisGap
 
+/-- Over an odd field of order at least ten thousand the centroid gives the unique
+global maximum of ordered triple counts for a cubic Singer line. -/
+theorem singer_unique_peak_field {F : Type*} [Field F] [Fintype F] [DecidableEq F] (odd : ringChar F≠2) {K : Type*} [Field K] [Fintype K]
+    [DecidableEq K] [Algebra F K] (h : Fintype.card K=(Fintype.card F)^3)
+    (L : K→ₗ[F] F) (onto : Function.Surjective L) (big : 10000≤(Fintype.card F)) :
+    let D:=labels h L
+    let z:=(3:ℕ) • (-((Fintype.card F) • ∑ d∈D,d))
+    ∀ t≠z, paths D 3 t<paths D 3 z := by
+  classical
+  let D:=labels h L
+  let z:=(3:ℕ) • (-((Fintype.card F) • ∑ d∈D,d))
+  change ∀ t≠z,paths D 3 t<paths D 3 z
+  have hd : Perfect D:=perfect_labels h L onto
+  have size : D.card=(Fintype.card F)+1 := by change (labels h L).card=_;rw [labels,card_map,(cubic_parameters L onto h).1]
+  have eq:=centroid_peak D hd (by omega : 0<(Fintype.card F)) size
+  change paths D 3 z=_ at eq
+  have peak : 2*((Fintype.card F):ℝ)≤paths D 3 z := by rw [eq];split_ifs <;> linarith
+  have large : 100≤(Fintype.card F).sqrt:=Nat.le_sqrt.mpr big
+  have margin : 80*((Fintype.card F).sqrt+1)+10<(Fintype.card F) := by
+    nlinarith only [Nat.sqrt_le (Fintype.card F),Nat.mul_le_mul_right (Fintype.card F).sqrt large,large]
+  have marginR : ((Fintype.card F):ℝ)+80*(((Fintype.card F).sqrt:ℝ)+1)+10<2*(Fintype.card F) := by
+    have real : 80*(((Fintype.card F).sqrt:ℝ)+1)+10<((Fintype.card F):ℝ) := by exact_mod_cast margin
+    linarith
+  obtain ⟨S⟩:=singer_map h L onto
+  obtain ⟨w,hw⟩:=Green33PrimeSingerCounts.triple_upper_field odd D S hd.sidon size h
+  have name : z=w := by
+    by_contra ne
+    exact (not_lt_of_ge peak) ((hw z ne).trans_lt marginR)
+  intro t nt
+  exact ((hw t (name ▸ nt)).trans_lt marginR).trans_le peak
+
+#print axioms singer_unique_peak_field
+
 /-- For large prime Singer lines the unique maximum three-sum count occurs at
 three times the centroid. Its exact value is given by `centroid_peak`. -/
 theorem prime_singer_unique_peak {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fintype K]
@@ -405,28 +438,8 @@ theorem prime_singer_unique_peak {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] 
     let D:=labels h L
     let z:=(3:ℕ) • (-(p • ∑ d∈D,d))
     ∀ t≠z, paths D 3 t<paths D 3 z := by
-  classical
-  let D:=labels h L
-  let z:=(3:ℕ) • (-(p • ∑ d∈D,d))
-  change ∀ t≠z,paths D 3 t<paths D 3 z
-  have hd : Perfect D:=perfect_labels h L onto
-  have size : D.card=p+1 := by change (labels h L).card=_;rw [labels,card_map,(cubic_parameters L onto h).1,ZMod.card]
-  have eq:=centroid_peak D hd (by omega : 0<p) size
-  change paths D 3 z=_ at eq
-  have peak : 2*(p:ℝ)≤paths D 3 z := by rw [eq];split_ifs <;> linarith
-  have large : 100≤p.sqrt:=Nat.le_sqrt.mpr big
-  have margin : 80*(p.sqrt+1)+10<p := by
-    nlinarith only [Nat.sqrt_le p,Nat.mul_le_mul_right p.sqrt large,large]
-  have marginR : (p:ℝ)+80*((p.sqrt:ℝ)+1)+10<2*p := by
-    have real : 80*((p.sqrt:ℝ)+1)+10<(p:ℝ) := by exact_mod_cast margin
-    linarith
-  obtain ⟨S⟩:=singer_map h L onto
-  obtain ⟨w,hw⟩:=Green33PrimeSingerCounts.triple_upper D S hd.sidon size h (by omega)
-  have name : z=w := by
-    by_contra ne
-    exact (not_lt_of_ge peak) ((hw z ne).trans_lt marginR)
-  intro t nt
-  exact ((hw t (name ▸ nt)).trans_lt marginR).trans_le peak
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using singer_unique_peak_field odd h L onto (by simpa only [ZMod.card] using big)
 
 #print axioms prime_singer_unique_peak
 

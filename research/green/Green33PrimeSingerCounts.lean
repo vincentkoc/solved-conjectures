@@ -25,14 +25,14 @@ private theorem coefficients_zero {F K : Type*} [Field F] [Field K] [Algebra F K
   · simpa [Q,coeff_X_pow] using h 1
   · simpa [Q,coeff_X_pow] using h 0
 
-private theorem affine_reverse {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Algebra (ZMod p) K]
-    (P : Pencil (ZMod p)) (r : K) (degree : (minpoly (ZMod p) r).natDegree=3)
-    (noPole : ∀ x, P.cubic x≠0) (pole : (P.map (algebraMap (ZMod p) K)).cubic r=0)
-    (x y z k : ZMod p) (product :
-      (r-algebraMap (ZMod p) K x)*(r-algebraMap (ZMod p) K y)*(r-algebraMap (ZMod p) K z)=
-        algebraMap (ZMod p) K k*(P.map (algebraMap (ZMod p) K)).quad r) :
-    y∈fiber P x := by
-  let φ:=algebraMap (ZMod p) K
+private theorem affine_reverse {F : Type*} [Field F] [Fintype F] [DecidableEq F] {K : Type*} [Field K] [Algebra F K]
+    (P : Pencil F) (r : K) (degree : (minpoly F r).natDegree=3)
+    (noPole : ∀ x, P.cubic x≠0) (pole : (P.map (algebraMap F K)).cubic r=0)
+    (x y z k : F) (product :
+      (r-algebraMap F K x)*(r-algebraMap F K y)*(r-algebraMap F K z)=
+        algebraMap F K k*(P.map (algebraMap F K)).quad r) :
+    y∈fiberOver P x := by
+  let φ:=algebraMap F K
   let a:= -(x+y+z)-P.i-k*P.a
   let b:=x*y+x*z+y*z-P.j-k*P.b
   let c:= -(x*y*z)-P.k-k*P.c
@@ -50,7 +50,7 @@ private theorem affine_reverse {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [A
   have three : P.k= -(x*y*z)-k*P.c := by dsimp [c] at h₃;linear_combination -h₃
   have atX : P.cubic x+k*P.quad x=0 := by unfold Pencil.cubic Pencil.quad;rw [one,two,three];ring
   have nonzero : P.quad x≠0 := fun e => noPole x (by simpa [e] using atX)
-  apply (mem_fiber P x y).mpr
+  apply (mem_fiberOver P x y).mpr
   refine ⟨nonzero,?_⟩
   unfold Pencil.quad Pencil.middle Pencil.last
   rw [one,two,three]
@@ -217,15 +217,15 @@ open Green33PrimeSingerIncidence Green33PrimeSingerTriples
 
 /-- Every target except one projective label has at most (p+O(√p)) ordered
 three-term representations. The constant is uniform in the cubic Singer chart. -/
-theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
-    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
-    (D : Finset G) (S : SingerMap (ZMod p) K D) (sid : IsSidon (D : Set G))
-    (size : D.card=p+1) (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) :
+theorem triple_upper_field {F : Type*} [Field F] [Fintype F] [DecidableEq F] (odd : ringChar F≠2) {K G : Type*} [Field K] [Fintype K]
+    [Algebra F K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap F K D) (sid : IsSidon (D : Set G))
+    (size : D.card=Fintype.card F+1) (card : Fintype.card K=(Fintype.card F)^3) :
     ∃ exception : G, ∀ c≠exception,
-      paths D 3 c≤(p:ℝ)+80*((p.sqrt:ℝ)+1)+10 := by
+      paths D 3 c≤(Fintype.card F:ℝ)+80*(((Fintype.card F).sqrt:ℝ)+1)+10 := by
   classical
-  let φ:=algebraMap (ZMod p) K
-  obtain ⟨C⟩:=line_chart D S (by omega) card
+  let φ:=algebraMap F K
+  obtain ⟨C⟩:=line_chart_field D S (by have := Fintype.one_lt_card (α:=F);omega) card
   let U:=C.base
   let θ:=C.theta
   let e:=C.embedding
@@ -237,18 +237,14 @@ theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
   intro c ne
   obtain ⟨W,wc⟩:=S.surj c
   obtain ⟨a,b,d,eq⟩:=span_quadratics θ card C.degree ((W:K)/(U:K)^3)
-  let P : Pencil (ZMod p):=⟨i,j,k,a,b,d⟩
+  let P : Pencil F:=⟨i,j,k,a,b,d⟩
   have val : (P.map φ).quad θ=(W:K)/(U:K)^3:=eq
   have prod : (P.map φ).quad θ*(U:K)^3=(W:K):=(eq_div_iff (pow_ne_zero 3 U.ne_zero)).mp val
   have four : (-4:K)≠0 := by
-    have h : (4:ZMod p)≠0 := by
-      change ((4:ℕ):ZMod p)≠0
-      rw [Ne,ZMod.natCast_eq_zero_iff]
-      exact Nat.not_dvd_of_pos_of_lt (by decide) (by omega)
-    have hz : (4:K)≠0 := by simpa only [map_ofNat] using (show φ (4:ZMod p)≠0 from (map_ne_zero φ).mpr h)
-    exact neg_ne_zero.mpr hz
-  have count : (∑ x : ZMod p,(fiber P x).card)≤p+80*(p.sqrt+1)+4 := by
-    rcases pairs_or_twist P big with q|twist
+    have twoK : (2:K)≠0 := Ring.two_ne_zero (by rwa [←Algebra.ringChar_eq F K])
+    exact neg_ne_zero.mpr (by simpa only [show (4:K)=2*2 by norm_num] using mul_ne_zero twoK twoK)
+  have count : (∑ x : F,(fiberOver P x).card)≤Fintype.card F+80*((Fintype.card F).sqrt+1)+4 := by
+    rcases pairs_or_twist_field odd P with q|twist
     · exact q
     · obtain ⟨j,ej⟩:=value_at_exception P four rs st tr one two three C.degree
         (val.trans_ne (div_ne_zero W.ne_zero (pow_ne_zero 3 U.ne_zero))) twist
@@ -257,7 +253,7 @@ theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
       change (W:K)=φ j*((U:K)^3*v)
       change (P.map φ).quad θ=φ j*v at ej
       rw [←prod,ej];ring
-  have rev (x y z : ZMod p) (he : e x+e y+e z=c) : y∈fiber P x := by
+  have rev (x y z : F) (he : e x+e y+e z=c) : y∈fiberOver P x := by
     have tags : S.tag (C.parameter x*C.parameter y*C.parameter z)=S.tag W := by
       rw [S.mul,S.mul,←C.tagged,←C.tagged,←C.tagged,wc];exact he
     obtain ⟨m,hm⟩:=(S.same _ _).mp tags
@@ -274,7 +270,7 @@ theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
     intro z hz
     obtain ⟨x,_,rfl⟩:=mem_map.mp hz
     exact C.inside x
-  have diff : (D \ univ.map e).card=1 := by rw [card_sdiff_of_subset inside,card_map,card_univ,ZMod.card,size];omega
+  have diff : (D \ univ.map e).card=1 := by rw [card_sdiff_of_subset inside,card_map,card_univ,size];omega
   obtain ⟨u,hu⟩:=card_eq_one.mp diff
   have cover (d) (hd : d∈D) : d=u ∨ ∃ x,e x=d := by
     by_cases h : d∈univ.map e
@@ -283,9 +279,20 @@ theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
     · have hv:=mem_sdiff.mpr ⟨hd,h⟩
       rw [hu,mem_singleton] at hv
       exact Or.inl hv
-  have upper:=chart_upper D sid c u e cover (fiber P) rev
-  have q : (∑ x : ZMod p,((fiber P x).card:ℝ))≤(p:ℝ)+80*((p.sqrt:ℝ)+1)+4 := by exact_mod_cast count
+  have upper:=chart_upper D sid c u e cover (fiberOver P) rev
+  have q : (∑ x : F,((fiberOver P x).card:ℝ))≤(Fintype.card F:ℝ)+80*(((Fintype.card F).sqrt:ℝ)+1)+4 := by exact_mod_cast count
   linarith
+
+#print axioms triple_upper_field
+
+theorem triple_upper {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
+    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap (ZMod p) K D) (sid : IsSidon (D : Set G))
+    (size : D.card=p+1) (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) :
+    ∃ exception : G, ∀ c≠exception,
+      paths D 3 c≤(p:ℝ)+80*((p.sqrt:ℝ)+1)+10 := by
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using triple_upper_field odd D S sid (by simpa only [ZMod.card] using size) card
 
 #print axioms triple_upper
 
@@ -306,73 +313,100 @@ open Green33SingerAllCharacteristics Green33PrimeSingerBasisGap Green33PerfectDi
 open Green33ReflectedLayers (overlap)
 open Green33SingerKloosterman (cubic_parameters)
 
-variable {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
+section FiniteFields
+
+variable {F : Type*} [Field F] [Fintype F] [DecidableEq F] {K : Type*} [Field K] [Fintype K] [DecidableEq K] [Algebra F K]
 
 /-- Two-sided uniform finite error for the reflected overlap, with the one
 exceptional three-term target charged at most once. -/
-theorem overlap_error (card : Fintype.card K=(Fintype.card (ZMod p))^3)
-    (L : K→ₗ[ZMod p] ZMod p) (onto : Function.Surjective L) (big : 400≤p)
-    (c : ZMod (order (ZMod p))) :
-    |4*(overlap (labels card L) c:ℝ)-(order (ZMod p):ℝ)|≤
-      ((p:ℝ)+1)*(80*((p.sqrt:ℝ)+1)+16)+1 := by
+theorem overlap_error_field (odd : ringChar F≠2) (card : Fintype.card K=(Fintype.card F)^3)
+    (L : K→ₗ[F] F) (onto : Function.Surjective L)
+    (c : ZMod (order F)) :
+    |4*(overlap (labels card L) c:ℝ)-(order F:ℝ)|≤
+      (((Fintype.card F):ℝ)+1)*(80*(((Fintype.card F).sqrt:ℝ)+1)+16)+1 := by
   classical
   let D:=labels card L
-  have size : D.card=p+1 := by change (labels card L).card=_;rw [labels,card_map,(cubic_parameters L onto card).1,ZMod.card]
+  have size : D.card=(Fintype.card F)+1 := by change (labels card L).card=_;rw [labels,card_map,(cubic_parameters L onto card).1]
   have hd:=(perfect_labels card L onto).sidon
   obtain ⟨S⟩:=singer_map card L onto
-  obtain ⟨z,hz⟩:=triple_upper D S hd size card big
-  let E : ℝ:=80*((p.sqrt:ℝ)+1)+10
-  have low (a : ZMod (order (ZMod p))) : (p:ℝ)-E≤paths D 3 (c-a) := by
-    have h:=label_triples card L onto big (c-a)
+  obtain ⟨z,hz⟩:=triple_upper_field odd D S hd size card
+  let E : ℝ:=80*(((Fintype.card F).sqrt:ℝ)+1)+10
+  have low (a : ZMod (order F)) : ((Fintype.card F):ℝ)-E≤paths D 3 (c-a) := by
+    have h:=label_triples_field odd card L onto (c-a)
     dsimp [D,E];linarith
-  have upper (a : ZMod (order (ZMod p))) :
-      paths D 3 (c-a)≤(p:ℝ)+E+if a=c-z then 2*((p:ℝ)+1) else 0 := by
+  have upper (a : ZMod (order F)) :
+      paths D 3 (c-a)≤((Fintype.card F):ℝ)+E+if a=c-z then 2*(((Fintype.card F):ℝ)+1) else 0 := by
     by_cases hit : a=c-z
     · rw [if_pos hit]
       have h:=triple_cap D hd (c-a)
       rw [size,Nat.cast_add,Nat.cast_one] at h
       have e : 0≤E := by dsimp [E];positivity
-      linarith [Nat.cast_nonneg (α:=ℝ) p]
+      linarith [Nat.cast_nonneg (α:=ℝ) (Fintype.card F)]
     · rw [if_neg hit,add_zero]
       simpa only [E,add_assoc] using hz (c-a) (fun e => hit (by rw [←e];abel))
   have low_sum:=sum_le_sum (s:=D) (fun x _ => low x)
   have up_sum:=sum_le_sum (s:=D) (fun x _ => upper x)
   simp only [sum_add_distrib,sum_const,nsmul_eq_mul,sum_ite_eq',size,Nat.cast_add,Nat.cast_one] at up_sum low_sum
-  have loss : (if c-z∈D then 2*((p:ℝ)+1) else 0)≤2*((p:ℝ)+1) := by split <;> first | exact le_rfl | positivity
-  change ((p:ℝ)+1)*((p:ℝ)-E)≤paths D 4 c at low_sum
-  change paths D 4 c≤((p:ℝ)+1)*p+((p:ℝ)+1)*E+_ at up_sum
+  have loss : (if c-z∈D then 2*(((Fintype.card F):ℝ)+1) else 0)≤2*(((Fintype.card F):ℝ)+1) := by split <;> first | exact le_rfl | positivity
+  change (((Fintype.card F):ℝ)+1)*(((Fintype.card F):ℝ)-E)≤paths D 4 c at low_sum
+  change paths D 4 c≤(((Fintype.card F):ℝ)+1)*(Fintype.card F)+(((Fintype.card F):ℝ)+1)*E+_ at up_sum
   have ov:=Green33ReflectedLayers.two_walk_overlap hd c
   change paths D 4 c≤4*(overlap D c:ℝ) ∧ 4*(overlap D c:ℝ)≤paths D 4 c+4*(D.card:ℝ) at ov
   rw [size,Nat.cast_add,Nat.cast_one] at ov
-  have v : (order (ZMod p):ℝ)=(p:ℝ)^2+p+1 := by simp [Green33SingerAllCharacteristics.order,ZMod.card]
-  change |4*(overlap D c:ℝ)-(order (ZMod p):ℝ)|≤_
+  have v : (order F:ℝ)=((Fintype.card F):ℝ)^2+(Fintype.card F)+1 := by simp [Green33SingerAllCharacteristics.order]
+  change |4*(overlap D c:ℝ)-(order F:ℝ)|≤_
   rw [v,abs_le]
   dsimp [E] at low_sum up_sum
-  constructor <;> nlinarith only [up_sum,low_sum,ov.1,ov.2,loss,Nat.cast_nonneg (α:=ℝ) p]
+  constructor <;> nlinarith only [up_sum,low_sum,ov.1,ov.2,loss,Nat.cast_nonneg (α:=ℝ) (Fintype.card F)]
+
+#print axioms overlap_error_field
+
+/-- The ordinary sumset in the doubled cyclic group has density (7/8) up
+to a uniform (O(Q^{-1/2})) relative error. -/
+theorem doubled_error_field (odd : ringChar F≠2) (card : Fintype.card K=(Fintype.card F)^3)
+    (L : K→ₗ[F] F) (onto : Function.Surjective L)
+    (t : ZMod (order F)) :
+    |4*((reflected card L t+reflected card L t).card:ℝ)-7*(order F:ℝ)|≤
+      (((Fintype.card F):ℝ)+1)*(80*(((Fintype.card F).sqrt:ℝ)+1)+24)+5 := by
+  classical
+  let c:=1+t+t
+  have size : (labels card L).card=(Fintype.card F)+1 := by rw [labels,card_map,(cubic_parameters L onto card).1]
+  have ne : (labels card L).Nonempty:=card_pos.mp (by omega)
+  have h:=doubled_count (m:=positiveOrder F) (perfect_labels card L onto) ne t
+  have eq:=congrArg (Nat.cast (R:=ℝ)) h
+  push_cast at eq
+  change ((reflected card L t+reflected card L t).card:ℝ)+(overlap (labels card L) c:ℝ)+1=
+    2*(order F:ℝ)+2*((labels card L).card:ℝ) at eq
+  have realSize : ((labels card L).card:ℝ)=((Fintype.card F):ℝ)+1 := by exact_mod_cast size
+  rw [realSize] at eq
+  have b:=abs_le.mp (overlap_error_field odd card L onto c)
+  rw [abs_le]
+  constructor <;> nlinarith only [eq,b.1,b.2,Nat.cast_nonneg (α:=ℝ) (Fintype.card F)]
+
+#print axioms doubled_error_field
+
+
+end FiniteFields
+
+variable {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Fintype K] [DecidableEq K] [Algebra (ZMod p) K]
+
+theorem overlap_error (card : Fintype.card K=(Fintype.card (ZMod p))^3)
+    (L : K→ₗ[ZMod p] ZMod p) (onto : Function.Surjective L) (big : 400≤p)
+    (c : ZMod (order (ZMod p))) :
+    |4*(overlap (labels card L) c:ℝ)-(order (ZMod p):ℝ)|≤
+      ((p:ℝ)+1)*(80*((p.sqrt:ℝ)+1)+16)+1 := by
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using overlap_error_field odd card L onto c
 
 #print axioms overlap_error
 
-/-- The ordinary sumset in the doubled cyclic group has density (7/8) up
-to a uniform (O(p^{-1/2})) relative error. -/
 theorem doubled_error (card : Fintype.card K=(Fintype.card (ZMod p))^3)
     (L : K→ₗ[ZMod p] ZMod p) (onto : Function.Surjective L) (big : 400≤p)
     (t : ZMod (order (ZMod p))) :
     |4*((reflected card L t+reflected card L t).card:ℝ)-7*(order (ZMod p):ℝ)|≤
       ((p:ℝ)+1)*(80*((p.sqrt:ℝ)+1)+24)+5 := by
-  classical
-  let c:=1+t+t
-  have size : (labels card L).card=p+1 := by rw [labels,card_map,(cubic_parameters L onto card).1,ZMod.card]
-  have ne : (labels card L).Nonempty:=card_pos.mp (by omega)
-  have h:=doubled_count (m:=positiveOrder (ZMod p)) (perfect_labels card L onto) ne t
-  have eq:=congrArg (Nat.cast (R:=ℝ)) h
-  push_cast at eq
-  change ((reflected card L t+reflected card L t).card:ℝ)+(overlap (labels card L) c:ℝ)+1=
-    2*(order (ZMod p):ℝ)+2*((labels card L).card:ℝ) at eq
-  have realSize : ((labels card L).card:ℝ)=(p:ℝ)+1 := by exact_mod_cast size
-  rw [realSize] at eq
-  have b:=abs_le.mp (overlap_error card L onto big c)
-  rw [abs_le]
-  constructor <;> nlinarith only [eq,b.1,b.2,Nat.cast_nonneg (α:=ℝ) p]
+  have odd : ringChar (ZMod p)≠2 := by rw [ringChar.eq (ZMod p) p];omega
+  simpa only [ZMod.card] using doubled_error_field odd card L onto t
 
 #print axioms doubled_error
 
@@ -381,7 +415,7 @@ open scoped Topology
 
 private theorem normalized (q : ℕ→ℕ) (v u : ℕ→ℝ) (b : ℝ) (hv : ∀ i,(q i:ℝ)^2≤v i)
     (grow : Tendsto q atTop atTop)
-    (err : ∀ i, 400≤q i → |u i-b*v i|≤
+    (err : ∀ᶠ i in atTop, |u i-b*v i|≤
       ((q i:ℝ)+1)*(80*(((q i).sqrt:ℝ)+1)+24)+5) :
     Tendsto (fun i => u i/v i) atTop (𝓝 b) := by
   have large : Tendsto (fun i => (q i:ℝ)) atTop atTop:=tendsto_natCast_atTop_atTop.comp grow
@@ -390,7 +424,7 @@ private theorem normalized (q : ℕ→ℕ) (v u : ℕ→ℝ) (b : ℝ) (hv : ∀
   rw [add_zero] at small
   rw [tendsto_iff_norm_sub_tendsto_zero]
   refine squeeze_zero' (Eventually.of_forall fun _ => norm_nonneg _) ?_ small
-  filter_upwards [grow.eventually_ge_atTop 400] with i big
+  filter_upwards [grow.eventually_ge_atTop 400,err] with i big ei
   let x:ℝ:=q i
   let y:ℝ:=(q i).sqrt
   have largeX : (400:ℝ)≤x := by dsimp [x];exact_mod_cast big
@@ -406,7 +440,7 @@ private theorem normalized (q : ℕ→ℕ) (v u : ℕ→ℝ) (b : ℝ) (hv : ∀
       (show 80*(y+1)+24≤80*(Real.sqrt x+1)+24 by linarith) (by linarith : 0≤80*(y+1)+24)
       (by linarith : 0≤2*x)
     linarith
-  have bound:= (err i big).trans coarse
+  have bound:=ei.trans coarse
   have rt:=Real.sqrt_pos.mpr xp
   change ‖u i/v i-b‖≤160/Real.sqrt x+220/x
   rw [show u i/v i-b=(u i-b*v i)/v i by field_simp,Real.norm_eq_abs,abs_div,abs_of_pos vp]
@@ -415,6 +449,89 @@ private theorem normalized (q : ℕ→ℕ) (v u : ℕ→ℝ) (b : ℝ) (hv : ∀
     _ ≤ (x*(160*Real.sqrt x+220))/x^2 :=
       div_le_div_of_nonneg_left (by positivity) (sq_pos_of_pos xp) (hv i)
     _ = _ := by field_simp [xp.ne',rt.ne'];nlinarith only [Real.sq_sqrt xp.le]
+
+section OddFieldLimits
+
+variable (F : ℕ→Type*) [∀ i, Field (F i)] [∀ i, Fintype (F i)] [∀ i, DecidableEq (F i)]
+    (odd : ∀ᶠ i in atTop, ringChar (F i)≠2) (K : ℕ→Type*) [∀ i, Field (K i)]
+    [∀ i, Fintype (K i)] [∀ i, DecidableEq (K i)] [∀ i, Algebra (F i) (K i)]
+    (h : ∀ i, Fintype.card (K i)=(Fintype.card (F i))^3)
+    (L : ∀ i, K i→ₗ[F i] F i) (onto : ∀ i, Function.Surjective (L i))
+    (t : ∀ i, ZMod (order (F i))) (grow : Tendsto (fun i => Fintype.card (F i)) atTop atTop)
+
+include onto odd grow
+
+/-- All choices of centers have limiting reflected overlap one quarter over
+growing odd finite fields. -/
+theorem quarter_field :
+    Tendsto (fun i => (overlap (labels (h i) (L i)) (t i):ℝ)/(order (F i):ℝ))
+      atTop (𝓝 (1/4)) := by
+  let v i : ℝ:=order (F i)
+  let I i : ℝ:=overlap (labels (h i) (L i)) (t i)
+  have hv (i) : (Fintype.card (F i):ℝ)^2≤v i := by dsimp [v,order];simp only [Nat.cast_add,Nat.cast_one,Nat.cast_pow];linarith [Nat.cast_nonneg (α:=ℝ) (Fintype.card (F i))]
+  have z:=normalized (fun i => Fintype.card (F i)) v (fun i => 4*I i) 1 hv grow (by
+    filter_upwards [odd] with i oi
+    rw [one_mul]
+    have hh:= overlap_error_field oi (h i) (L i) (onto i) (t i)
+    change |4*I i-v i|≤_ at hh
+    exact hh.trans (by nlinarith only [Nat.cast_nonneg (α:=ℝ) (Fintype.card (F i))]))
+  apply (z.div_const 4).congr
+  intro i
+  change 4*I i/v i/4=I i/v i
+  ring
+
+/-- Seven-eighths coverage by the ordinary doubled Singer construction for
+every sequence of reflection axes over growing odd finite fields. -/
+theorem seven_eighths_field :
+    Tendsto (fun i => ((reflected (h i) (L i) (t i)+reflected (h i) (L i) (t i)).card:ℝ)/
+      (2*(order (F i):ℝ))) atTop (𝓝 (7/8)) := by
+  let v i : ℝ:=order (F i)
+  let A i : ℝ:=(reflected (h i) (L i) (t i)+reflected (h i) (L i) (t i)).card
+  have hv (i) : (Fintype.card (F i):ℝ)^2≤v i := by dsimp [v,order];simp only [Nat.cast_add,Nat.cast_one,Nat.cast_pow];linarith [Nat.cast_nonneg (α:=ℝ) (Fintype.card (F i))]
+  have z:=normalized (fun i => Fintype.card (F i)) v (fun i => 4*A i) 7 hv grow (odd.mono fun i oi => doubled_error_field oi (h i) (L i) (onto i) (t i))
+  apply (z.div_const 8).congr
+  intro i
+  change 4*A i/v i/8=A i/(2*v i)
+  ring
+
+#print axioms quarter_field
+#print axioms seven_eighths_field
+
+open Green33ReflectedLayers (doubleHom double_coordinates)
+
+/-- Any ordinary full basis containing both reflected odd-field Singer layers has
+eventual normalized size above every value below `(3+√3)/(2√2)`. -/
+theorem repair_floor_field (B : ∀ i, Finset (ZMod (2*order (F i))))
+    (sub : ∀ i, reflected (h i) (L i) (t i)⊆B i) (full : ∀ i,B i+B i=univ)
+    {s : ℝ} (below : s<(3+Real.sqrt 3)/(2*Real.sqrt 2)) :
+    ∀ᶠ i in atTop, s<((B i).card:ℝ)/Real.sqrt (2*(order (F i):ℝ)) := by
+  classical
+  let v i:=positiveOrder (F i)
+  let D (i : ℕ) : Finset (ZMod (v i)):=labels (h i) (L i)
+  let T (i : ℕ) : ZMod (v i):=t i
+  have ne i : (D i).Nonempty := by
+    apply card_pos.mp
+    change 0<(labels (h i) (L i)).card
+    rw [labels,card_map,(cubic_parameters (L i) (onto i) (h i)).1];omega
+  have hd i : Perfect (D i):=perfect_labels (h i) (L i) (onto i)
+  have vg : Tendsto (fun i => Fintype.card (ZMod (v i))) atTop atTop := by
+    simp only [ZMod.card]
+    exact tendsto_atTop_mono (fun i => by dsimp [v,positiveOrder,order];omega) grow
+  have inter : Tendsto (fun i => (overlap (D i) (1+T i+T i):ℝ)/Fintype.card (ZMod (v i)))
+      atTop (𝓝 (1/4)) := by
+    simp only [ZMod.card]
+    exact quarter_field F odd K h L onto (fun i => 1+t i+t i) grow
+  have res:=Green33SidonLayerRepairs.overlap_extension_lower D (fun i => (hd i).sidon) ne
+    (fun i => doubleHom (v i)) (fun i => (double_coordinates (v i) (T i)).1)
+    (fun i => 1+doubleHom (v i) (T i)) (fun i => (double_coordinates (v i) (T i)).2.1)
+    (by intro i;simp only [ZMod.card]) (fun i => 1+T i+T i)
+    (fun i => (double_coordinates (v i) (T i)).2.2) vg (perfect_size_limit D hd vg) inter B sub full below
+  simp only [ZMod.card,Nat.cast_mul,Nat.cast_ofNat] at res
+  exact res
+
+#print axioms repair_floor_field
+
+end OddFieldLimits
 
 section Limits
 
@@ -426,72 +543,34 @@ variable (q : ℕ→ℕ) [∀ i, Fact (q i).Prime] (K : ℕ→Type*) [∀ i, Fie
 
 include onto grow
 
-/-- All choices of centers have limiting reflected overlap one quarter over
-growing prime fields. -/
+omit onto in
+private theorem prime_eventually_odd : ∀ᶠ i in atTop, ringChar (ZMod (q i))≠2 := by
+  filter_upwards [grow.eventually_ge_atTop 3] with i hi
+  rw [ringChar.eq (ZMod (q i)) (q i)]
+  omega
+
 theorem quarter :
     Tendsto (fun i => (overlap (labels (h i) (L i)) (t i):ℝ)/(order (ZMod (q i)):ℝ))
       atTop (𝓝 (1/4)) := by
-  let v i : ℝ:=order (ZMod (q i))
-  let I i : ℝ:=overlap (labels (h i) (L i)) (t i)
-  have hv (i) : (q i:ℝ)^2≤v i := by dsimp [v,order];simp only [ZMod.card,Nat.cast_add,Nat.cast_one,Nat.cast_pow];linarith [Nat.cast_nonneg (α:=ℝ) (q i)]
-  have z:=normalized q v (fun i => 4*I i) 1 hv grow (fun i hi => by
-    rw [one_mul]
-    have hh:= overlap_error (h i) (L i) (onto i) hi (t i)
-    change |4*I i-v i|≤_ at hh
-    exact hh.trans (by nlinarith only [Nat.cast_nonneg (α:=ℝ) (q i)]))
-  apply (z.div_const 4).congr
-  intro i
-  change 4*I i/v i/4=I i/v i
-  ring
+  exact quarter_field (fun i => ZMod (q i)) (prime_eventually_odd q grow) K h L onto t
+    (by simpa only [ZMod.card] using grow)
 
-/-- Seven-eighths coverage by the ordinary doubled Singer construction for
-every sequence of reflection axes over growing prime fields. -/
+#print axioms quarter
+
 theorem seven_eighths :
     Tendsto (fun i => ((reflected (h i) (L i) (t i)+reflected (h i) (L i) (t i)).card:ℝ)/
       (2*(order (ZMod (q i)):ℝ))) atTop (𝓝 (7/8)) := by
-  let v i : ℝ:=order (ZMod (q i))
-  let A i : ℝ:=(reflected (h i) (L i) (t i)+reflected (h i) (L i) (t i)).card
-  have hv (i) : (q i:ℝ)^2≤v i := by dsimp [v,order];simp only [ZMod.card,Nat.cast_add,Nat.cast_one,Nat.cast_pow];linarith [Nat.cast_nonneg (α:=ℝ) (q i)]
-  have z:=normalized q v (fun i => 4*A i) 7 hv grow (fun i hi => doubled_error (h i) (L i) (onto i) hi (t i))
-  apply (z.div_const 8).congr
-  intro i
-  change 4*A i/v i/8=A i/(2*v i)
-  ring
+  exact seven_eighths_field (fun i => ZMod (q i)) (prime_eventually_odd q grow) K h L onto t
+    (by simpa only [ZMod.card] using grow)
 
-#print axioms quarter
 #print axioms seven_eighths
 
-open Green33ReflectedLayers (doubleHom double_coordinates)
-
-/-- Any ordinary full basis containing both reflected prime Singer layers has
-eventual normalized size above every value below `(3+√3)/(2√2)`. -/
 theorem repair_floor (B : ∀ i, Finset (ZMod (2*order (ZMod (q i)))))
     (sub : ∀ i, reflected (h i) (L i) (t i)⊆B i) (full : ∀ i,B i+B i=univ)
     {s : ℝ} (below : s<(3+Real.sqrt 3)/(2*Real.sqrt 2)) :
     ∀ᶠ i in atTop, s<((B i).card:ℝ)/Real.sqrt (2*(order (ZMod (q i)):ℝ)) := by
-  classical
-  let v i:=positiveOrder (ZMod (q i))
-  let D (i : ℕ) : Finset (ZMod (v i)):=labels (h i) (L i)
-  let T (i : ℕ) : ZMod (v i):=t i
-  have ne i : (D i).Nonempty := by
-    apply card_pos.mp
-    change 0<(labels (h i) (L i)).card
-    rw [labels,card_map,(cubic_parameters (L i) (onto i) (h i)).1];omega
-  have hd i : Perfect (D i):=perfect_labels (h i) (L i) (onto i)
-  have vg : Tendsto (fun i => Fintype.card (ZMod (v i))) atTop atTop := by
-    simp only [ZMod.card]
-    exact tendsto_atTop_mono (fun i => by dsimp [v,positiveOrder,order];rw [ZMod.card];omega) grow
-  have inter : Tendsto (fun i => (overlap (D i) (1+T i+T i):ℝ)/Fintype.card (ZMod (v i)))
-      atTop (𝓝 (1/4)) := by
-    simp only [ZMod.card]
-    exact quarter q K h L onto (fun i => 1+t i+t i) grow
-  have res:=Green33SidonLayerRepairs.overlap_extension_lower D (fun i => (hd i).sidon) ne
-    (fun i => doubleHom (v i)) (fun i => (double_coordinates (v i) (T i)).1)
-    (fun i => 1+doubleHom (v i) (T i)) (fun i => (double_coordinates (v i) (T i)).2.1)
-    (by intro i;simp only [ZMod.card]) (fun i => 1+T i+T i)
-    (fun i => (double_coordinates (v i) (T i)).2.2) vg (perfect_size_limit D hd vg) inter B sub full below
-  simp only [ZMod.card,Nat.cast_mul,Nat.cast_ofNat] at res
-  exact res
+  exact repair_floor_field (fun i => ZMod (q i)) (prime_eventually_odd q grow) K h L onto t
+    (by simpa only [ZMod.card] using grow) B sub full below
 
 #print axioms repair_floor
 
