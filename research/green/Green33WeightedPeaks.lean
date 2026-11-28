@@ -249,11 +249,13 @@ private theorem pair_le (p q : PMF ι) (f : ι → ι → G) (i j : ι) :
     (fun _ _ => by positivity) (mem_univ (i,j))
   simpa using h
 
-/-- An exactly uniform independent sum requires at least `2√|G|−1` labels in the common
-budget, allowing different input laws and zero mass on any chosen labels. -/
-theorem exact_uniform_budget [AddCommGroup G] (p q : PMF ι) (label : ι → G)
+/-- Atom caps with product equal to the uniform output mass, together with the
+diagonal collision bound. The labels need not be distinct. -/
+theorem exact_atom_caps [AddCommGroup G] (p q : PMF ι) (label : ι → G)
     (flat : ∀ z, ((law p q (fun i j => label i+label j)) z).toReal = (Fintype.card G:ℝ)⁻¹) :
-    2*Real.sqrt (Fintype.card G)-1 ≤ (Fintype.card ι:ℝ) := by
+    ∃ a b : ℝ, 0<a ∧ 0<b ∧ a*b=(Fintype.card G:ℝ)⁻¹ ∧
+      (∀ i, (p i).toReal≤a) ∧ (∀ i, (q i).toReal≤b) ∧
+      ∑ i, (p i).toReal*(q i).toReal ≤ (Fintype.card G:ℝ)⁻¹ := by
   classical
   let m := (Fintype.card G:ℝ)
   have hm : 0 < m := by dsimp [m];exact_mod_cast Fintype.card_pos (α:=G)
@@ -283,6 +285,19 @@ theorem exact_uniform_budget [AddCommGroup G] (p q : PMF ι) (label : ι → G)
     apply (le_div_iff₀ apos).mpr
     rw [mul_comm]
     exact (pair_le p q f i j).trans (flat _).le
+  exact ⟨a,b,apos,div_pos (inv_pos.mpr hm) apos,ab,maxp,maxq,small⟩
+
+/-- An exactly uniform independent sum requires at least `2√|G|−1` labels in the common
+budget, allowing different input laws and zero mass on any chosen labels. -/
+theorem exact_uniform_budget [AddCommGroup G] (p q : PMF ι) (label : ι → G)
+    (flat : ∀ z, ((law p q (fun i j => label i+label j)) z).toReal = (Fintype.card G:ℝ)⁻¹) :
+    2*Real.sqrt (Fintype.card G)-1 ≤ (Fintype.card ι:ℝ) := by
+  classical
+  let m := (Fintype.card G:ℝ)
+  have hm : 0 < m := by dsimp [m];exact_mod_cast Fintype.card_pos (α:=G)
+  obtain ⟨a,b,apos,bpos,ab,maxp,maxq,small⟩ := exact_atom_caps p q label flat
+  change a*b=m⁻¹ at ab
+  change _ ≤ m⁻¹ at small
   have count := sum_nonneg (s:=(univ:Finset ι)) (fun j _ =>
     mul_nonneg (sub_nonneg.mpr (maxp j)) (sub_nonneg.mpr (maxq j)))
   have expr (j : ι) : (a-(p j).toReal)*(b-(q j).toReal) =
@@ -294,7 +309,7 @@ theorem exact_uniform_budget [AddCommGroup G] (p q : PMF ι) (label : ι → G)
   have amgm : 2 ≤ (a+b)*Real.sqrt m := by
     have h2 : 4 ≤ ((a+b)*Real.sqrt m)^2 := by
       nlinarith [mul_nonneg (sq_nonneg (a-b)) (sq_nonneg (Real.sqrt m))]
-    have nonneg := mul_nonneg (add_nonneg apos.le (div_nonneg (inv_nonneg.mpr hm.le) apos.le)) (Real.sqrt_nonneg m)
+    have nonneg := mul_nonneg (add_nonneg apos.le bpos.le) (Real.sqrt_nonneg m)
     exact (sq_le_sq₀ (by norm_num : (0:ℝ)≤2) nonneg).mp (by nlinarith)
   have bound := (le_div_iff₀ hm).mp upper
   change 2*Real.sqrt m-1 ≤ _
@@ -620,6 +635,7 @@ theorem every_order (M : ℕ+) :
 #print axioms difference_atom_bound
 #print axioms overlap_lower
 #print axioms overlap_peak_bound
+#print axioms exact_atom_caps
 #print axioms exact_uniform_budget
 #print axioms square_order_attains
 #print axioms sub_two_rate
