@@ -20,7 +20,7 @@ theorem sequence_mass (hAP : ProgressionMangoldt) :
     simpa only [one_div,div_eq_mul_inv,one_mul,a,ThetaCharacterPrimeMeans.residual,mul_comm _ (X.primeCounting:ℝ)] using hX
   · intro p _ hp; exact hp.le
 
-private theorem modulus_log {T : ℕ} (hT : 0< T) : Real.log (modulus T:ℝ) ≤ (T:ℝ)^3 := by
+theorem modulus_log {T : ℕ} (_hT : 0< T) : Real.log (modulus T:ℝ) ≤ (T:ℝ)^3 := by
   have h : T.factorial ≤ T^T := Nat.factorial_le_pow T
   have hl := Real.log_le_log (by exact_mod_cast Nat.factorial_pos T : 0<(T.factorial:ℝ))
      (by exact_mod_cast h : (T.factorial:ℝ) ≤ (T:ℝ)^T)

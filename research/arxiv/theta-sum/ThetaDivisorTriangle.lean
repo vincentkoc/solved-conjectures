@@ -34,7 +34,7 @@ theorem triangle (m : ℕ) :
   have hh : mass m/2≤∑ g∈S,(g:ℝ)⁻¹ := by linarith only [hs,multiple_mass (m:=m) (t:=2) (by decide)]
   nlinarith only [H,pow_le_pow_left₀ (div_nonneg (mass_nonneg m) (by norm_num)) hh 2]
 
-private lemma factorial_log (T : ℕ) (hT : 0<T) (s : Finset ℕ) (hs : ∀ p∈s,p.Prime ∧ p≤T) :
+theorem factorial_log (T : ℕ) (hT : 0<T) (s : Finset ℕ) (hs : ∀ p∈s,p.Prime ∧ p≤T) :
     ∑ p∈s,log p/p≤2*log T := by
   have ht : (0:ℝ)<T := by exact_mod_cast hT
   have H (p) (hp : p∈s) : (T:ℝ)/p≤2*(T.factorial.factorization p:ℝ) := by
@@ -65,9 +65,7 @@ private lemma factorial_log (T : ℕ) (hT : 0<T) (s : Finset ℕ) (hs : ∀ p∈
           (mul_le_mul_of_nonneg_right (H p hp) (log_nonneg_nat _)).trans_eq (by ring))
     _ ≤ _ := by rw [←mul_sum]; linarith only [hsum,hf]
 
-/-- The logarithmic divisor moment costs one logarithm of the largest prime factor. -/
-theorem smooth_log {m T : ℕ} (hm : 0 < m) (hT : 0<T) (hs : ∀ p∈m.primeFactors,p≤T) :
-    logMass m≤mass m*(1+4*log T) := by
+theorem logMass_upper {m : ℕ} (hm : 0 < m) : logMass m≤mass m+2*mass m*∑ p∈m.primeFactors,log p/p := by
   have hD := mass_nonneg m
   have hp (p) (h : p∈m.primeFactors) : (∑ g∈m.divisors,(g.factorization p:ℝ)/g)*log p≤
       2*mass m*(log p/p) := by
@@ -78,11 +76,16 @@ theorem smooth_log {m T : ℕ} (hm : 0 < m) (hT : 0<T) (hs : ∀ p∈m.primeFact
       rw [div_le_div_iff₀ (by linarith) (by linarith)]
       nlinarith only [mul_le_mul_of_nonneg_left hh hD]
     exact (mul_le_mul_of_nonneg_right (hv.trans hu) (log_nonneg_nat _)).trans_eq (by ring)
+  rw [logMass_eq m hm, mul_sum]
+  exact add_le_add_right (sum_le_sum hp) _
+
+/-- The logarithmic divisor moment costs one logarithm of the largest prime factor. -/
+theorem smooth_log {m T : ℕ} (hm : 0 < m) (hT : 0<T) (hs : ∀ p∈m.primeFactors,p≤T) :
+    logMass m≤mass m*(1+4*log T) := by
   have hn := factorial_log T hT m.primeFactors (fun p hp => ⟨Nat.prime_of_mem_primeFactors hp,hs p hp⟩)
-  rw [logMass_eq m hm]
-  have H := sum_le_sum hp
-  rw [←mul_sum] at H
-  nlinarith only [H,mul_le_mul_of_nonneg_left hn (show 0≤2*mass m by positivity)]
+  have hD := mass_nonneg m
+  nlinarith only [logMass_upper hm,mul_le_mul_of_nonneg_left hn (show 0≤2*mass m by positivity)]
+
 
 end
 end Arxiv.«2501.03234».ThetaDivisorTriangle

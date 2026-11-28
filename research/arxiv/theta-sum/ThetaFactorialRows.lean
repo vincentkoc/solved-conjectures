@@ -49,7 +49,7 @@ theorem rare_mass (m T A : ℕ) :
              have : 0≤ Real.log T := by rcases T with _|T; simp; exact Real.log_nonneg (by exact_mod_cast Nat.succ_pos T)
              positivity [mass_nonneg m]
 
-private theorem rectangle {m : ℕ} (D G S : Finset ℕ)
+theorem rectangle {m : ℕ} (D G S : Finset ℕ)
     (h : ∀ d∈D,m.gcd d∈G ∧ d/(m.gcd d)∈S) :
     ∑ d∈D, logWeight (m.gcd d)*tailWeight (d/(m.gcd d)) ≤
       (∑ g∈G,logWeight g)*(∑ s∈S,tailWeight s) := by
