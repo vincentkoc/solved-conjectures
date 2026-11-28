@@ -57,7 +57,8 @@ private theorem shift_pow (v : ℕ → ℝ) (i n : ℕ) : (shift^i) v n = v (n+i
   | zero => simp
   | succ i ih => rw [pow_succ',Module.End.mul_apply]; change (shift^i) v (n+1) = _; rw [ih]; congr 1; omega
 
-private theorem cyclic_sum {p : ℕ} (hp : p.Prime) (I : Finset ℕ)
+/-- A nonempty proper subset of prime cyclic translates detects every periodic sequence. -/
+theorem cyclic_sum {p : ℕ} (hp : p.Prime) (I : Finset ℕ)
     (pos : 0<I.card) (small : I.card<p) (u : ℕ → ℝ)
     (period : ∀ n, u (n+p)=u n) (vanish : ∀ n, ∑ i ∈ I, u (n+i)=0) : u=0 := by
   let F : ℤ[X] := ∑ i ∈ I, X^i
@@ -92,17 +93,17 @@ private theorem prime_cycle (H : ℚ[X]) (irr : Irreducible H) (hp : H.natDegree
     rw [map_pow,←ord,pow_mod_orderOf,hn]
   exact congrArg Subtype.val h
 
-private theorem orbit_factors (H : ℚ[X]) (hm : H.Monic) (irr : Irreducible H)
-    (σ : H.Gal) (x : H.rootSet H.SplittingField)
-    (covers : ∀ y : H.rootSet H.SplittingField, ∃ i < H.natDegree, (σ^i) x.val=y.val) :
-    H.map (algebraMap ℚ H.SplittingField)=∏ i ∈ range H.natDegree, (X-C ((σ^i) x.val)) := by
+/-- Factor a separable polynomial along a transitive orbit of its roots. -/
+theorem orbit_factors {K : Type*} [Field K] [Algebra ℚ K] (H : ℚ[X]) (hm : H.Monic) (irr : Irreducible H)
+    (split : (H.map (algebraMap ℚ K)).Splits) (σ : K ≃ₐ[ℚ] K) (x : H.rootSet K)
+    (covers : ∀ y : H.rootSet K, ∃ i < H.natDegree, (σ^i) x.val=y.val) :
+    H.map (algebraMap ℚ K)=∏ i ∈ range H.natDegree, (X-C ((σ^i) x.val)) := by
   classical
-  let K := H.SplittingField
   let a (i : ℕ) : K := (σ^i) x.val
   let L : K[X] := ∏ i ∈ range H.natDegree, (X-C (a i))
   have lm : L.Monic := monic_prod_X_sub_C a _
   have dv : H.map (algebraMap ℚ K) ∣ L := by
-    apply (SplittingField.splits H).dvd_of_roots_le_roots (map_ne_zero irr.ne_zero)
+    apply split.dvd_of_roots_le_roots (map_ne_zero irr.ne_zero)
     apply (Multiset.le_iff_subset (nodup_roots irr.separable.map)).mpr
     intro z hz
     have mem : z∈H.rootSet K := by
@@ -138,7 +139,8 @@ private theorem orbit_norm {K : Type*} [Field K] [Algebra ℚ K]
   intro n
   exact Real.eq_one_of_pos_of_log_eq_zero (norm_pos_iff.mpr (nz n)) (congrFun zero n)
 
-private theorem real_root_of_odd (H : ℚ[X]) (irr : Irreducible H) (odd : Odd H.natDegree) :
+/-- A separable irreducible rational polynomial of odd degree has a real root. -/
+theorem real_root_of_odd (H : ℚ[X]) (irr : Irreducible H) (odd : Odd H.natDegree) :
     ∃ r : ℝ, aeval r H=0 := by
   classical
   let _ : Fact ((H.map (algebraMap ℚ ℂ)).Splits) := ⟨IsAlgClosed.splits _⟩
@@ -155,7 +157,8 @@ private theorem real_root_of_odd (H : ℚ[X]) (irr : Irreducible H) (odd : Odd H
   obtain ⟨r⟩ := Fintype.card_pos_iff.mp pos
   exact ⟨r.val, (mem_rootSet.mp r.property).2⟩
 
-private theorem no_rational_root (H : ℚ[X]) (irr : Irreducible H) (hp : H.natDegree.Prime)
+/-- An irreducible rational polynomial of prime degree has no rational root. -/
+theorem no_rational_root (H : ℚ[X]) (irr : Irreducible H) (hp : H.natDegree.Prime)
     (r : ℚ) : H.eval r ≠ 0 := by
   intro h
   have d := (irreducible_X_sub_C r).dvd_symm irr (dvd_iff_isRoot.mpr h)
@@ -179,12 +182,12 @@ theorem no_unit_constant_split (H : ℚ[X]) (hm : H.Monic) (irr : Irreducible H)
   obtain ⟨x⟩ := Fintype.card_pos_iff.mp (card ▸ hp.pos)
   let a (i : ℕ) := ι ((σ^i) x.val)
   have eq : H.map (algebraMap ℚ ℂ)=∏ i ∈ range H.natDegree, (X-C (a i)) := by
-    have h := congrArg (Polynomial.map ι.toRingHom) (orbit_factors H hm irr σ x (covers x))
+    have h := congrArg (Polynomial.map ι.toRingHom) (orbit_factors H hm irr (SplittingField.splits H) σ x (covers x))
     rw [Polynomial.map_map] at h
-    have comp : ι.toRingHom.comp (algebraMap ℚ H.SplittingField)=algebraMap ℚ ℂ := ι.comp_algebraMap
-    rw [comp] at h
+    have comp (φ : ℚ →+* ℂ) : H.map φ=H.map (algebraMap ℚ ℂ) :=
+      congrArg (fun ψ : ℚ →+* ℂ => H.map ψ) (RingHom.ext_rat _ _)
     simp only [Polynomial.map_prod,Polynomial.map_sub,Polynomial.map_X,Polynomial.map_C] at h
-    apply h.trans
+    apply ((comp _).symm.trans h).trans
     apply Finset.prod_congr rfl
     intro i _
     rfl
