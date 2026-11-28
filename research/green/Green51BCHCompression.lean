@@ -124,13 +124,14 @@ private theorem projected_rect (L : K →ₗ[F] H) (t x : K) (p : Space K × H)
   calc _ = (p.2+p.2)+(p.2+p.2)+(u.2+u.2)+(v.2+v.2) := by abel
        _ = 0 := by simp [ZModModule.add_self]
 
-/-- Omitting a two-dimensional subspace of the seventh-power coordinate
-still excludes binary affine three-spaces from the double. -/
-theorem excludes_three [Finite K] (L : K →ₗ[F] H) (small : Module.finrank F L.ker≤2)
-    (p : Space K × H) (W : Submodule F (Space K × H))
-    (inside : p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L)) :
-    Module.finrank F W ≤ 2 := by
-  by_contra! dim
+/-- A three-flat in the projected double comes from one nonzero difference
+and an input subspace of one higher dimension on which all projected pair minors vanish. -/
+theorem input_of_flat [Finite K] (L : K →ₗ[F] H) (p : Space K × H)
+    (W : Submodule F (Space K × H))
+    (inside : p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L))
+    (dim : 3≤Module.finrank F W) :
+    ∃ (t : K) (U : Submodule F K), t≠0 ∧ t∈U ∧
+      Module.finrank F U=Module.finrank F W+1 ∧ ∀ b∈U,∀ c∈U,L (moore t b c)=0 := by
   let P := LinearMap.fst F (Space K) H
   obtain ⟨fixed,count⟩ := horizontal L p W inside dim
   let V := W.map P
@@ -174,14 +175,38 @@ theorem excludes_three [Finite K] (L : K →ₗ[F] H) (small : Module.finrank F 
   have im : U.map (polar t)=V := Submodule.map_comap_eq_self range
   have eq : Module.finrank F V=Module.finrank F W := count
   rw [im,eq,polar_ker nt,finrank_span_singleton nt] at rank
-  obtain ⟨J,inj,at0,contained⟩ := pin_direction U t ht nt (by omega)
   have kill := projected_rect L t x p base W inside U (fun u hu => by
     obtain ⟨w,hw,h⟩ := hu
     exact ⟨w,hw,h⟩)
+  exact ⟨t,U,nt,ht,by omega,kill⟩
+
+theorem input_four_of_flat [Finite K] (L : K →ₗ[F] H) (p : Space K × H)
+    (W : Submodule F (Space K × H))
+    (inside : p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L))
+    (dim : 3≤Module.finrank F W) :
+    ∃ (t : K) (U : Submodule F K), t≠0 ∧ t∈U ∧ Module.finrank F U=4 ∧
+      ∀ b∈U,∀ c∈U,L (moore t b c)=0 := by
+  obtain ⟨t,U,nt,ht,rank,kill⟩ := input_of_flat L p W inside dim
+  obtain ⟨J,inj,at0,contained⟩ := pin_direction U t ht nt (by omega)
+  refine ⟨t,J.range,nt,⟨_,at0⟩,by simpa [Cube] using J.finrank_range_of_inj inj,?_⟩
+  rintro _ ⟨b,rfl⟩ _ ⟨c,rfl⟩
+  exact kill _ (contained b) _ (contained c)
+
+/-- Omitting a two-dimensional subspace of the seventh-power coordinate
+still excludes binary affine three-spaces from the double. -/
+theorem excludes_three [Finite K] (L : K →ₗ[F] H) (small : Module.finrank F L.ker≤2)
+    (p : Space K × H) (W : Submodule F (Space K × H))
+    (inside : p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L)) :
+    Module.finrank F W ≤ 2 := by
+  by_contra! dim
+  obtain ⟨t,U,nt,ht,rank,kill⟩ := input_of_flat L p W inside dim
+  obtain ⟨J,inj,at0,contained⟩ := pin_direction U t ht nt (by omega)
   have big := moore_rank L J inj (fun b c => by rw [at0];exact kill _ (contained b) _ (contained c))
   omega
 
 
 end Green51BCHCompression
+#print axioms Green51BCHCompression.input_of_flat
+#print axioms Green51BCHCompression.input_four_of_flat
 #print axioms Green51BCHCompression.excludes_three
 #print axioms Green51BCHCompression.seventhDerivative_rect

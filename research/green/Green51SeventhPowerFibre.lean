@@ -41,21 +41,23 @@ def artinSchreier : K →ₗ[F] K where
   map_smul' a x := by
     rcases (show ∀ a:F, a=0 ∨ a=1 from by decide) a with rfl|rfl <;> simp
 
+theorem artinSchreier_ker : (artinSchreier (K:=K)).ker=Submodule.span F {1} := by
+  apply le_antisymm
+  · intro x hx
+    change x^2+x=0 at hx
+    have hx' : x*(x+1)=0 := by linear_combination hx
+    rcases mul_eq_zero.mp hx' with z|z
+    · exact z ▸ Submodule.zero_mem _
+    · exact (CharTwo.add_eq_zero.mp z).symm ▸ Submodule.subset_span (Set.mem_singleton 1)
+  · apply Submodule.span_le.mpr
+    apply Set.singleton_subset_iff.mpr
+    change (1:K)^2+1=0
+    rw [one_pow,CharTwo.add_self_eq_zero]
+
 theorem trace_test [Finite K] :
     ∃ Q : K →ₗ[F] F, ∀ x : K,Q x=0 ↔ ∃ y : K,y^2+y=x := by
   let A : K →ₗ[F] K := artinSchreier
-  have ker : A.ker=Submodule.span F {1} := by
-    apply le_antisymm
-    · intro x hx
-      change x^2+x=0 at hx
-      have hx' : x*(x+1)=0 := by linear_combination hx
-      rcases mul_eq_zero.mp hx' with z|z
-      · exact z ▸ Submodule.zero_mem _
-      · exact (CharTwo.add_eq_zero.mp z).symm ▸ Submodule.subset_span (Set.mem_singleton 1)
-    · apply Submodule.span_le.mpr
-      apply Set.singleton_subset_iff.mpr
-      change (1:K)^2+1=0
-      rw [one_pow,CharTwo.add_self_eq_zero]
+  have ker : A.ker=Submodule.span F {1} := artinSchreier_ker
   have rank := A.finrank_range_add_finrank_ker
   rw [ker,finrank_span_singleton (one_ne_zero : (1:K)≠0)] at rank
   have dim := A.range.finrank_quotient_add_finrank
@@ -114,6 +116,7 @@ theorem simultaneous_artin_schreier [Fintype K] (v : Fin 3 → K) (large :
 end Green51BCHOptimality
 #print axioms Green51BCHOptimality.seventh_meets
 #print axioms Green51BCHOptimality.seventh_cubic
+#print axioms Green51BCHOptimality.artinSchreier_ker
 #print axioms Green51BCHOptimality.trace_test
 #print axioms Green51BCHOptimality.seventh_meets_coprime
 #print axioms Green51BCHOptimality.meets_of_large
