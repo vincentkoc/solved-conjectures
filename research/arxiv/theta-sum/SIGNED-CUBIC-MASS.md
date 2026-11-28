@@ -1,0 +1,29 @@
+# Pointwise cancellation of high-order character contributions
+
+For every fixed $\varepsilon>0$ and every sufficiently large odd prime $p$, consider the terms of the exact character expansion of the original integer $S(p)$ from nonprincipal characters modulo $p$ of order greater than $p^{1-\varepsilon}$. The sum of their positive real contributions is at least $p\sqrt p/512$. The absolute sum of their negative real contributions satisfies the same lower bound. Both estimates use the original factor $4/(p-1)$ and hold at every sufficiently large prime $p\equiv1\bmod8$. The difference between the two signs across the entire spectrum equals $S(p)$, whose known notebook bound is $O(p\log^2p)$. [Two signs](ThetaSignedCubicMass.lean) · [Pointwise character expansion](POINTWISE-ORDER-CUTOFF.md) · [Absolute upper bound for the original sum](FOURIER.md)
+
+There is also an absolute $\delta>0$ such that, for every fixed $\varepsilon>0$ and every sufficiently large prime $p$, at least $\delta p$ characters of order greater than $p^{1-\varepsilon}$ satisfy $u_\chi\ge p\sqrt p/8192$, and at least $\delta p$ satisfy $u_\chi\le-p\sqrt p/8192$. Here $u_\chi=\operatorname{Re}(A_\chi^2 A_{\chi^{-1}})$ and each term enters $S(p)$ with factor $4/(p-1)$. Thus each of these characters contributes at least $\sqrt p/2048$ in its own sign. The total absolute contribution, including all nonprincipal characters, is $O(p\sqrt p)$, so the upper and lower bounds for either sign match in order. [Proportions and absolute upper bound](ThetaCubicProportions.lean)
+
+Write $n=p-1$, let $A$ be the odd representatives in $[1,p)$, and set $A_\chi=\sum_{a\in A}\chi(a)$. The signed term before scaling is $u_\chi=|A_\chi|^2\operatorname{Re} A_\chi$. Its sign can be either positive or negative even after summing a whole character order. The high-order lower bounds quantify the cancellation that any uniform sign proof must address. They leave the sign of the remaining signed difference open. [Exact maximal-order example at 241](ThetaOrderExample.lean) · [Pinned sign and growth conjectures](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2501.03234/ArithmeticSumS.lean)
+
+## The inverse count controls the real second moment
+
+Let $L$ count the members of $A$ whose modular inverse also belongs to $A$. Multiplicative character orthogonality gives
+\[
+ 2\sum_{\chi\ne1}(\operatorname{Re} A_\chi)^2=nL.
+\]
+Indeed the sums over all characters of $A_\chi^2$ and $|A_\chi|^2$ are $nL$ and $n|A|$, respectively. Subtracting the principal character cancels the second term. The notebook's reciprocal-interval discrepancy at numerator one bounds $|2L-n/2|$ by $4p^{3/4}(1+H_{(p-1)/2})^2$, so $L\ge p/8$ eventually. If $M_p$ counts Lehmer numbers, the representatives whose inverse has opposite parity, then $2L=n-M_p$. Cohen and Trudgian give an explicit, stronger estimate for $M_p$ building on Zhang. The formal proof uses the existing elementary discrepancy estimate. [Real second moment](ThetaRealCharacterMoment.lean) · [Odd-inverse bound](ThetaOddInverseCount.lean) · [Cohen and Trudgian](https://arxiv.org/abs/1712.03990)
+
+For $T=\sqrt p/8$, each character satisfies $T(\operatorname{Re} A_\chi)^2\le |u_\chi|+T^3$. Summing gives $\sum_{\chi\ne1}|u_\chi|\ge p^2\sqrt p/512$ eventually. The signed sum is $(p-1)S(p)/4=o(p^2\sqrt p)$. Removing every order at most $p^{1-\varepsilon}$ also removes $o(p^2\sqrt p)$ in total absolute mass. Indeed there are at most $p^{1-\varepsilon}\tau(p-1)$ such characters and each cubic term is at most $p^{3/2}(1+\log p)^3$. The sum and difference of the remaining positive and negative masses give the stated bounds. [Absolute mass](ThetaAbsoluteCubicMass.lean) · [Sparse character orders](ThetaSparseCubicMass.lean)
+
+## Fourth moment and the number of contributors
+
+Write $f(t)=p^{-1}\widehat{1_A}(-t)$ for a nonzero additive frequency. The geometric sum over odd representatives gives a uniform bound on $\sum_{t\ne0}|f(t)|^{4/3}$ by $2\sum_{j\ge1}j^{-4/3}$. Gauss completion expresses $A_\chi$ as a Gauss sum of norm $\sqrt p$ times the multiplicative character transform of $f$. Two applications of Cauchy–Schwarz to multiplicative convolution, followed by finite Parseval, give the fourth-moment estimate
+\[
+ \sum_{\chi\ne1}|A_\chi/\sqrt p|^4\le C p
+\]
+with an absolute $C$. This is the finite Hausdorff–Young inequality at exponent $4/3$ applied to the completed interval. [Finite transform bound](ThetaCharacterFourthMoment.lean) · [Frequency estimate](ThetaHalfSpectrum.lean) · [Character fourth moment](ThetaHalfFourthMoment.lean)
+
+Set $x_\chi=|A_\chi|/\sqrt p$ and $y_\chi=u_\chi/(p\sqrt p)$, so $|y_\chi|\le x_\chi^3$. For either sign, the lower bound on the sum of its positive parts over high orders is $p/2048$. Terms with $x_\chi>K$ contribute at most $Cp/K$ there by the fourth moment. Among the remaining terms, those smaller than $1/8192$ in the chosen sign contribute at most $p/8192$, and each other term contributes at most $K^3$. Taking $K=8192(1+C)$ gives the stated absolute positive proportion. Finally $x^3\le1+x^4$ for $x\ge0$ gives the matching absolute upper bound. [Thresholds and normalization](ThetaCubicProportions.lean)
+
+For nonprincipal $\chi$, the odd-representative sum is $-\chi(2)\sum_{j\le(p-1)/2}\chi(j)$. The distribution of normalized character paths at prime moduli, including the ordinary half-interval sum, is studied by Hussain. The result here uses the explicit real cubic terms of the Berndt–Bhat–Meyer–Xie–Zaharescu sum and its independently established signed bound. [Hussain](https://doi.org/10.1093/imrn/rnab194) · [Original paper](https://arxiv.org/pdf/2501.03234v3) · [DeepMind reduction](https://github.com/google-deepmind/formal-conjectures/issues/7589) · [OMA harmonic reduction](https://github.com/lefttosolve2/open-math-agents/pull/22818) · [Left to Solve](https://lefttosolve.com/api/solved)
