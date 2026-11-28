@@ -31,9 +31,11 @@ variable (R : Type*) [CommRing R]
 /-- A root is the upper endpoint of a factorial repetition of length `k`. -/
 noncomputable def gap (k : ℕ) : R[X] := descPochhammer R k - 1
 
-private theorem root_repeats {p k : ℕ} [Fact p.Prime] (hk : 2 ≤ k)
-    {x : ZMod p} (hx : (gap (ZMod p) k).IsRoot x) :
-    x.val ∈ Ico 1 p ∧ ∃ j ∈ Ico 1 p, j < x.val ∧ j.factorial % p = x.val.factorial % p := by
+/-- A root of the falling-factorial polynomial gives a repetition at exactly
+the stated index separation, with lower endpoint possibly zero. -/
+theorem endpoints_of_root {p k : ℕ} [Fact p.Prime] {x : ZMod p}
+    (hx : (gap (ZMod p) k).IsRoot x) :
+    k ≤ x.val ∧ (x.val-k).factorial % p = x.val.factorial % p := by
   have hval : (x.val.descFactorial k : ZMod p) = 1 := by
     rw [← descPochhammer_eval_eq_descFactorial, ZMod.natCast_zmod_val]
     simpa [gap, IsRoot.def, sub_eq_zero] using hx
@@ -41,11 +43,16 @@ private theorem root_repeats {p k : ℕ} [Fact p.Prime] (hk : 2 ≤ k)
     by_contra! h
     rw [Nat.descFactorial_eq_zero_iff_lt.mpr h, Nat.cast_zero] at hval
     exact zero_ne_one hval
+  refine ⟨hle,?_⟩
+  apply (ZMod.natCast_eq_natCast_iff' _ _ _).mp
+  have h := congrArg (fun n : ℕ ↦ (n : ZMod p)) (Nat.factorial_mul_descFactorial hle)
+  simpa only [Nat.cast_mul, hval, mul_one] using h
+
+private theorem root_repeats {p k : ℕ} [Fact p.Prime] (hk : 2 ≤ k)
+    {x : ZMod p} (hx : (gap (ZMod p) k).IsRoot x) :
+    x.val ∈ Ico 1 p ∧ ∃ j ∈ Ico 1 p, j < x.val ∧ j.factorial % p = x.val.factorial % p := by
+  obtain ⟨hle,eqfac⟩ := endpoints_of_root hx
   have hlt := x.val_lt
-  have eqfac : (x.val - k).factorial % p = x.val.factorial % p := by
-    apply (ZMod.natCast_eq_natCast_iff' _ _ _).mp
-    have h := congrArg (fun n : ℕ ↦ (n : ZMod p)) (Nat.factorial_mul_descFactorial hle)
-    simpa only [Nat.cast_mul, hval, mul_one] using h
   refine ⟨mem_Ico.mpr ⟨by omega, hlt⟩, ?_⟩
   rcases hle.eq_or_lt with he | he
   · refine ⟨1, mem_Ico.mpr ⟨le_rfl, by omega⟩, by omega, ?_⟩
@@ -142,7 +149,7 @@ open scoped nonZeroDivisors
 
 /-- An integral primitive element is obtained by clearing the denominator of
 a primitive element of the number field. -/
-private theorem integral_generator (K : Type*) [Field K] [NumberField K] :
+theorem integral_generator (K : Type*) [Field K] [NumberField K] :
     ∃ θ : 𝓞 K, ℚ⟮(θ : K)⟯ = ⊤ := by
   obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ K
   obtain ⟨m, hm⟩ := IsIntegral.exists_multiple_integral_of_isLocalization ℤ⁰ α
@@ -156,7 +163,7 @@ private theorem integral_generator (K : Type*) [Field K] [NumberField K] :
   rw [Int.cast_smul_eq_zsmul]
   exact mem_adjoin_simple_self ℚ (θ : K)
 
-private theorem generator_degree {K : Type*} [Field K] [NumberField K]
+theorem generator_degree {K : Type*} [Field K] [NumberField K]
     (θ : 𝓞 K) (hθ : ℚ⟮(θ : K)⟯ = ⊤) :
     (minpoly ℤ θ).natDegree = Module.finrank ℚ K := by
   have hmin : (minpoly ℤ θ).natDegree = (minpoly ℚ (θ : K)).natDegree := by

@@ -57,7 +57,7 @@ private theorem count_degree_one (K : Type) [Field K] [NumberField K] (X : ℕ) 
     · change ¬ 1 < J.inertiaDeg ℤ
       simp [hdeg]
 
-private theorem degree_one_prime_ideal_theorem : DegreeOnePrimeIdealTheorem := by
+theorem degree_one_prime_ideal_theorem : DegreeOnePrimeIdealTheorem := by
   let s := fun x : ℝ => x / Real.log x
   have hs : ∀ᶠ x in atTop, s x ≠ 0 := by
     filter_upwards [eventually_gt_atTop (1:ℝ)] with x hx

@@ -22,7 +22,7 @@ PORT = "bb3b4fff6bb0210a0f94fc535bf9adbf46ecc55a"
 MATHLIB = "0df444a360eaa60ab8c11dca51a86af692955474"
 DIGEST = "0fe69072de0e3e61a7eea4f6b1227303ad902bf5d6931b55c67f7c663fc99fbd"
 URL = f"https://codeload.github.com/KitaKen1/simultaneous-primitive-roots/tar.gz/{PORT}"
-FINAL = "Erdos478NaturalDensity"
+ADAPTERS = {"density": "Erdos478NaturalDensity", "gap-sieve": "Erdos478NaturalGapSieve"}
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
 
@@ -30,7 +30,7 @@ def external(name):
     return name.startswith(("TauCeti.", "Compat4331."))
 
 
-def collect(archive, src):
+def collect(archive, src, target):
     prefix = f"simultaneous-primitive-roots-{PORT}/lean/"
     paths, graph = {}, {}
 
@@ -46,7 +46,7 @@ def collect(archive, src):
                 raise ValueError(member.name)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(archive.extractfile(member).read())
-        elif name == FINAL:
+        elif name in ADAPTERS.values():
             path = src / (name + ".lean")
             shutil.copyfile(TOPIC / (name + ".lean.in"), path)
         else:
@@ -57,7 +57,7 @@ def collect(archive, src):
         for dep in graph[name]:
             visit(dep)
 
-    visit(FINAL)
+    visit(target)
     digest = hashlib.sha256()
     for name in sorted(n for n in paths if external(n)):
         digest.update(name.encode() + b"\0" + hashlib.sha256(paths[name].read_bytes()).digest())
@@ -69,6 +69,7 @@ def collect(archive, src):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, help="reuse the GitHub source tarball for the pinned port")
+    parser.add_argument("--target", choices=ADAPTERS, default="density", help="proof to replay")
     args = parser.parse_args()
     manifest = json.loads(Path("lake-manifest.json").read_text())
     if not any(p["name"] == "mathlib" and p.get("rev") == MATHLIB for p in manifest["packages"]):
@@ -88,7 +89,7 @@ def main():
             with urlopen(URL, timeout=120) as response, archive.open("wb") as dst:
                 shutil.copyfileobj(response, dst)
         with tarfile.open(archive, "r:gz") as port:
-            paths, graph = collect(port, src)
+            paths, graph = collect(port, src, ADAPTERS[args.target])
         env = dict(os.environ, LEAN_PATH=os.pathsep.join([str(out), os.environ["LEAN_PATH"]]))
 
         def build(name):

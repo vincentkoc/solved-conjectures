@@ -1,0 +1,57 @@
+import Erdos478NaturalDensity
+import Erdos478GapCutoff
+
+/-!
+# Unconditional prime-density bounds for prescribed factorial gaps
+
+The ordinary prime average is supplied by the checked prime ideal theorem
+adapter. All fractions count rational primes up to and including X.
+-/
+
+namespace Erdos478.GapSieve
+noncomputable section
+open Finset Filter Topology GapVariance MeanDeficit GapDensity
+
+theorem ordinary_lower (s : Finset Nat.Primes) (E : Finset Nat.Primes → Prop)
+    (hE : Monotone E) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, eventMass weight s E - ε < fraction X (fun p => E (hits s p)) :=
+  lower_of_pit degree_one_prime_ideal_theorem s E hE hε
+
+theorem ordinary_upper (s : Finset Nat.Primes) (E : Finset Nat.Primes → Prop)
+    (hE : Antitone E) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => E (hits s p)) < eventMass weight s E + ε :=
+  upper_of_pit degree_one_prime_ideal_theorem s E hE hε
+
+theorem ordinary_all_gaps (s : Finset Nat.Primes) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, (∏ i ∈ s, weight i)-ε < fraction X (fun p => s ⊆ hits s p) :=
+  all_hits_of_pit degree_one_prime_ideal_theorem s hε
+
+theorem ordinary_no_gaps (s : Finset Nat.Primes) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => hits s p = ∅) < (∏ i ∈ s, (1-weight i))+ε :=
+  no_hits_of_pit degree_one_prime_ideal_theorem s hε
+
+theorem ordinary_deficit_tail (s : Finset Nat.Primes) (D : ℕ) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => deficit p ≤ D) <
+      eventMass weight s (fun t => t.card<D) + ε :=
+  deficit_upper_of_pit degree_one_prime_ideal_theorem s D hε
+
+theorem ordinary_no_gaps_log {K : ℕ} (hK : 0 < K) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => hits (through K) p = ∅) <
+      (Real.log (K+1 : ℕ))⁻¹ + ε :=
+  no_hits_log_of_pit degree_one_prime_ideal_theorem hK hε
+
+theorem ordinary_cutoff (K D : ℕ) {η : ℝ}
+    (hη : 0 < η) (hK : (8:ℝ)^D < Real.log (K+1 : ℕ) * η^3) :
+    ∀ᶠ X in atTop, fraction X (fun p => (hits (through K) p).card<D) < η :=
+  cutoff_of_pit degree_one_prime_ideal_theorem K D hη hK
+
+#print axioms ordinary_lower
+#print axioms ordinary_upper
+#print axioms ordinary_all_gaps
+#print axioms ordinary_no_gaps
+#print axioms ordinary_deficit_tail
+#print axioms ordinary_no_gaps_log
+#print axioms ordinary_cutoff
+
+end
+end Erdos478.GapSieve

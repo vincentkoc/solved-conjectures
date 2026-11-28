@@ -91,7 +91,7 @@ theorem prime_ideal_input_of_common_scale (s : ℕ → ℝ) (hs : ∀ᶠ X in at
   dsimp only [total_apply]
   field_simp [hsX,hq']
 
-private def countingAverage (h : DegreeOnePrimeIdealTheorem) : PrimeAverage where
+def countingAverage (h : DegreeOnePrimeIdealTheorem) : PrimeAverage where
   avg := ordinary
   mono X _ _ hab := mul_le_mul_of_nonneg_left (total_mono X hab) (by positivity)
   finite_change := ordinary_change
