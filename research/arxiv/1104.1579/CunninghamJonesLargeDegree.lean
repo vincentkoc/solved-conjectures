@@ -567,7 +567,8 @@ private lemma all_roots_outside (m j : ℕ) (hm : 2 ≤ m) {z : ℂ}
   apply hn
   simpa [φ,jonesSumPolynomial,Polynomial.map_sum,eval_finsetSum] using hz
 
-private lemma large_constant_of_factor {m j : ℕ} (hm : 2 ≤ m) {g : ℤ[X]} (hg : g.Monic)
+/-- Every positive-degree monic integral factor has constant coefficient of absolute value greater than one. -/
+theorem jones_factor_constant_gt_one {m j : ℕ} (hm : 2 ≤ m) {g : ℤ[X]} (hg : g.Monic)
     (hdiv : g ∣ jonesSumPolynomial m j) (hdeg : 0 < g.natDegree) : 1 < (g.coeff 0).natAbs := by
   let G := g.map (Int.castRingHom ℂ)
   have hmon : G.Monic := hg.map _
@@ -598,6 +599,8 @@ private lemma large_constant_of_factor {m j : ℕ} (hm : 2 ≤ m) {g : ℤ[X]} (
   change 1 < ‖(g.coeff 0 : ℂ)‖ at hc
   rw [Complex.norm_intCast,← Int.cast_abs,← Int.natCast_natAbs] at hc
   exact_mod_cast hc
+
+#print axioms jones_factor_constant_gt_one
 
 private theorem six_normalized_swap (j : ℕ) (a b : ℤ[X]) (ha : a.Monic) (hb : b.Monic)
     (hab : a*b = jonesSumPolynomial 6 j) (ha₂ : (a.coeff 0).natAbs = 2) :
@@ -657,8 +660,8 @@ private theorem six_irred_of_no_swap (j : ℕ) (hj : 0 < j)
   refine ⟨fun he => by rw [he,natDegree_one] at hd; omega,?_⟩
   intro a b ha hb hab
   by_contra! h
-  have h₁ := large_constant_of_factor (by decide : 2 ≤ 6) ha (hab ▸ dvd_mul_right ..) (Nat.pos_of_ne_zero h.1)
-  have h₂ := large_constant_of_factor (by decide : 2 ≤ 6) hb (hab ▸ dvd_mul_left ..) (Nat.pos_of_ne_zero h.2)
+  have h₁ := jones_factor_constant_gt_one (by decide : 2 ≤ 6) ha (hab ▸ dvd_mul_right ..) (Nat.pos_of_ne_zero h.1)
+  have h₂ := jones_factor_constant_gt_one (by decide : 2 ≤ 6) hb (hab ▸ dvd_mul_left ..) (Nat.pos_of_ne_zero h.2)
   have hab0 : a.coeff 0*b.coeff 0 = 6 := by
     have h := congrArg (fun p : ℤ[X] => p.coeff 0) hab
     simpa [jonesSumPolynomial,finsetSum_coeff,coeff_X_pow] using h

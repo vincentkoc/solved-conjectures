@@ -1,0 +1,29 @@
+# How many sums fill a binary quadratic graph?
+
+Let Γ be the graph of a quadratic map $f:U\to V$ between finite binary vector spaces. Write $B$ for its bilinear polarization and $W$ for the span of all $B(x,y)$. If $d=\dim W$, then **$2\lfloor\sqrt d\rfloor+1$ summands fill the affine span of Γ**. This bound is attained at every square $d=t^2$ by the triangular graphs. [Graph theorem](Green50QuadraticDiameter.lean) · [Sharp examples](QUADRATIC-FUNCTION-GRAPHS.md#exact-covering-order-in-arbitrary-dimension)
+
+Above that threshold, the fibre over each $u$ is exactly $f(u)+W$. The affine span therefore has dimension $\dim U+d$. In particular, five sums fill it for $d\le8$. The triangular graph with nine outputs needs seven sums. If $A+A$ contains such a graph over complementary subspaces and $d\le8$, then $10A$ contains a coset of codimension $\dim V-d$. For an arbitrary $A$, the graph supplied by the quotient argument can have higher degree. Green 50 remains open. [Tenfold transfer](Green50QuadraticDiameter.lean) · [Quotient argument](FUNCTION-GRAPH-REDUCTION.md) · [Pinned Green 50](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/50.lean)
+
+## The finite-field dimension bound
+
+Over a finite field of order $q$, let $J+T$ be an affine space of nondegenerate alternating forms on a space of dimension $2k$. Then $\dim T\le k(k-1)$. De Seguins Pazzis proves this bound under $q\ge 2k-1$ and gives a triangular example attaining equality over every field. His later classification studies equality under the same field-size hypothesis. The proof below uses finiteness and works for every $q$, including two. [Lean proof](Green50SymplecticSpaces.lean) · [De Seguins Pazzis, Theorems 2–3 and §6](https://arxiv.org/html/2307.10347) · [Later classification](https://arxiv.org/abs/2607.14648)
+
+For each nonzero $v$, choose $y_v$ with $J(v,y_v)=1$ and $A(v,y_v)=0$ for all $A\in T$. Such a partner exists by separation. Otherwise $J(v,\cdot)$ would belong to the space of evaluations $A(v,\cdot)$, contradicting nondegeneracy of a form in $J+T$. There are exactly $q^{2k-2}$ vectors $x$ satisfying both $J(v,x)=0$ and $J(y_v,x)=1$. Counting the pairs in the opposite order gives a nonzero $x$ for which at least that many nonzero $v$ satisfy both equations. These $v$ span $H=x^\perp$, since a proper subspace of $H$ has at most $q^{2k-2}-1$ nonzero vectors.
+
+Evaluating $T$ at this $x$ costs at most $2k-2$ dimensions because every evaluation vanishes at $x$ and at $y_x$. The kernel descends faithfully to alternating forms on $H/\langle x\rangle$. Indeed, if $A$ in the kernel vanishes on $H\times H$, then it also vanishes on $(v,y_v)$ for each spanning $v$ above. Each $y_v$ lies outside $H$, so $A(v,\cdot)=0$. Alternation now forces $A=0$. Each descended affine form is nondegenerate because its pairing with $x$ agrees with that of $J$. Induction in dimension $2k-2$ gives the bound.
+
+## From a shortest representation to a graph fibre
+
+For any alternating bilinear map over a finite field, suppose $w$ needs exactly $k$ terms $B(x_i,y_i)$. On $2k$ formal coordinates, a linear map sends each coordinate wedge to the corresponding $B$-value and the standard symplectic form to $w$. Every alternating form in that fibre is nondegenerate. A singular one decomposes into fewer than $k$ wedges, giving a shorter representation. The dimension bound applied to this fibre forces its codimension to be at least $\binom{2k}{2}-k(k-1)=k^2$. Its codimension is at most $d$, so $k\le\lfloor\sqrt d\rfloor$. [Representation theorem](Green50QuadraticDiameter.lean)
+
+For a binary quadratic map, the earlier fibre identity gives $(2r+1)\Gamma=\Gamma+rC$, where $C=\{(0,B(x,y))\}$. Once $r\ge\lfloor\sqrt d\rfloor$, the sum $rC$ fills $\{0\}\times W$. The resulting fibres form the affine span. [Fibre identity](Green50QuadraticFibres.lean) · [Notebook replay](../README.md#replay)
+
+## Minimum rank at prescribed codimension
+
+Let $T$ be a linear subspace of the alternating forms on an $n$-dimensional space over any finite field, and let $d$ be its codimension in the alternating forms. **Every translate of $T$ contains a form of rank at most $2\lfloor\sqrt d\rfloor$.** For $n=2r+s$ with $s\ge0$, a translate with minimum rank exactly $2r$ exists at each feasible codimension $d$ if and only if $d\ge r^2$. Feasibility means $0\le d\le\binom{n}{2}$, the dimension of the ambient space of forms. This includes the zero-dimensional and zero-rank cases. [Lean theorem](Green50AlternatingRank.lean)
+
+Consider the exterior product of two linear functionals modulo $T$. Every affine class has a representative that is a sum of exterior products, by the decomposition of alternating forms. The shortest-representation bound supplies at most $\lfloor\sqrt d\rfloor$ products. Their sum has rank at most twice that number since it factors through the evaluations of the chosen functionals.
+
+For sharpness, take coordinate families $a_1,\ldots,a_r$ and $b_1,\ldots,b_r$. Require the first family to be totally isotropic and the mixed matrix $F(a_i,b_j)$ to be lower unitriangular. These are $r^2$ scalar conditions. The resulting $2r$-by-$2r$ block is invertible for every form in the family. The upper bound supplies a member of rank exactly $2r$ and shows that all $r^2$ conditions are independent. Slicing the direction space through this member realizes each larger feasible codimension with the same minimum rank.
+
+De Seguins Pazzis gives this triangular construction and the sharp lower-rank dimension formula under a field-size hypothesis. The argument here obtains the finite-field upper bound by applying the graph notebook's representation theorem to the quotient of alternating forms. [Theorem 4 and §4 of *On affine spaces of alternating matrices with constant rank*](https://arxiv.org/html/2307.10347)

@@ -5,7 +5,8 @@ namespace Arxiv.«2501.03234».ThetaHalfLogExcursions
 open Finset Filter Real ThetaReciprocalBlocks ThetaOffDiagonalSigns ThetaPrimeDensity
 open ThetaDivisibleDiagonal ThetaDiagonalConstant ThetaCenterBounds
 
-private lemma common_factor_mass {V : ℕ} (hV : 2≤V) :
+/-- The first eleven odd common factors in the denominator-three weight. -/
+theorem common_factor_mass {V : ℕ} (hV : 2≤V) :
     121/100≤commonWeight (2*V^52) 3 := by
   have hu : 21≤2*V^52/3 := by have := Nat.pow_le_pow_left hV 52; omega
   let s := (range 22).filter (fun g => g%2=1)
@@ -52,4 +53,5 @@ theorem S_half_log_excursions :
 end Arxiv.«2501.03234».ThetaHalfLogExcursions
 #print axioms Arxiv.«2501.03234».ThetaHalfLogExcursions.S_half_log_excursions
 
+#print axioms Arxiv.«2501.03234».ThetaHalfLogExcursions.common_factor_mass
 #print axioms Arxiv.«2501.03234».ThetaHalfLogExcursions.S_half_log_witnesses
