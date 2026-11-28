@@ -8,7 +8,8 @@ namespace Arxiv.«2501.03234».ThetaPrimeDensity
 
 open Finset Filter ThetaReciprocalCutoff ThetaCotangentTriangle ThetaReciprocalInversion ThetaReciprocalVariance
 
-private lemma small_harmonic {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
+/-- Uniform harmonic estimate on the 64th-power scale. -/
+theorem small_harmonic {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
     (harmonic k : ℝ) ≤ 65*N := by
   apply (harmonic_le_one_add_log _).trans
   have hN' : (1:ℝ)≤N := by exact_mod_cast hN
@@ -19,12 +20,28 @@ private lemma small_harmonic {k N : ℕ} (hN : 1≤N) (hk : k≤N^64) :
   rw [Real.log_pow] at hlog; norm_num at hlog
   linarith [Real.log_le_self (Nat.cast_nonneg N)]
 
-private lemma cutoff_inside {N p : ℕ} (hN : 2≤N) (hlo : N^56≤p) : 2*N^52<p := by
+/-- Primes in the top part of the scale exceed all denominator cutoffs. -/
+theorem cutoff_inside {N p : ℕ} (hN : 2≤N) (hlo : N^56≤p) : 2*N^52<p := by
   calc
     _ ≤ N^52*N := by rw [mul_comm]; exact Nat.mul_le_mul_left _ hN
     _ = N^53 := by ring
     _ < N^56 := Nat.pow_lt_pow_right (by omega) (by decide)
     _ ≤ p := hlo
+
+/-- The Kloosterman discrepancy at p ≤ N^64 costs at most a constant times N^50. -/
+theorem scale_discrepancy {N p : ℕ} (hN : 1≤N) (hhi : p≤N^64) :
+    discrepancy p ≤ 17424*(N:ℝ)^50 := by
+  have hH := small_harmonic hN ((Nat.div_le_self p 2).trans hhi)
+  have hNr : 1≤(N:ℝ) := by exact_mod_cast hN
+  have hpow := Real.rpow_le_rpow (Nat.cast_nonneg p)
+    (show (p:ℝ)≤(N:ℝ)^64 by exact_mod_cast hhi) (by norm_num : (0:ℝ)≤3/4)
+  rw [← Real.rpow_natCast_mul (Nat.cast_nonneg _)] at hpow
+  norm_num at hpow
+  have hH₀ : (0:ℝ)≤harmonic (p/2) := by exact_mod_cast (show 0≤harmonic (p/2) by unfold harmonic; positivity)
+  unfold discrepancy
+  have he := pow_le_pow_left₀ (by positivity : (0:ℝ)≤1+harmonic (p/2))
+    (show 1+(harmonic (p/2):ℝ) ≤ 66*N by linarith) 2
+  nlinarith only [mul_le_mul hpow he (sq_nonneg _) (pow_nonneg (Nat.cast_nonneg N : (0:ℝ)≤N) 48)]
 
 private lemma uniform_cutoff {N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hlo : N^56≤p) (hhi : p≤N^64)
     (ho : p%2=1) :
@@ -37,15 +54,7 @@ private lemma uniform_cutoff {N p : ℕ} [Fact p.Prime] (hN : 2≤N) (hlo : N^56
   have hH := small_harmonic hN₁ ((Nat.div_le_self p 2).trans hhi)
   have hJH := small_harmonic hN₁ (Nat.pow_le_pow_right hN₁ (by decide : 52≤64))
   have hH₀ : (0:ℝ)≤harmonic (p/2) := by exact_mod_cast (show 0≤harmonic (p/2) by unfold harmonic; positivity)
-  have hpow := Real.rpow_le_rpow (Nat.cast_nonneg p)
-    (show (p:ℝ)≤(N:ℝ)^64 by exact_mod_cast hhi) (by norm_num : (0:ℝ)≤3/4)
-  rw [← Real.rpow_natCast_mul (Nat.cast_nonneg _)] at hpow
-  norm_num at hpow
-  have hD : discrepancy p ≤ 17424*(N:ℝ)^50 := by
-    unfold discrepancy
-    have he := pow_le_pow_left₀ (by positivity : (0:ℝ)≤1+harmonic (p/2))
-      (show 1+(harmonic (p/2):ℝ) ≤ 66*N by linarith) 2
-    nlinarith only [mul_le_mul hpow he (sq_nonneg _) (pow_nonneg (Nat.cast_nonneg N : (0:ℝ)≤N) 48)]
+  have hD := scale_discrepancy hN₁ hhi
   have ht : 2*discrepancy p*p*harmonic (p/2)/(2*(↑(N^52 : ℕ):ℝ)+1) ≤ 2265120*p := by
     rw [div_le_iff₀ (by positivity)]; push_cast
     have he := mul_le_mul hD hH hH₀ (by positivity)
@@ -100,26 +109,32 @@ private lemma bad_forces_large {c : ℝ} (hc : c<lead) :
   rw [div_mul_eq_mul_div,div_le_iff₀ (by positivity)]
   linarith only [H,h₁,h₂,h₃]
 
+/-- Primes satisfying a specified exceptional-event predicate. -/
+noncomputable def primeSet (P : ℕ → Prop) (X : ℕ) : Finset ℕ := by
+  classical exact (Nat.primesLE X).filter P
+
 /-- Primes up to X whose original theta sum is at most c p log p. -/
-noncomputable def exceptions (c : ℝ) (X : ℕ) : Finset ℕ := by
-  classical exact (Nat.primesLE X).filter fun p => (S p:ℝ) ≤ c*p*Real.log p
+noncomputable def exceptions (c : ℝ) := primeSet (fun p => (S p:ℝ) ≤ c*p*Real.log p)
 
-private lemma exception_mem {c : ℝ} {X p : ℕ} :
-    p ∈ exceptions c X ↔ p≤X ∧ p.Prime ∧ (S p:ℝ) ≤ c*p*Real.log p := by
-  classical simp only [exceptions,mem_filter,Nat.mem_primesLE,and_assoc]
+private lemma primeSet_mem {P : ℕ → Prop} {X p : ℕ} :
+    p ∈ primeSet P X ↔ p≤X ∧ p.Prime ∧ P p := by
+  classical simp only [primeSet,mem_filter,Nat.mem_primesLE,and_assoc]
 
-private lemma exceptions_mono (c : ℝ) {X Z : ℕ} (h : X≤Z) : exceptions c X ⊆ exceptions c Z := by
-  intro p hp; obtain ⟨hp,hp',hs⟩ := exception_mem.mp hp
-  exact exception_mem.mpr ⟨hp.trans h,hp',hs⟩
+private lemma primeSet_mono (P : ℕ → Prop) {X Z : ℕ} (h : X≤Z) : primeSet P X ⊆ primeSet P Z := by
+  intro p hp; obtain ⟨hp,hp',hs⟩ := primeSet_mem.mp hp
+  exact primeSet_mem.mpr ⟨hp.trans h,hp',hs⟩
 
-private lemma scale_exceptions {c : ℝ} (hc : c<lead) :
+private lemma scale_exceptions (P : ℕ → Prop) (F : ℕ → ℕ → ℂ)
+    (hv : ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N → ∑ n ∈ range (N^64+1), ‖F N n‖^2 ≤ K*(N:ℝ)^64)
+    (hf : ∃ δ : ℝ, 0<δ ∧ ∀ᶠ N : ℕ in atTop, ∀ p : ℕ, p.Prime → N^56≤p → p≤N^64 →
+      P p → δ*Real.log N ≤ ‖F N p‖) :
     ∃ A : ℝ, 0≤A ∧ ∀ᶠ N : ℕ in atTop,
-      ((exceptions c (N^64)).card : ℝ)*(Real.log N)^2 ≤ A*(N:ℝ)^64 := by
-  obtain ⟨K,hK,hvar⟩ := interval_variance
-  obtain ⟨δ,hδ,hforce⟩ := bad_forces_large hc
+      ((primeSet P (N^64)).card : ℝ)*(Real.log N)^2 ≤ A*(N:ℝ)^64 := by
+  obtain ⟨K,hK,hvar⟩ := hv
+  obtain ⟨δ,hδ,hforce⟩ := hf
   refine ⟨1+K/δ^2,by positivity,?_⟩
   filter_upwards [hforce,eventually_ge_atTop 2] with N hforce hN
-  let E := exceptions c (N^64)
+  let E := primeSet P (N^64)
   let L := E.filter (fun p => N^56≤p)
   let U := E.filter (fun p => ¬N^56≤p)
   have hℓ : 0≤Real.log N := Real.log_nonneg (by exact_mod_cast (show 1≤N by omega))
@@ -128,14 +143,14 @@ private lemma scale_exceptions {c : ℝ} (hc : c<lead) :
   have hlarge : (L.card:ℝ)*(δ*Real.log N)^2 ≤ K*(N:ℝ)^64 := by
     calc
       _ = ∑ p ∈ L, (δ*Real.log N)^2 := by simp
-      _ ≤ ∑ p ∈ L, ‖extension (2*N^52) p‖^2 := by
+      _ ≤ ∑ p ∈ L, ‖F N p‖^2 := by
         apply sum_le_sum; intro p hp
         obtain ⟨hE,hpL⟩ := mem_filter.mp hp
-        obtain ⟨hh,hp',hs⟩ := exception_mem.mp hE
+        obtain ⟨hh,hp',hs⟩ := primeSet_mem.mp hE
         exact pow_le_pow_left₀ (mul_nonneg hδ.le hℓ) (hforce p hp' hpL hh hs) _
-      _ ≤ ∑ p ∈ range (N^64+1), ‖extension (2*N^52) p‖^2 := by
+      _ ≤ ∑ p ∈ range (N^64+1), ‖F N p‖^2 := by
         apply sum_le_sum_of_subset_of_nonneg _ (by intros; positivity)
-        intro p hp; exact mem_range.mpr (Nat.lt_succ_of_le (exception_mem.mp (mem_filter.mp hp).1).1)
+        intro p hp; exact mem_range.mpr (Nat.lt_succ_of_le (primeSet_mem.mp (mem_filter.mp hp).1).1)
       _ ≤ _ := hvar N (by omega)
   have hsmall : U.card ≤ N^56 := by
     calc
@@ -176,19 +191,21 @@ theorem prime_first_moment : ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N →
   rw [mul_assoc]; exact mul_le_mul (by exact_mod_cast hc) ht (sum_nonneg fun _ _ => sq_nonneg _)
     (Nat.cast_nonneg _)
 
-private lemma count_trivial (c : ℝ) (X : ℕ) : (exceptions c X).card ≤ X+1 := by
+private lemma count_trivial (P : ℕ → Prop) (X : ℕ) : (primeSet P X).card ≤ X+1 := by
   calc
     _ ≤ (range (X+1)).card := card_le_card (by
-      intro p hp; exact mem_range.mpr (Nat.lt_succ_of_le (exception_mem.mp hp).1))
+      intro p hp; exact mem_range.mpr (Nat.lt_succ_of_le (primeSet_mem.mp hp).1))
     _ = _ := card_range _
 
 set_option maxHeartbeats 600000 in
-/-- For every c below 3/(4π²), the original double sum has at most C X/(log X)^2
-exceptional primes up to X, for every integer X≥2. -/
-theorem prime_exception_bound {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
-    ∃ C : ℝ, 0<C ∧ ∀ X : ℕ, 2≤X →
-      ((exceptions c X).card : ℝ) ≤ C*X/(Real.log X)^2 := by
-  obtain ⟨A,hA,hscale⟩ := scale_exceptions hc
+/-- A uniformly bounded cutoff variance gives an X/log² X prime exception bound
+whenever the exception forces a cutoff value of logarithmic size. -/
+theorem count_from_variance (P : ℕ → Prop) (F : ℕ → ℕ → ℂ)
+    (hv : ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N → ∑ n ∈ range (N^64+1), ‖F N n‖^2 ≤ K*(N:ℝ)^64)
+    (hf : ∃ δ : ℝ, 0<δ ∧ ∀ᶠ N : ℕ in atTop, ∀ p : ℕ, p.Prime → N^56≤p → p≤N^64 →
+      P p → δ*Real.log N ≤ ‖F N p‖) :
+    ∃ C : ℝ, 0<C ∧ ∀ X : ℕ, 2≤X → ((primeSet P X).card:ℝ) ≤ C*X/(Real.log X)^2 := by
+  obtain ⟨A,hA,hscale⟩ := scale_exceptions P F hv hf
   obtain ⟨N₀,h₀⟩ := eventually_atTop.mp hscale
   let Z := (N₀+1)^64
   let K := (4096*A)*(2:ℝ)^64 + 2*(Z:ℝ)^2 + 1
@@ -215,15 +232,15 @@ theorem prime_exception_bound {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
     have hlogN := Real.log_nonneg (show (1:ℝ)≤N by exact_mod_cast (by dsimp [N]; omega : 1≤N))
     have hh := Real.log_le_log hXp (show (X:ℝ)≤(N:ℝ)^64 by exact_mod_cast hL.le)
     rw [Real.log_pow] at hh; norm_num at hh
-    have hE := card_le_card (exceptions_mono c hL.le)
+    have hE := card_le_card (primeSet_mono P hL.le)
     have hs := h₀ N hN
-    have hcross := mul_le_mul (show ((exceptions c X).card:ℝ) ≤ (exceptions c (N^64)).card by exact_mod_cast hE)
+    have hcross := mul_le_mul (show ((primeSet P X).card:ℝ) ≤ (primeSet P (N^64)).card by exact_mod_cast hE)
       (pow_le_pow_left₀ hlog.le hh 2) (sq_nonneg _) (Nat.cast_nonneg _)
     have hn' : (N:ℝ)^64 ≤ (2:ℝ)^64*X := by exact_mod_cast hnr
     have hk : (4096*A)*(2:ℝ)^64 ≤ K := by dsimp [K]; linarith [sq_nonneg (Z:ℝ)]
     linarith only [hcross,hs,mul_le_mul_of_nonneg_left hn' hA,mul_le_mul_of_nonneg_right hk hXp.le]
-  · have h1 : ((exceptions c X).card:ℝ) ≤ 2*X := by
-      have h : ((exceptions c X).card:ℝ) ≤ X+1 := by exact_mod_cast count_trivial c X
+  · have h1 : ((primeSet P X).card:ℝ) ≤ 2*X := by
+      have h : ((primeSet P X).card:ℝ) ≤ X+1 := by exact_mod_cast count_trivial P X
       linarith
     have h2 : Real.log X ≤ Z := (Real.log_le_self hXp.le).trans (by exact_mod_cast (lt_of_not_ge hz).le)
     have he := mul_le_mul h1 (pow_le_pow_left₀ hlog.le h2 2) (sq_nonneg _) (by positivity)
@@ -231,6 +248,13 @@ theorem prime_exception_bound {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
       change _ ≤ (4096*A)*(2:ℝ)^64 + 2*(Z:ℝ)^2 + 1
       linarith only [mul_nonneg (mul_nonneg (by norm_num : (0:ℝ)≤4096) hA) (by positivity : (0:ℝ)≤2^64)]
     linarith only [he,mul_le_mul_of_nonneg_right hK' hXp.le]
+
+/-- For every c below 3/(4π²), the original double sum has at most C X/(log X)^2
+exceptional primes up to X, for every integer X≥2. -/
+theorem prime_exception_bound {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
+    ∃ C : ℝ, 0<C ∧ ∀ X : ℕ, 2≤X →
+      ((exceptions c X).card : ℝ) ≤ C*X/(Real.log X)^2 :=
+  count_from_variance _ (fun N => extension (2*N^52)) interval_variance (bad_forces_large hc)
 
 private lemma prime_count_lower : ∀ᶠ X : ℕ in atTop,
     Real.log 2/2*(X:ℝ) ≤ Nat.primeCounting X*Real.log X := by
@@ -247,10 +271,12 @@ private lemma prime_count_lower : ∀ᶠ X : ℕ in atTop,
   rw [abs_of_pos (by linarith : 0<(X:ℝ)+1)] at he
   linarith [le_abs_self (Real.log ((X:ℝ)+1)),mul_le_mul_of_nonneg_left hXr.le htwo.le]
 
-/-- The relative density of the exceptions among primes is zero. -/
-theorem prime_density_one {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
-    Tendsto (fun X : ℕ => ((exceptions c X).card:ℝ) / Nat.primeCounting X) atTop (nhds 0) := by
-  obtain ⟨C,hC,hbound⟩ := prime_exception_bound hc
+/-- The exceptional proportion among primes tends to zero for every finite
+X/log² X count. -/
+theorem density_from_count (P : ℕ → Prop) (hb : ∃ C : ℝ, 0<C ∧ ∀ X : ℕ, 2≤X →
+    ((primeSet P X).card:ℝ) ≤ C*X/(Real.log X)^2) :
+    Tendsto (fun X : ℕ => ((primeSet P X).card:ℝ) / Nat.primeCounting X) atTop (nhds 0) := by
+  obtain ⟨C,hC,hbound⟩ := hb
   have htwo : 0<Real.log 2 := Real.log_pos (by norm_num)
   have ht : Tendsto (fun X : ℕ => Real.log (X:ℝ)) atTop atTop := Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
   have hsmall : Tendsto (fun X : ℕ => (2*C/Real.log 2)/Real.log X) atTop (nhds 0) :=
@@ -267,6 +293,11 @@ theorem prime_density_one {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
   have h₂ := mul_le_mul_of_nonneg_left hb htwo.le
   apply le_of_mul_le_mul_right (a:=Real.log X) _ hlog
   linarith only [h₁,h₂]
+
+/-- The relative density of the exceptions among primes is zero. -/
+theorem prime_density_one {c : ℝ} (hc : c<3/(4*Real.pi^2)) :
+    Tendsto (fun X : ℕ => ((exceptions c X).card:ℝ) / Nat.primeCounting X) atTop (nhds 0) :=
+  density_from_count _ (prime_exception_bound hc)
 
 private lemma primeCounting_pos_real {X : ℕ} (hX : 2≤X) : 0<(Nat.primeCounting X:ℝ) := by
   have h : 0<(Nat.primesLE X).card := card_pos.mpr ⟨2,Nat.mem_primesLE.mpr ⟨hX,Nat.prime_two⟩⟩
@@ -312,3 +343,8 @@ end Arxiv.«2501.03234».ThetaPrimeDensity
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.prime_density_one
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.normalized_prime_first_moment
 #print axioms Arxiv.«2501.03234».ThetaPrimeDensity.prime_family_density
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.small_harmonic
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.cutoff_inside
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.scale_discrepancy
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.count_from_variance
+#print axioms Arxiv.«2501.03234».ThetaPrimeDensity.density_from_count

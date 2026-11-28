@@ -6,12 +6,12 @@ namespace Arxiv.«2501.03234».ThetaReciprocalInversion
 
 open Finset ThetaReciprocalFibers
 
-/-- Every fraction k/d, including zero, occurs once after reduction. -/
-theorem sum_reduced {A : Type*} [AddCommMonoid A] {d : ℕ} (hd : 0<d) (f : ℕ → A) :
-    (∑ q ∈ d.divisors, ∑ h ∈ (range q).filter (·.Coprime q), f ((d/q)*h)) =
-      ∑ k ∈ range d, f k := by
+/-- Reducing all fractions k/d with 0 ≤ k < Kd preserves the numerator window. -/
+theorem sum_reduced_window (K : ℕ) {A : Type*} [AddCommMonoid A] {d : ℕ} (hd : 0<d) (f : ℕ → A) :
+    (∑ q ∈ d.divisors, ∑ h ∈ (range (K*q)).filter (·.Coprime q), f ((d/q)*h)) =
+      ∑ k ∈ range (K*d), f k := by
   rw [sum_sigma']
-  let s := d.divisors.sigma (fun q => (range q).filter (·.Coprime q))
+  let s := d.divisors.sigma (fun q => (range (K*q)).filter (·.Coprime q))
   let lift (z : Σ _ : ℕ, ℕ) := (d/z.1)*z.2
   have hdvd {z : Σ _ : ℕ, ℕ} (hz : z ∈ s) : z.1 ∣ d := Nat.dvd_of_mem_divisors (mem_sigma.mp hz).1
   have hg {z : Σ _ : ℕ, ℕ} (hz : z ∈ s) : 0<d/z.1 :=
@@ -26,7 +26,9 @@ theorem sum_reduced {A : Type*} [AddCommMonoid A] {d : ℕ} (hd : 0<d) (f : ℕ 
   · intro z hz
     have hlt := mem_range.mp (mem_filter.mp (mem_sigma.mp hz).2).1
     apply mem_range.mpr
-    exact (Nat.mul_lt_mul_of_pos_left hlt (hg hz)).trans_eq (Nat.div_mul_cancel (hdvd hz))
+    apply (Nat.mul_lt_mul_of_pos_left hlt (hg hz)).trans_eq
+    calc (d/z.1)*(K*z.1) = K*((d/z.1)*z.1) := by ring
+         _ = K*d := by rw [Nat.div_mul_cancel (hdvd hz)]
   · intro a ha b hb H
     have h : d/a.1=d/b.1 := (hgcd ha).symm.trans ((congrArg (fun k : ℕ => k.gcd d) H).trans (hgcd hb))
     have hq : a.1=b.1 := by
@@ -42,13 +44,19 @@ theorem sum_reduced {A : Type*} [AddCommMonoid A] {d : ℕ} (hd : 0<d) (f : ℕ 
     have hgd : g ∣ d := Nat.gcd_dvd_right k d
     have hgk : g ∣ k := Nat.gcd_dvd_left k d
     have hq := Nat.div_dvd_of_dvd hgd
-    have hlt : k/g < d/g := (Nat.div_lt_iff_lt_mul hg').mpr (by
-      rw [Nat.div_mul_cancel hgd]; exact mem_range.mp hk)
+    have hlt : k/g < K*(d/g) := (Nat.div_lt_iff_lt_mul hg').mpr (by
+      rw [Nat.mul_assoc,Nat.div_mul_cancel hgd]; exact mem_range.mp hk)
     refine ⟨⟨d/g,k/g⟩,mem_sigma.mpr ⟨Nat.mem_divisors.mpr ⟨hq,hd.ne'⟩,
       mem_filter.mpr ⟨mem_range.mpr hlt,Nat.coprime_div_gcd_div_gcd hg'⟩⟩,?_⟩
     dsimp [lift]
     rw [Nat.div_div_self hgd hd.ne',Nat.mul_div_cancel' hgk]
   · intros; rfl
+
+/-- Every fraction k/d, including zero, occurs once after reduction. -/
+theorem sum_reduced {A : Type*} [AddCommMonoid A] {d : ℕ} (hd : 0<d) (f : ℕ → A) :
+    (∑ q ∈ d.divisors, ∑ h ∈ (range q).filter (·.Coprime q), f ((d/q)*h)) =
+      ∑ k ∈ range d, f k := by
+  simpa only [one_mul] using sum_reduced_window 1 hd f
 
 /-- A positive product cutoff can be summed first over the product or over either factor. -/
 theorem sum_by_product {A : Type*} [AddCommMonoid A] (Y : ℕ) (f : ℕ → ℕ → A) :
@@ -223,29 +231,32 @@ private lemma raw_scaled {p g d w : ℕ} (hc : p.Coprime (g*d)) (hd : 0<d) (hw :
 private lemma hidden_coprime {p d w : ℕ} (h : ¬w.Coprime d) : scaledTerm p d w=0 := by
   simp [scaledTerm,primitiveTerm,h]
 
-private lemma reduced_rows {p Y : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
-    (∑ u ∈ Icc 1 Y, ∑ v ∈ range u, rawTerm p u v) =
-    ∑ d ∈ Icc 1 Y, ((commonWeight Y d : ℝ) : ℂ)/(d:ℂ) *
-      ∑ w ∈ range d, scaledTerm p d w := by
+private lemma factor_rows (K Y : ℕ) (F f₀ : ℕ → ℕ → ℂ)
+    (hscaled : ∀ g d w, 0<g → 0<d → g*d≤Y → w.Coprime d →
+      F (g*d) (g*w) = (if g%2=1 then ((g:ℂ)^2)⁻¹ else 0)*((d:ℂ)⁻¹*f₀ d w))
+    (hzero : ∀ d w, ¬w.Coprime d → f₀ d w=0) :
+    (∑ u ∈ Icc 1 Y, ∑ v ∈ range (K*u), F u v) =
+    ∑ d ∈ Icc 1 Y, (commonWeight Y d : ℂ)/(d:ℂ) *
+      ∑ w ∈ range (K*d), f₀ d w := by
   let f (d g : ℕ) : ℂ := (if g%2=1 then ((g:ℂ)^2)⁻¹ else 0) *
-      ((d:ℂ)⁻¹*∑ w ∈ range d, scaledTerm p d w)
+      ((d:ℂ)⁻¹*∑ w ∈ range (K*d), f₀ d w)
   calc
     _ = ∑ u ∈ Icc 1 Y, ∑ d ∈ u.divisors, f d (u/d) := by
       apply sum_congr rfl; intro u hu
-      rw [← sum_reduced (mem_Icc.mp hu).1]
+      rw [← sum_reduced_window K (mem_Icc.mp hu).1]
       apply sum_congr rfl; intro d hd
       have he := Nat.div_mul_cancel (Nat.dvd_of_mem_divisors hd)
-      have H : ∀ w, w.Coprime d → rawTerm p u ((u/d)*w) =
-          (if (u/d)%2=1 then ((↑(u/d) : ℂ)^2)⁻¹ else 0)*((d:ℂ)⁻¹*scaledTerm p d w) := by
+      have H : ∀ w, w.Coprime d → F u ((u/d)*w) =
+          (if (u/d)%2=1 then ((↑(u/d) : ℂ)^2)⁻¹ else 0)*((d:ℂ)⁻¹*f₀ d w) := by
         intro w hw
         calc
-          _ = rawTerm p ((u/d)*d) ((u/d)*w) := by rw [he]
-          _ = _ := raw_scaled (by rw [he]; exact hp u hu) (Nat.pos_of_mem_divisors hd) hw
+          _ = F ((u/d)*d) ((u/d)*w) := by rw [he]
+          _ = _ := hscaled _ _ _ (Nat.div_pos (Nat.divisor_le hd) (Nat.pos_of_mem_divisors hd)) (Nat.pos_of_mem_divisors hd) (by rw [he]; exact (mem_Icc.mp hu).2) hw
       dsimp [f]; rw [mul_sum,mul_sum,sum_filter]
       apply sum_congr rfl; intro w _
       by_cases hw : w.Coprime d
       · rw [if_pos hw]; exact H w hw
-      · rw [if_neg hw,hidden_coprime hw]; simp
+      · rw [if_neg hw,hzero d w hw]; simp
     _ = ∑ d ∈ Icc 1 Y, ∑ g ∈ Icc 1 (Y/d), f d g := (sum_by_product Y f).symm
     _ = _ := by
       apply sum_congr rfl; intro d _
@@ -254,7 +265,16 @@ private lemma reduced_rows {p Y : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
       dsimp [f]; rw [← sum_mul,sum_filter]
       ring
 
-private lemma odds_interval {A : Type*} [AddCommMonoid A] (s : Finset ℕ) (J : ℕ)
+private lemma reduced_rows {p Y : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
+    (∑ u ∈ Icc 1 Y, ∑ v ∈ range u, rawTerm p u v) =
+    ∑ d ∈ Icc 1 Y, ((commonWeight Y d : ℝ) : ℂ)/(d:ℂ) *
+      ∑ w ∈ range d, scaledTerm p d w := by
+  simpa only [one_mul] using factor_rows 1 Y (rawTerm p) (scaledTerm p)
+    (fun g d w hg hd hY hw => raw_scaled (hp _ (mem_Icc.mpr ⟨Nat.mul_pos hg hd,hY⟩)) hd hw)
+    (fun _ _ => hidden_coprime)
+
+/-- Enumerate the odd members of a finite interval by their half indices. -/
+theorem odds_interval {A : Type*} [AddCommMonoid A] (s : Finset ℕ) (J : ℕ)
     (hs : ∀ n, n ∈ s → n%2=1 → n/2<J)
     (ht : ∀ j<J, 2*j+1 ∈ s) (f : ℕ → A) :
     (∑ n ∈ s, if n%2=1 then f n else 0) = ∑ j ∈ range J, f (2*j+1) := by
@@ -290,15 +310,15 @@ private noncomputable def scalarCoeff (q m w h : ℕ) : ℂ :=
     let _ : NeZero q := ⟨hq⟩
     numeratorVector q m w (h : ZMod q)
 
-private lemma block_expanded (Y q h : ℕ) (hq : 0<q) :
-    blockCoordinate Y q h = ∑ m ∈ Icc 1 (Y/q),
+private lemma block_expanded (L : ℕ → ℕ) (Y q h : ℕ) (hq : 0<q) :
+    windowCoordinate L Y q h = ∑ m ∈ Icc 1 (Y/q),
       ((commonWeight Y (q*m) : ℂ) / ((q*m : ℕ) : ℂ)) *
-      ∑ k ∈ range (q*m-1), ((↑(k+1 : ℕ) : ℂ)⁻¹)*scalarCoeff q m (k+1) h := by
+      ∑ k ∈ range (L (q*m)), ((↑(k+1 : ℕ) : ℂ)⁻¹)*scalarCoeff q m (k+1) h := by
   let : NeZero q := ⟨hq.ne'⟩
   let e : EuclideanSpace ℂ (ZMod q) →ₗ[ℝ] ℂ := PiLp.projₗ 2 _ (h : ZMod q)
-  rw [blockCoordinate,dif_neg hq.ne']
-  change e (weightedBlock Y q) = _
-  unfold weightedBlock numeratorRow
+  rw [windowCoordinate,dif_neg hq.ne']
+  change e (windowBlock L Y q) = _
+  unfold windowBlock numeratorWindow
   simp only [map_sum,map_smul,Complex.real_smul]
   unfold scalarCoeff
   simp only [dif_neg hq.ne']
@@ -306,21 +326,21 @@ private lemma block_expanded (Y q h : ℕ) (hq : 0<q) :
   push_cast; rfl
 
 /-- Fourier synthesis of the rational extension on every integer. -/
-noncomputable def extension (Y n : ℕ) : ℂ :=
+noncomputable def windowExtension (L : ℕ → ℕ) (Y n : ℕ) : ℂ :=
   ∑ q ∈ Icc 1 Y, ∑ h ∈ (range q).filter (·.Coprime q),
-    blockCoordinate Y q h * phase ((h:ℝ)/q) n
+    windowCoordinate L Y q h * phase ((h:ℝ)/q) n
 
-private lemma extension_rows {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
-    extension Y p = ∑ d ∈ Icc 1 Y, (commonWeight Y d : ℂ)/(d:ℂ) *
-      ∑ w ∈ range d, scaledTerm p d w := by
+private lemma window_rows (L : ℕ → ℕ) {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
+    windowExtension L Y p = ∑ d ∈ Icc 1 Y, (commonWeight Y d : ℂ)/(d:ℂ) *
+      ∑ k ∈ range (L d), scaledTerm p d (k+1) := by
   let F (q m : ℕ) := (commonWeight Y (q*m) : ℂ) / ((q*m : ℕ) : ℂ) *
-      ∑ k ∈ range (q*m-1), (↑(k+1 : ℕ) : ℂ)⁻¹ *
+      ∑ k ∈ range (L (q*m)), (↑(k+1 : ℕ) : ℂ)⁻¹ *
         ∑ h ∈ (range q).filter (·.Coprime q), scalarCoeff q m (k+1) h * phase ((h:ℝ)/q) p
   calc
-    extension Y p = ∑ q ∈ Icc 1 Y, ∑ m ∈ Icc 1 (Y/q), F q m := by
-      unfold extension
+    windowExtension L Y p = ∑ q ∈ Icc 1 Y, ∑ m ∈ Icc 1 (Y/q), F q m := by
+      unfold windowExtension
       apply sum_congr rfl; intro q hq
-      simp_rw [block_expanded Y q _ (mem_Icc.mp hq).1,sum_mul]
+      simp_rw [block_expanded L Y q _ (mem_Icc.mp hq).1,sum_mul]
       rw [sum_comm]
       apply sum_congr rfl; intro m _
       dsimp [F]
@@ -331,7 +351,7 @@ private lemma extension_rows {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
     _ = _ := by
       apply sum_congr rfl; intro d hd
       have hF (q : ℕ) (hq : q ∈ d.divisors) : F q (d/q) = (commonWeight Y d : ℂ)/(d:ℂ) *
-          ∑ k ∈ range (d-1), (↑(k+1 : ℕ) : ℂ)⁻¹ *
+          ∑ k ∈ range (L d), (↑(k+1 : ℕ) : ℂ)⁻¹ *
             ∑ h ∈ (range q).filter (·.Coprime q), scalarCoeff q (d/q) (k+1) h * phase ((h:ℝ)/q) p := by
         dsimp only [F]; rw [Nat.mul_div_cancel' (Nat.dvd_of_mem_divisors hq)]
       rw [sum_congr rfl hF,← mul_sum,sum_comm]
@@ -340,10 +360,20 @@ private lemma extension_rows {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
           scalarCoeff q (d/q) w h * phase ((h:ℝ)/q) p) = primitiveTerm p d w :=
         select_freq (mem_Icc.mp hd).1 (hp d hd) w
       simp_rw [← mul_sum,he]
-      change (∑ k ∈ range (d-1), scaledTerm p d (k+1)) = _
-      have hf := sum_range_succ' (scaledTerm p d) (d-1)
-      rw [Nat.sub_add_cancel (mem_Icc.mp hd).1] at hf
-      simpa [scaledTerm] using hf.symm
+      rfl
+
+/-- Fourier synthesis for the lower triangle. -/
+noncomputable def extension : ℕ → ℕ → ℂ := windowExtension (fun d => d-1)
+
+private lemma extension_rows {Y p : ℕ} (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
+    extension Y p = ∑ d ∈ Icc 1 Y, (commonWeight Y d : ℂ)/(d:ℂ) *
+      ∑ w ∈ range d, scaledTerm p d w := by
+  rw [extension,window_rows _ hp]
+  apply sum_congr rfl; intro d hd
+  congr 1
+  have hf := sum_range_succ' (scaledTerm p d) (d-1)
+  rw [Nat.sub_add_cancel (mem_Icc.mp hd).1] at hf
+  simpa [scaledTerm] using hf.symm
 
 /-- For every argument coprime to the denominators, the extension exactly interpolates the
 previous rational cutoff. In particular it interpolates every prime above the cutoff. -/
@@ -358,8 +388,49 @@ theorem extension_at_prime {p J : ℕ} (hp : Nat.Prime p) (hJ : 2*J<p) :
   exact hp.coprime_iff_not_dvd.mpr fun h =>
     ((mem_Icc.mp hd).2.trans_lt hJ).not_ge (Nat.le_of_dvd (mem_Icc.mp hd).1 h)
 
+/-- At reduced denominator one every numerator is an exact multiple. Otherwise
+the cone of width K has positive numerators 1 through Kd−1. -/
+def coneWindow (K d : ℕ) : ℕ := if d=1 then 0 else K*d-1
+
+/-- On arguments coprime to all denominators, the wide Fourier expansion gives
+the complete rational cone with exact multiples removed. -/
+theorem windowExtension_nondivisible {p Y K : ℕ} (hK : 0<K) (hp : ∀ d ∈ Icc 1 Y, p.Coprime d) :
+    windowExtension (coneWindow K) Y p =
+      ∑ u ∈ Icc 1 Y, ∑ v ∈ range (K*u),
+        (if u%2=1 ∧ v%2=1 ∧ ¬u∣v then
+          (ThetaCotangentTriangle.reciprocalSign p u v:ℂ)/((u:ℂ)*v) else 0) := by
+  let F (u v : ℕ) : ℂ := if u∣v then 0 else rawTerm p u v
+  let f (d w : ℕ) : ℂ := if d=1 then 0 else scaledTerm p d w
+  have hr := factor_rows K Y F f (by
+    intro g d w hg hd hY hw
+    have hh : g*d ∣ g*w ↔ d=1 := by
+      rw [Nat.mul_dvd_mul_iff_left hg]
+      exact ⟨fun h => by simpa only [Nat.gcd_eq_right h] using hw.gcd_eq_one,fun h => h ▸ one_dvd _⟩
+    by_cases h : d=1
+    · simp [F,f,h]
+    · simpa only [F,f,if_neg h,if_neg (mt hh.mp h)] using
+        raw_scaled (g:=g) (w:=w) (hp _ (mem_Icc.mpr ⟨Nat.mul_pos hg hd,hY⟩)) hd hw) (by
+    intro d w hw; simp [f,hidden_coprime hw])
+  rw [window_rows _ hp]
+  apply Eq.trans _ (hr.symm.trans ?_)
+  · apply sum_congr rfl; intro d hd
+    congr 1
+    by_cases h : d=1
+    · simp [coneWindow,h,f]
+    · simp only [coneWindow,if_neg h,f]
+      have hk : 0<K*d := Nat.mul_pos hK (mem_Icc.mp hd).1
+      have hf := sum_range_succ' (scaledTerm p d) (K*d-1)
+      rw [Nat.sub_add_cancel hk] at hf
+      simpa [scaledTerm] using hf.symm
+  · apply sum_congr rfl; intro u _
+    apply sum_congr rfl; intro v _
+    dsimp [F,rawTerm]; split_ifs <;> simp_all
+
 end Arxiv.«2501.03234».ThetaReciprocalInversion
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.sum_reduced
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.sum_by_product
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.extension_rationalPrefix
 #print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.extension_at_prime
+#print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.sum_reduced_window
+#print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.odds_interval
+#print axioms Arxiv.«2501.03234».ThetaReciprocalInversion.windowExtension_nondivisible

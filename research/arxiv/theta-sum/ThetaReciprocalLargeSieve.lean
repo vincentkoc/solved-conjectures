@@ -234,17 +234,21 @@ private lemma farey_gap {q r h k Q : ℕ} (hq : 0<q) (hr : 0<r) (hqQ : q≤Q) (h
   exact_mod_cast (show q*r ≤ Q^2 by simpa [sq] using Nat.mul_le_mul hqQ hrQ)
 
 /-- Contribution to the rational extension from a band of reduced denominators. -/
-noncomputable def band (Y : ℕ) (s : Finset ℕ) (n : ℕ) : ℂ :=
-  ∑ q ∈ s, ∑ h ∈ (range q).filter (·.Coprime q), blockCoordinate Y q h * phase ((h:ℝ)/q) n
+noncomputable def windowBand (L : ℕ → ℕ) (Y : ℕ) (s : Finset ℕ) (n : ℕ) : ℂ :=
+  ∑ q ∈ s, ∑ h ∈ (range q).filter (·.Coprime q), windowCoordinate L Y q h * phase ((h:ℝ)/q) n
+
+/-- Squared mass of the primitive coordinates at a given denominator. -/
+noncomputable def windowMass (L : ℕ → ℕ) (Y q : ℕ) : ℝ :=
+  ∑ h ∈ (range q).filter (·.Coprime q), ‖windowCoordinate L Y q h‖^2
 
 /-- The finite interval variance is bounded by the mass on this band and the square
 of its largest denominator (with one harmonic factor from the elementary large sieve). -/
-theorem band_sieve (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
-    ∑ n ∈ range X, ‖band Y s n‖^2 ≤
-      2*((X:ℝ)+2*(Q^2:ℕ)*harmonic (Q^2))*∑ q ∈ s, primitiveEnergy Y q := by
+theorem window_sieve (L : ℕ → ℕ) (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
+    ∑ n ∈ range X, ‖windowBand L Y s n‖^2 ≤
+      2*((X:ℝ)+2*(Q^2:ℕ)*harmonic (Q^2))*∑ q ∈ s, windowMass L Y q := by
   let S := s.sigma fun q => (range q).filter (·.Coprime q)
   let t (z : Σ _ : ℕ, ℕ) := (z.2:ℝ)/z.1
-  let a (z : Σ _ : ℕ, ℕ) := blockCoordinate Y z.1 z.2
+  let a (z : Σ _ : ℕ, ℕ) := windowCoordinate L Y z.1 z.2
   have he (z : Σ _ : ℕ, ℕ) (hz : z∈S) : 0<z.1 ∧ z.1≤Q ∧ z.2<z.1 ∧ z.2.Coprime z.1 := by
     obtain ⟨hq,hh⟩ := mem_sigma.mp hz
     exact ⟨(mem_Icc.mp (hs _ hq)).1,(mem_Icc.mp (hs _ hq)).2,mem_range.mp (mem_filter.mp hh).1,(mem_filter.mp hh).2⟩
@@ -261,8 +265,20 @@ theorem band_sieve (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1
     by_contra! H
     apply hne; cases z; cases w; simp_all
   have H := separated_sieve S a t X (Q^2) ht hgap
-  simpa only [band,primitiveEnergy,sum_sigma',S,a,t] using H
+  simpa only [windowBand,windowMass,sum_sigma',S,a,t] using H
+
+/-- Contribution to the rational extension from a band of reduced denominators. -/
+noncomputable def band (Y : ℕ) (s : Finset ℕ) (n : ℕ) : ℂ :=
+  ∑ q ∈ s, ∑ h ∈ (range q).filter (·.Coprime q), blockCoordinate Y q h * phase ((h:ℝ)/q) n
+
+/-- The finite interval variance is bounded by the mass on this band and the square
+of its largest denominator (with one harmonic factor from the elementary large sieve). -/
+theorem band_sieve (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
+    ∑ n ∈ range X, ‖band Y s n‖^2 ≤
+      2*((X:ℝ)+2*(Q^2:ℕ)*harmonic (Q^2))*∑ q ∈ s, primitiveEnergy Y q :=
+  window_sieve (fun d => d-1) Y X Q s hs
 
 end Arxiv.«2501.03234».ThetaReciprocalLargeSieve
 #print axioms Arxiv.«2501.03234».ThetaReciprocalLargeSieve.separated_sieve
 #print axioms Arxiv.«2501.03234».ThetaReciprocalLargeSieve.band_sieve
+#print axioms Arxiv.«2501.03234».ThetaReciprocalLargeSieve.window_sieve
