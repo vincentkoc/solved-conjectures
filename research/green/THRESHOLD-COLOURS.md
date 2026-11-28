@@ -10,4 +10,14 @@ For any displacement vanishing on the fixed coordinates, split the free coordina
 
 The $r$ coordinate thresholds in dimension $r$ have singleton joint cells. Their doubles contain only zero, so a uniform codimension bound must be at least $r$. Both bounds also apply to arbitrary linear changes of the common basis. [Coordinate lower bound](Green53ThresholdColours.lean)
 
-Green asks the question for arbitrary finite partitions. Jaber and Kumar study Hamming-ball cases which allow different bases. The common basis is a hypothesis here. [Green, problem 53](https://people.maths.ox.ac.uk/greenbj/papers/open-problems.pdf) · [Jaber and Kumar](https://arxiv.org/abs/2606.07918)
+## Dependent parities
+
+A threshold can also take a weighted sum of parity characters. Write all the parity bits used by the tests as an affine map $x\mapsto Ex+h$ into $\mathbb F_2^N$, and put $s=N-\operatorname{rank}(E)$. The number of bits and the ambient dimension can be arbitrarily large. For any readout of $r$ such thresholds, some colour $A$ has a linear subspace in $A+A$ of codimension at most
+$$
+2r\bigl(2^s r(2r+2s+2)\bigr)^2.
+$$
+In particular, the partition conclusion holds when both $r$ and $s$ are bounded in terms of the number of colours. For example, two coordinate bases differing in at most $s$ coordinates after reordering use at most $n+s$ distinct parities and span the whole dual space. Their tests therefore satisfy the bound. [Lean proofs of the slice and partition theorems](Green53ParityThresholds.lean)
+
+The affine image occupies a fraction $2^{-s}$ of the $N$-dimensional cube. In the interval-counting argument above, make the fraction of bad sign assignments smaller than $2^{-s}$. This gives an assignment in the image whose fixed coordinates provide a margin of $(2r+2s+1)M$ in each row. Rounding the remaining signs can take the provisional point outside the image. Keep the fixed bits and select a basis for the image of the free coordinates under the parity checks. Flipping at most $s$ of those bits returns the point to the required affine slice. The same flips repair both endpoints of any displacement in the linear image. The extra error in a row is at most $2sM$. Pulling the fixed-coordinate constraints back through $E$ gives the claimed subspace in the original cube.
+
+Green asks the question for arbitrary finite partitions. Jaber and Kumar prove cases for Hamming balls in different bases under hypotheses on their radius or density. The bound above depends on the number of relations among the parities used by the tests. [Green, problem 53](https://people.maths.ox.ac.uk/greenbj/papers/open-problems.pdf) · [Jaber and Kumar](https://arxiv.org/abs/2606.07918)
