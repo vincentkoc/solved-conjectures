@@ -37,7 +37,7 @@ noncomputable def amp (A : Finset (ZMod p)) (t : ZMod p) : ℂ :=
 noncomputable def triples (A : Finset (ZMod p)) : ℂ :=
   ∑ a ∈ A, ∑ b ∈ A, if a * b ∈ A then 1 else 0
 
-private lemma S_trip [Fact p.Prime] (hp : p % 2 = 1) :
+lemma S_trip [Fact p.Prime] (hp : p % 2 = 1) :
     (S p : ℂ) = 4 * triples (odds p) - 2 * ((odds p).card : ℂ)^2 := by
   rw [ThetaDiagonal.S_eq_odd_square hp]
   push_cast
@@ -62,7 +62,7 @@ theorem orthog (x : ZMod p) :
   · simp [h, ZMod.card]
   · exact AddChar.sum_eq_zero_of_ne_one (ZMod.isPrimitive_stdAddChar p h)
 
-private lemma inversion (A : Finset (ZMod p)) (z : ZMod p) :
+lemma inversion (A : Finset (ZMod p)) (z : ZMod p) :
     ∑ t : ZMod p, amp A (-t) * ZMod.stdAddChar (z * t) =
       (p : ℂ) * (if z ∈ A then 1 else 0) := by
   simp only [amp, sum_mul, ← AddChar.map_add_eq_mul]
@@ -130,7 +130,7 @@ private lemma trip_error [Fact p.Prime] (A : Finset (ZMod p)) (hA : 0 ∉ A) :
       exact sum_nbij' (fun t => -t) (fun t => -t) (by simp) (by simp) (by simp)
         (by simp) (by simp)
 
-private lemma sum_progression (hp : p % 2 = 1) {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
+lemma sum_progression (hp : p % 2 = 1) {M : Type*} [AddCommMonoid M] (f : ZMod p → M) :
     ∑ i ∈ range (p / 2), f ((2 * i + 1 : ℕ) : ZMod p) = ∑ x ∈ odds p, f x := by
   apply sum_bij (fun (i : ℕ) _ => ((2 * i + 1 : ℕ) : ZMod p))
   · intro i hi
