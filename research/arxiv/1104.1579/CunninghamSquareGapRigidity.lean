@@ -78,6 +78,30 @@ private lemma too_far_for_exception {b : ℕ} (hb : 2 ≤ b) (n : ℕ) (hn : 0 <
         (by simpa [mul_comm (reflect (n+2) G) G] using prod) h
       exact bad ⟨z,hz,Or.inr he⟩
 
+/-- If the reflected product has no exceptional support pattern within its energy
+bound, every integral witness agrees with a signed orientation of the endpoint. -/
+theorem square_rigidity_of_no_exception {b n : ℕ} (hb : 2 ≤ b) (hn : 0 < n)
+    (sep : (gapEndpoint (b^2) false).natDegree < n+2)
+    (clean : ¬ ∃ t ≤ (1+energy (gapEndpoint (b^2) false)
+      ((gapEndpoint (b^2) false).natDegree+1)).toNat, exceptional b t n) :
+    ∀ G : ℤ[X], G.natDegree ≤ n+2 →
+      G*reflect (n+2) G=separated (gapEndpoint (b^2) false) (n+2)*
+        reflect (n+2) (separated (gapEndpoint (b^2) false) (n+2)) →
+      ∃ z : ℤ, z^2=1 ∧ (G=C z*separated (gapEndpoint (b^2) false) (n+2) ∨
+        reflect (n+2) G=C z*separated (gapEndpoint (b^2) false) (n+2)) := by
+  let c := gapEndpoint (b^2) false
+  change ¬ ∃ t ≤ (1+energy c (c.natDegree+1)).toNat, exceptional b t n at clean
+  intro G dg prod
+  by_contra bad
+  have exc := too_far_for_exception hb n hn G dg prod bad
+  have energyEq := congrArg (fun P : ℤ[X] => P.coeff (n+2)) prod
+  simp only [coeff_mul_self_reflect] at energyEq
+  change energy G (n+2+1)=energy (separated c (n+2)) (n+2+1) at energyEq
+  rw [separated_energy c sep] at energyEq
+  have card := support_card_le_energy G dg
+  rw [energyEq] at card
+  exact clean ⟨G.support.card,by omega,exc⟩
+
 /-- A square coefficient gives only finitely many second-kind degrees with
 an integral reflected-product witness differing from both signed orientations. -/
 theorem eventual_square_rigidity {b : ℕ} (hb : 2 ≤ b) :
@@ -92,17 +116,9 @@ theorem eventual_square_rigidity {b : ℕ} (hb : 2 ≤ b) :
   have bound := (bounded_exceptional_finite rat W).eventually_cofinite_notMem
   rw [Nat.cofinite_eq_atTop] at bound
   filter_upwards [bound,Filter.eventually_gt_atTop c.natDegree] with n hn large
-  intro G dg prod
-  by_contra bad
-  have exc := too_far_for_exception hb n (by omega) G dg prod bad
-  have energyEq := congrArg (fun P : ℤ[X] => P.coeff (n+2)) prod
-  simp only [coeff_mul_self_reflect] at energyEq
-  change energy G (n+2+1)=energy (separated c (n+2)) (n+2+1) at energyEq
-  rw [separated_energy c (by omega)] at energyEq
-  have card := support_card_le_energy G dg
-  rw [energyEq] at card
-  exact hn ⟨G.support.card,by dsimp [W]; omega,exc⟩
+  exact square_rigidity_of_no_exception hb (by omega) (by dsimp [c] at large; omega) hn
 
+#print axioms square_rigidity_of_no_exception
 #print axioms eventual_square_rigidity
 
 #print axioms signed_of_dvd
