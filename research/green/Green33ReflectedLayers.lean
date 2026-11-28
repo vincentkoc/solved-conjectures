@@ -192,7 +192,8 @@ private lemma sidon_discrepancy {A : Finset G} (hA : IsSidon (A : Set G)) (hne :
   ring
 
 omit [Fintype G] in
-private lemma paths_affine {H : Type*} [AddCommGroup H] [DecidableEq H]
+/-- An affine change of labels shifts an r-step sum by r translations. -/
+theorem paths_affine {H : Type*} [AddCommGroup H] [DecidableEq H]
     (A : Finset G) (e : G ≃+ H) (s : H) (r : ℕ) (x : G) :
     paths (A.image (fun a => e a+s)) r (e x+r • s) = paths A r x := by
   classical
@@ -283,7 +284,8 @@ private lemma sidon_sum_size {A : Finset G} (hA : IsSidon (A : Set G)) :
   simp only [paths_two,pair_profile hA,sum_sub_distrib,← mul_sum,total_mark,hdiag] at h
   exact_mod_cast (show 2*((A+A).card : ℝ)=(A.card : ℝ)^2+A.card by linarith)
 
-private lemma two_walk_overlap {A : Finset G} (hA : IsSidon (A : Set G)) (z : G) :
+/-- Four-step paths count the reflected overlap up to the diagonal pairs. -/
+theorem two_walk_overlap {A : Finset G} (hA : IsSidon (A : Set G)) (z : G) :
     let S := A+A
     let I := S.filter (fun x => z-x∈S)
     paths A 4 z ≤ 4*I.card ∧ 4*(I.card : ℝ) ≤ paths A 4 z + 4*A.card := by
@@ -629,7 +631,8 @@ private noncomputable def chart (p : ℕ) [hp : Fact p.Prime] :
   let hc := (Nat.coprime_self_sub_left hp.out.one_le).mpr (by simp)
   exact ((ZMod.chineseRemainder hc).toAddEquiv.trans (f.prodCongr (AddEquiv.refl _))).symm
 
-private def doubleHom (m : ℕ+) : ZMod m →+ ZMod (2*m.val) where
+/-- Embed the cyclic group of order m as the even residues modulo 2m. -/
+def doubleHom (m : ℕ+) : ZMod m →+ ZMod (2*m.val) where
   toFun x := (2*x.val : ℕ)
   map_zero' := by simp
   map_add' x y := by
@@ -658,6 +661,14 @@ private lemma even_ne_odd (m : ℕ+) (x t : ZMod m) : doubleHom m x ≠ 1+double
   have h' := congrArg parity he
   rw [h,map_add,map_one,h,add_zero] at h'
   exact zero_ne_one h'
+
+/-- Coordinates of an odd reflection axis in the cyclic double cover. -/
+theorem double_coordinates (m : ℕ+) (t : ZMod m) :
+    Function.Injective (doubleHom m) ∧ (∀ x, doubleHom m x ≠ 1+doubleHom m t) ∧
+    doubleHom m (1+t+t)=(1+doubleHom m t)+(1+doubleHom m t) := by
+  refine ⟨double_injective _,fun x => even_ne_odd _ x t,?_⟩
+  simp only [map_add,double_one]
+  abel
 
 private noncomputable def primeEven (p : ℕ) [Fact p.Prime] : Plane (ZMod p) →+ ZMod (2*(order p).val) :=
   (doubleHom (order p)).comp (chart p).toAddMonoidHom
@@ -970,9 +981,12 @@ theorem typical_centers {m : ℕ → ℕ+} (A : (i : ℕ) → Finset (ZMod (m i)
 #print axioms walk_energy_bound
 #print axioms path_variance
 #print axioms sidon_difference_size
+#print axioms paths_affine
+#print axioms two_walk_overlap
 #print axioms reflection_variance
 #print axioms layer_sumset_size
 #print axioms graph_moment
+#print axioms double_coordinates
 #print axioms primeLayers_structure
 #print axioms prime_layer_bound
 #print axioms prime_hole_fraction
