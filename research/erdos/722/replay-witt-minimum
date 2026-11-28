@@ -50,6 +50,8 @@ def main():
     parser.add_argument("--archive", type=Path, help="reuse the source archive at the pinned revision")
     parser.add_argument("--with-products", action="store_true", help="also replay the six-point-block product family")
     parser.add_argument("--with-two-stem", action="store_true", help="also replay Hanani’s 4v+2 construction")
+    parser.add_argument("--with-small-orders", action="store_true", help="also replay the finite rank-three spectrum and repunit products")
+    parser.add_argument("--bruck-ryser", type=Path, help="reuse the pinned Bruck–Ryser proof with --with-small-orders")
     args = parser.parse_args()
     upstream = Path.cwd().resolve()
     manifest = json.loads((upstream / "lake-manifest.json").read_text())
@@ -73,6 +75,11 @@ def main():
     if args.with_two_stem:
         selected.append(TOPIC / "Erdos722HananiSpectrum.lean")
         adapters.append("Erdos722WittTwoStemOrders")
+    if args.with_small_orders:
+        selected.extend(TOPIC / name for name in [
+            "Erdos722SmallOrderSpectrum.lean", "Erdos722PuncturedOrderClosure.lean", "Erdos722CubicOrderBound.lean",
+        ])
+        adapters.extend(["Erdos722InversiveBruckRyser", "Erdos722SmallSteinerOrders"])
     order, _, aliases = runner["dependency_order"](selected, files, upstream, env)
     with TemporaryDirectory(prefix="steiner-minimum-orders-") as directory:
         work = Path(directory)
@@ -88,6 +95,25 @@ def main():
         compile_module(upstream, WIKI, out, env)
         for name in MODULES:
             compile_module(src, Path("Solution/Witt") / f"{name}.lean", out, env)
+        certificates = []
+        if args.with_small_orders:
+            bruck = runpy.run_path(str(TOPIC / "replay-inversive-orders"))
+            for name, digest in bruck["HOST"].items():
+                path = Path(f"FormalConjectures/ErdosProblems/{name}.lean")
+                if subprocess.check_output(["git", "hash-object", path], text=True).strip() != digest:
+                    raise SystemExit(f"{path} differs from the audited source")
+                compile_module(upstream, path, out, env)
+            cert = src / "BruckRyserCertificate.lean"
+            if args.bruck_ryser:
+                data = args.bruck_ryser.read_bytes()
+            else:
+                with urlopen(bruck["URL"], timeout=60) as incoming:
+                    data = incoming.read()
+            if hashlib.sha256(data).hexdigest() != bruck["DIGEST"]:
+                raise SystemExit("Bruck–Ryser certificate differs from the audited source")
+            cert.write_bytes(data)
+            compile_module(src, Path(cert.name), out, env)
+            certificates.append(cert)
         for path in order:
             runner["compile_proof"](path, out, env)
             if path in aliases:
@@ -100,8 +126,9 @@ def main():
             checked.append(adapter)
         for name in MODULES:
             subprocess.run(["leanchecker", "-v", f"Solution.Witt.{name}"], env=env, check=True)
-        runner["replay_kernel"](checked, env)
-        print(f"Replayed {len(checked)} notebook and adapter modules and six Witt modules.")
+        runner["replay_kernel"]([*certificates, *checked], env)
+        print(f"Replayed {len(checked)} notebook and adapter modules and six Witt modules"
+              + (" and the Bruck–Ryser certificate." if certificates else "."))
 
 
 if __name__ == "__main__":
