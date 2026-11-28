@@ -30,7 +30,8 @@ private theorem shift_nonaffine {C D : Finset G} (m : ShortestOddCircuit D C)
   have fb := LinearMap.mem_ker.mp ((sup_le kp kv) bmem)
   exact one_ne_zero (by simpa only [fb,sub_zero] using zero)
 
-private theorem frame_certificate {s r : ℕ} (hs : 5 ≤ s) {D : Finset (𝔽₂ (2*(s+1)+r))}
+/-- The recovered circuit and its complementary period space satisfy the strict overlap bound. -/
+theorem frame_certificate {s r : ℕ} (hs : 5 ≤ s) {D : Finset (𝔽₂ (2*(s+1)+r))}
     (no : ¬∃ f : (𝔽₂ (2*(s+1)+r)) →ₗ[F] F, ∀ x ∈ D, f x=1)
     (near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*D.card)
     (realized : ∃ A : Finset (𝔽₂ (2*(s+1)+r)), (A+A)ᶜ=D ∧ threshold (2*s)<(A.dens : ℝ)) :
@@ -107,3 +108,5 @@ theorem realizable_shifts {s r : ℕ} (hs : 5 ≤ s) {D : Finset (𝔽₂ (2*(s+
 end Green51OriginRecovery
 #print axioms Green51OriginRecovery.realizable_shifts
 #print axioms Green51OriginRecovery.nonaffine_after_shift
+
+#print axioms Green51OriginRecovery.frame_certificate
