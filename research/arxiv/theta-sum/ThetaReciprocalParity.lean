@@ -7,7 +7,7 @@ namespace Arxiv.«2501.03234».ThetaReciprocalParity
 open Finset ThetaSmoothedHalf ThetaShortReciprocalBlocks ThetaCotangentTriangle
 variable {p : ℕ} [Fact p.Prime]
 
-private lemma twice_odd (hp : p % 2 = 1) (x : ZMod p) :
+lemma twice_odd (hp : p % 2 = 1) (x : ZMod p) :
     (2*x).val % 2 = 1 ↔ p/2 < x.val := by
   rw [two_mul, ZMod.val_add]
   have hx := x.val_lt
@@ -18,7 +18,7 @@ private lemma twice_odd (hp : p % 2 = 1) (x : ZMod p) :
       Nat.mod_eq_of_lt (show x.val+x.val-p < p by omega)]
     omega
 
-private lemma hits_complement (hp : p % 2 = 1) (x : ℕ → ZMod p) {n : ℕ}
+lemma hits_complement (hp : p % 2 = 1) (x : ℕ → ZMod p) {n : ℕ}
     (hx : ∀ j < n, x j ≠ 0) :
     hits x n (p/2+1) + hits (fun j => -x j) n (p/2+1) = n := by
   unfold hits

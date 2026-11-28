@@ -33,18 +33,23 @@ def family (p : ℕ) [Fact p.Prime] (B α b : ℝ) : Prop :=
     (∀ n∈E, (n:ℝ) ≤ B*exp (-(log p)^α)) ∧
     b*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ E.card
 
-theorem many_below_completion (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧
+theorem trim (G₀ : (p : ℕ) → [Fact p.Prime] → Finset ℕ)
+    (hsub : ∀ p : ℕ, ∀ [Fact p.Prime], G₀ p ⊆ lengths p 1) {c : ℝ} (hc : 0<c)
+    (H : ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
+      letI : Fact p.Prime := ⟨hp⟩
+      (S p:ℝ) ≤ (p:ℝ)*log p/100 → ∃ E : Finset ℕ, E ⊆ G₀ p ∧ separated E ∧
+        c*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ E.card) :
     ∀ α : ℝ, 0<α → α<1/3 → ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
       letI : Fact p.Prime := ⟨hp⟩
       ∀ B : ℝ, 0<B → (∀ t a : ZMod p, a≠0 → ‖ThetaReciprocalCutoff.kloosterman t a‖ ≤ 2*B) →
         (S p:ℝ) ≤ (p:ℝ)*log p/100 →
-        family p B α b := by
+        ∃ E : Finset ℕ, E ⊆ G₀ p ∧ separated E ∧
+          (∀ n∈E, (n:ℝ) ≤ B*exp (-(log p)^α)) ∧
+          (c/2)*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ E.card := by
   classical
-  obtain ⟨c,hc,H⟩ := many estimate
-  refine ⟨c/2,by positivity,?_⟩
   intro α hα htop
   have hlog := tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R:=ℝ))
-  filter_upwards [H 1 (by norm_num),upper_logs,hlog.eventually (absorption hc hα htop),
+  filter_upwards [H,upper_logs,hlog.eventually (absorption hc hα htop),
     (tendsto_log_atTop.comp hlog).eventually_ge_atTop 1] with p H hU hshift hv
   intro hp ho
   let : Fact p.Prime := ⟨hp⟩
@@ -63,7 +68,7 @@ theorem many_below_completion (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b
   have hGs : separated G := fun n m hn hm => hsep n m (mem_filter.mp hn).1 (mem_filter.mp hm).1
   have hpack := packing G hGs (show U-u^α ≤ U+32*log u by linarith [rpow_nonneg hu.le α]) (by
     intro n hn
-    have hh := hU hp ho 1 B hB hK n (hF (mem_filter.mp hn).1)
+    have hh := hU hp ho 1 B hB hK n (hsub p (hF (mem_filter.mp hn).1))
     refine ⟨hh.1,?_,hh.2⟩
     rw [←hlg]
     exact log_le_log hz (le_of_lt (lt_of_not_ge (mem_filter.mp hn).2)))
@@ -82,6 +87,15 @@ theorem many_below_completion (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b
     linarith only [hpack]
   linarith only [hsize,hd',hG]
 
+theorem many_below_completion (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧
+    ∀ α : ℝ, 0<α → α<1/3 → ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
+      letI : Fact p.Prime := ⟨hp⟩
+      ∀ B : ℝ, 0<B → (∀ t a : ZMod p, a≠0 → ‖ThetaReciprocalCutoff.kloosterman t a‖ ≤ 2*B) →
+        (S p:ℝ) ≤ (p:ℝ)*log p/100 →
+        family p B α b := by
+  obtain ⟨c,hc,H⟩ := many estimate
+  exact ⟨c/2,by positivity,trim (fun p _ => lengths p 1) (fun _ _ => le_rfl) hc (H 1 (by norm_num))⟩
+
 theorem elementary_and_weil (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧
     ∀ α : ℝ, 0<α → α<1/3 → ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
       letI : Fact p.Prime := ⟨hp⟩
@@ -97,6 +111,7 @@ theorem elementary_and_weil (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b �
   exact ⟨h hp ho _ (rpow_pos_of_pos hx _) ThetaReciprocalCutoff.kloosterman_bound hsmall,
     fun hK => h hp ho _ (sqrt_pos.mpr hx) hK hsmall⟩
 
+#print axioms trim
 #print axioms many_below_completion
 #print axioms elementary_and_weil
 end

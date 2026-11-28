@@ -36,20 +36,18 @@ private theorem depth_bound {p : ℕ} (hp : 0<p) (ht : 1≤depth p) :
   have ht' : (1:ℝ)≤depth p := by exact_mod_cast ht
   linarith
 
-theorem many (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧ ∀ δ : ℝ, 0<δ →
+theorem many_levels (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧
     ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
       letI : Fact p.Prime := ⟨hp⟩
       (S p:ℝ) ≤ (p:ℝ)*log p/100 →
-        ∃ E : Finset ℕ, E ⊆ lengths p δ ∧ separated E ∧
-          b*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ E.card := by
+        b*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ (levels p (lowerLevel p) (depth p)).card := by
   obtain ⟨c,hc,hest⟩ := estimate
   let d := (5*c)^((2:ℝ)/3)
   have hd : 0<d := by dsimp [d];positivity
-  refine ⟨1/(12582912*d),by positivity,?_⟩
-  intro δ hδ
+  refine ⟨1/(4194304*d),by positivity,?_⟩
   have hlog := tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R:=ℝ))
-  filter_upwards [hest,scales,counted hδ,hlog.eventually_ge_atTop 1,
-    (tendsto_log_atTop.comp hlog).eventually_ge_atTop 1] with p he H hcnt hu hv
+  filter_upwards [hest,scales,hlog.eventually_ge_atTop 1,
+    (tendsto_log_atTop.comp hlog).eventually_ge_atTop 1] with p he H hu hv
   intro hp ho
   let : Fact p.Prime := ⟨hp⟩
   intro hS
@@ -79,22 +77,39 @@ theorem many (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧ ∀ δ : ℝ
   have hA₀ : 0<A := by linarith
   have ht := count hA₀ htfit hst hsmall (small_sum_forces_triangle hpr hp₀ hS)
     (fun i hi => peak hpr hi ht₀ (by omega) hK hA hKA he)
-  obtain ⟨E,hE,hsep,hcard⟩ := hcnt hp ho
-  refine ⟨E,hE,hsep,?_⟩
-  have hn : ((levels p (lowerLevel p) (depth p)).card:ℝ) ≤ 3*(E.card:ℝ) := by
-    exact_mod_cast hcard
-  have hh := (div_le_iff₀ (by positivity)).mp (ht.trans hn)
+  have hh := (div_le_iff₀ (by positivity)).mp ht
   have hdu := depth_bound hp.pos (by omega : 1 ≤ depth p)
   change u ≤ _ at hdu
   rw [hdec] at hh
   have hu' : u^((1:ℝ)/3)*u^((2:ℝ)/3)=u := by rw [←rpow_add hu₀];norm_num
-  change (1/(12582912*d))*u^((1:ℝ)/3)/v^((8:ℝ)/3) ≤ _
+  change (1/(4194304*d))*u^((1:ℝ)/3)/v^((8:ℝ)/3) ≤ _
   apply (div_le_iff₀ (rpow_pos_of_pos hv₀ _)).mpr
   rw [div_mul_eq_mul_div,one_mul]
   apply (div_le_iff₀ (by positivity)).mpr
   apply le_of_mul_le_mul_right _ (rpow_pos_of_pos hu₀ ((2:ℝ)/3))
   rw [hu']
   nlinarith only [hdu,hh]
+
+theorem many (estimate : InitialSumEstimate) : ∃ b : ℝ, 0<b ∧ ∀ δ : ℝ, 0<δ →
+    ∀ᶠ p : ℕ in atTop, ∀ hp : p.Prime, _root_.Odd p →
+      letI : Fact p.Prime := ⟨hp⟩
+      (S p:ℝ) ≤ (p:ℝ)*log p/100 →
+        ∃ E : Finset ℕ, E ⊆ lengths p δ ∧ separated E ∧
+          b*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3) ≤ E.card := by
+  obtain ⟨c,hc,H⟩ := many_levels estimate
+  refine ⟨c/3,by positivity,?_⟩
+  intro δ hδ
+  filter_upwards [H,counted hδ] with p hsize hcnt
+  intro hp ho
+  let : Fact p.Prime := ⟨hp⟩
+  intro hS
+  obtain ⟨E,hE,hs,hcard⟩ := hcnt hp ho
+  refine ⟨E,hE,hs,?_⟩
+  have h : ((levels p (lowerLevel p) (depth p)).card:ℝ) ≤ 3*(E.card:ℝ) := by exact_mod_cast hcard
+  have ht := (hsize hp ho hS).trans h
+  calc
+    _ = (c*(log p)^((1:ℝ)/3)/(log (log p))^((8:ℝ)/3))/3 := by ring
+    _ ≤ _ := (div_le_iff₀ (by norm_num)).mpr (by linarith only [ht])
 
 /-- It is enough to rule out a growing family of separated large sums. -/
 theorem sparse_implies_growth (estimate : InitialSumEstimate) {δ : ℝ} (hδ : 0<δ)
@@ -116,6 +131,7 @@ theorem sparse_implies_growth (estimate : InitialSumEstimate) {δ : ℝ} (hδ : 
   have hh := mul_lt_mul_of_pos_right hu (Nat.cast_pos.mpr hp.pos : 0<(p:ℝ))
   exact_mod_cast (show (n:ℝ)*(p:ℝ)<(S p:ℝ) by linarith)
 
+#print axioms many_levels
 #print axioms many
 #print axioms sparse_implies_growth
 end
