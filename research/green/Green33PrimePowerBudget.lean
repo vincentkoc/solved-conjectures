@@ -140,7 +140,8 @@ private theorem push_flat {G H : Type*} [Fintype G] [Fintype H] [AddCommGroup G]
   intro t
   simp only [Equiv.subRight_apply, map_sub, ha, sub_eq_zero]
 
-private theorem fiber_count (N t p : ℕ) [NeZero N] [NeZero t] (size : N = t*p)
+/-- Every fibre of a surjective homomorphism between cyclic groups has the quotient of their orders as its size. -/
+theorem fiber_count (N t p : ℕ) [NeZero N] [NeZero t] (size : N = t*p)
     (π : ZMod N →+ ZMod t) (onto : Function.Surjective π) (y : ZMod t) :
     (univ.filter fun z => π z = y).card = p := by
   classical
@@ -150,7 +151,8 @@ private theorem fiber_count (N t p : ℕ) [NeZero N] [NeZero t] (size : N = t*p)
   simp only [card_univ, ZMod.card, eq, sum_const, nsmul_eq_mul] at s
   exact Nat.eq_of_mul_eq_mul_left (NeZero.pos t) (s.symm.trans size)
 
-private theorem lift_equal {t N : ℕ} [NeZero t] [NeZero N] (h : t ∣ N)
+/-- A weight invariant under subtraction of the smaller modulus descends to its residue classes. -/
+theorem lift_equal {t N : ℕ} [NeZero t] [NeZero N] (h : t ∣ N)
     {K : Type*} (w : ZMod N → K) (period : ∀ z, w (z - (t : ZMod N)) = w z)
     {x y : ZMod N} (same : ZMod.castHom h (ZMod t) x = ZMod.castHom h (ZMod t) y) : w x = w y := by
   have eq (a : ℕ) (z : ZMod N) : w (z + (a*t : ℕ)) = w z := by
@@ -452,6 +454,8 @@ theorem four_real_labels_mod_five : ∃ P Q : PMF (Fin 4), ∀ z : ZMod 5,
   fin_cases z <;> norm_num [Fin.sum_univ_succ,F,G,a,b,ZMod.val] <;> nlinarith
 
 #print axioms periodic_input
+#print axioms fiber_count
+#print axioms lift_equal
 #print axioms digit_caps
 #print axioms prime_power_budget
 #print axioms radix_exact
