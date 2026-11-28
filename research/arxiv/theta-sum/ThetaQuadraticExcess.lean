@@ -6,7 +6,7 @@ import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 namespace Arxiv.«2501.03234».ThetaQuadraticExcess
 open Finset Filter Topology Complex ThetaLegendreFactors
 
-private theorem radial_argument {t : ℝ} (ht : 0<t) (ht' : t<Real.pi) :
+theorem radial_argument {t : ℝ} (ht : 0<t) (ht' : t<Real.pi) :
     Tendsto (fun r : ℝ => (-log (1-(r:ℂ)*exp (((2*t:ℝ):ℂ)*I))).im)
       (𝓝[<] 1) (𝓝 (Real.pi/2-t)) := by
   let z := exp (((2*t:ℝ):ℂ)*I)
