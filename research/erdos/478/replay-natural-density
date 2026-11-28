@@ -29,6 +29,7 @@ ADAPTERS = {
     "counts": "Erdos478NaturalExactCounts",
     "paired": "Erdos478NaturalPairedDensity",
     "sextic": "Erdos478NaturalSexticCounts",
+    "real-gaps": "Erdos478NaturalCubicPattern",
 }
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
