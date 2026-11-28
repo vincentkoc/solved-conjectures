@@ -1,0 +1,17 @@
+# Odd dimensions and the critical density in Green 51
+
+At the density $\alpha_n=\tfrac12-1/\sqrt{2\pi n}$, the largest affine dimension guaranteed in $A+A$ is **$n-2$ for even $n$ and $n-1$ for odd $n$**, for every $n\ge2$. In Green’s eventual formulation with coefficient $C=1/\sqrt{2\pi}$, the least codimension allowance is exactly two. Both assertions use the original definition of the guaranteed dimension. [Critical value and host quantifiers](Green51CriticalWindow.lean) · [Pinned problem](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/51.lean)
+
+Write $h_n=\tfrac12-\binom{2k}{k}/(2\cdot4^k)$ for $k=\lfloor n/2\rfloor$. Throughout $h_{n-2}<\alpha\le h_n$, the guaranteed dimension in every odd rank $n\ge5$ is exactly $n-2$. Together with the even case, this gives the same formula for every $n\ge4$. In dimension three a singleton has density $1/8$ and its double has dimension zero, so the odd-rank hypothesis matters. [Odd-dimensional interval](Green51CriticalWindow.lean) · [Even-dimensional interval](MISSING-DIRECTIONS.md)
+
+## A linear map to four colours
+
+Let $D$ be the missing directions. The density bound rules out short odd relations among them by pulling back to folded cubes. If some linear functional takes the value one on $D$, its kernel lies in $A+A$. Otherwise choose an even independent set $B$ of $2k$ missing directions whose sum $d$ is missing. It spans all but at most one ambient dimension. Inside its span the only missing directions are $B\cup\{d\}$. [Folded-cube bound and relations](Green51MissingDirections.lean)
+
+In the remaining coset, fix a missing direction $z$. If $z+\sum T$ is also missing for $T\subseteq B$, then $|T|$ is $0$, $2$ or $2k-1$. All other choices yield a shorter odd relation using $z$ and either $T$ or its complement and $d$. Take two disjoint pairs from $B$. Their translates by $z$ cannot both be missing, since their difference uses four coordinates. Mark a pair whose translate is present in the double. Send its members to $(0,1)$ and $(1,1)$, and each other basis member and $z$ to $(1,0)$. The map avoids zero on every missing direction, so its kernel is the required subspace. [Linear four-colouring](Green51OddDirections.lean)
+
+The argument applies to any binary Cayley graph of rank at most $2k+1$ with no odd relation of length less than $2k+1$, for $k\ge2$. The proof uses the folded cube inside a binary Cayley graph of prescribed odd girth. The pair analysis is related to the distance-two argument in Observation 3.2 and Corollary 3.3 of Beaudou, Naserasr and Tardif. [Beaudou–Naserasr–Tardif](https://www.irif.fr/~reza/pdfs/papers/BNT15.pdf) · [Mančinska et al., Lemma 4.5](https://arxiv.org/pdf/1808.02051)
+
+## Why parity appears
+
+The normalized even middle layer lies strictly below its Wallis limit. Multiplying the same layer by $\sqrt{2k+1}$ instead of $\sqrt{2k}$ places it strictly above that limit. Thus the critical density lies inside the codimension-two interval in even rank and inside the hyperplane interval in odd rank. The general bounded-codimension theorem of Kohlmeyer and Kruer allows the codimension to depend on $C$. These finite evaluations determine the loss at its hyperplane boundary. [Wallis comparison](Green51CriticalWindow.lean) · [Kohlmeyer–Kruer](https://liamkruer.com/assets/work/conjectures/problems/green-51/paper/proof.pdf) · [Formal proof](https://github.com/lefttosolve2/open-math-agents/pull/5448)

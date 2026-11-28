@@ -33,7 +33,8 @@ private theorem complement_sum {G : Type*} [AddCommGroup G] [Module F G]
   change (∑ b∈B\T,b)+(∑ b∈T,b)=∑ b∈B,b at e
   rw [← e,add_right_comm,ZModModule.add_self,zero_add]
 
-private theorem subset_sum {G : Type*} [AddCommGroup G] [Module F G] (B : Finset G)
+/-- In characteristic two every element of a finite span is a subset sum. -/
+theorem subset_sum {G : Type*} [AddCommGroup G] [Module F G] (B : Finset G)
     (x : G) (hx : x∈Submodule.span F (↑B:Set G)) :
     ∃ S⊆B, ∑ b∈S,b=x := by
   classical
@@ -49,6 +50,36 @@ private theorem subset_sum {G : Type*} [AddCommGroup G] [Module F G] (B : Finset
     rw [←hc]; simp only [T,sum_filter]; apply sum_congr rfl; intro b _
     have h (z:F) : z=0 ∨ z=1 := by fin_cases z <;> first | exact Or.inl rfl | exact Or.inr rfl
     rcases h (c b) with h|h <;> simp [h]
+
+
+/-- Inside a shortest odd circuit’s span, every missing direction is one of the circuit elements. -/
+theorem inside_frame {G : Type*} [AddCommGroup G] [Module F G] (k : ℕ) (D : Set G) (B : Finset G) (sz : B.card=2*k)
+    (bs : (B:Set G)⊆D) (d : G) (hd : d∈D) (db : d∉B) (sd : ∑ b∈B,b=d)
+    (short : ∀ T : Finset G, (T:Set G)⊆D → 2∣T.card → T.card<2*k → (∑ x∈T,x)∉D)
+    (T : Finset G) (tb : T⊆B) (out : (∑ x∈T,x)∈D) :
+    (∑ x∈T,x)∈B ∨ (∑ x∈T,x)=d := by
+  classical
+  have tc := card_le_card tb
+  by_cases even : 2∣T.card
+  · have eq : T=B := by
+      apply eq_of_subset_of_card_le tb
+      by_contra! small
+      exact short T (fun _ hx => bs (tb hx)) even (by omega) out
+    exact Or.inr (eq ▸ sd)
+  by_cases one : T.card=1
+  · obtain ⟨i,eq⟩ := card_eq_one.mp one
+    rw [eq,sum_singleton]; exact Or.inl (tb (eq ▸ mem_singleton_self i))
+  exfalso
+  let V := B\T
+  have dv : d∉V := fun h => db (mem_sdiff.mp h).1
+  have count : (insert d V).card=B.card-T.card+1 := by
+    rw [card_insert_of_notMem dv,card_sdiff_of_subset tb]
+  have subset : (↑(insert d V):Set G)⊆D := by
+    simpa only [coe_insert,Set.insert_subset_iff] using
+      And.intro hd (show (V:Set G)⊆D from fun _ h => bs (mem_sdiff.mp h).1)
+  apply short _ subset (by omega) (by omega)
+  rw [sum_insert dv,←sd]
+  rwa [complement_sum B T tb]
 
 /-- In even rank, a set of directions with maximal odd girth consists of a
 basis and its total sum. -/
@@ -85,37 +116,24 @@ theorem frame_of_no_short {G : Type*} [AddCommGroup G] [Module F G] [Module.Fini
   have nd : d∉B := fun h => bad (hl _ h)
   refine ⟨B,sb,ind,Set.Subset.antisymm ?_ (Set.union_subset sub (Set.singleton_subset_iff.mpr (sumd ▸ hd)))⟩
   intro x hx
-  by_cases inside : x∈B
-  · exact Or.inl inside
-  by_cases same : x=d
-  · exact Or.inr (same.trans sumd.symm)
-  exfalso
   obtain ⟨T,tb,xt⟩ := rep x hx
-  have tc := card_le_card tb
-  by_cases even : 2∣T.card
-  · have full : T.card=2*k := by
-      by_contra! gap
-      exact short T (fun _ hx => sub (tb hx)) even (by omega) (xt ▸ hx)
-    have eq := eq_of_subset_of_card_le tb (by omega)
-    exact same (xt.symm.trans (eq ▸ sumd))
-  have low : 3≤T.card := by
-    by_contra! h
-    have one : T.card=1 := by omega
-    obtain ⟨y,ty⟩ := card_eq_one.mp one
-    rw [ty] at xt tb; simp only [sum_singleton] at xt
-    exact inside (xt ▸ tb (mem_singleton_self y))
-  let Q := insert d (B\T)
-  have nq : d∉B\T := fun h => nd (mem_sdiff.mp h).1
-  have count : Q.card=(B.card-T.card)+1 := by dsimp only [Q]; rw [card_insert_of_notMem nq,card_sdiff_of_subset tb]
-  have qsub : (Q:Set G)⊆D := by
-    intro y hy; rcases mem_insert.mp hy with rfl|h
-    · exact hd
-    · exact sub (mem_sdiff.mp h).1
-  apply short Q qsub (by omega) (by omega)
-  have sum := complement_sum B T tb
-  rw [sumd,xt] at sum
-  dsimp only [Q]; rw [sum_insert nq,sum]; exact hx
+  have member := inside_frame k D B sb sub d hd nd sumd short T tb (xt ▸ hx)
+  rw [xt] at member
+  exact member.imp_right (fun eq => eq.trans sumd.symm)
 
+
+/-- A density above the folded-cube bound precludes any even list of at most
+two times the index whose entries and total are all missing. -/
+theorem no_short_relation {G : Type*} [AddCommGroup G] [Module F G] [Fintype G] [DecidableEq G]
+    (A : Finset G) (s : ℕ)
+    (large : Fintype.card G*2^(2*s)<(2*A.card)*2^(2*s)+Fintype.card G*(2*s).choose s)
+    (T : Finset G) (sub : (T:Set G)⊆((↑(A+A) : Set G)ᶜ))
+    (parity : 2∣T.card) (length : T.card≤2*s) : (∑ b∈T,b)∉(↑(A+A) : Set G)ᶜ := by
+  intro last
+  obtain ⟨v,miss,top⟩ := even_direction_list _ T sub s parity length last
+  exact (not_lt_of_ge (Green51Hyperplane.folded_pullback A s v
+    (fun i => by simpa only [Set.mem_compl_iff,Finset.mem_coe] using miss i)
+    (by simpa only [Set.mem_compl_iff,Finset.mem_coe] using top))) large
 
 /-- Just below the sharp threshold, an even-dimensional double either contains
 a linear hyperplane or its missing directions are a basis and their sum. -/
@@ -137,15 +155,12 @@ theorem even_missing_directions (s : ℕ) (A : Finset (Fin (2*(s+1)) → F))
     by_contra no
     exact zero_ne_one ((LinearMap.mem_ker.mp hx).symm.trans (h x no))
   · intro P sub parity length sumD
-    obtain ⟨v,miss,last⟩ := even_direction_list D P sub s parity (by omega) sumD
-    have bound := Green51Hyperplane.folded_pullback A s v
-      (fun i => by simpa only [D,Set.mem_compl_iff,mem_coe,mem_add] using miss i)
-      (by simpa only [D,Set.mem_compl_iff,mem_coe,mem_add] using last)
-    simp only [F,Fintype.card_fun,Fintype.card_fin,ZMod.card] at bound
+    apply no_short_relation A s _ P sub parity (by omega) sumD
+    simp only [F,Fintype.card_fun,Fintype.card_fin,ZMod.card]
     have size : (2:ℕ)^(2*(s+1))=4*2^(2*s) := by rw [Nat.mul_add,pow_add]; ring
-    have contradiction := Nat.mul_lt_mul_of_pos_right large (by positivity : 0<(2:ℕ)^(2*s))
-    rw [size] at bound contradiction
-    nlinarith only [bound,contradiction]
+    have inequality := Nat.mul_lt_mul_of_pos_right large (by positivity : 0<(2:ℕ)^(2*s))
+    rw [size] at inequality ⊢
+    nlinarith only [inequality]
 
 /-- In the exceptional case the number of missing directions exceeds the
 ambient dimension by exactly one. -/
@@ -174,3 +189,6 @@ end Green51NearThreshold
 #print axioms Green51NearThreshold.even_missing_directions
 
 #print axioms Green51NearThreshold.even_missing_count
+#print axioms Green51NearThreshold.subset_sum
+#print axioms Green51NearThreshold.inside_frame
+#print axioms Green51NearThreshold.no_short_relation

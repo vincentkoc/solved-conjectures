@@ -79,11 +79,13 @@ theorem guaranteed_hyperplane_iff {n : ℕ} (hn : 2≤n) {α : ℝ} (hα : α≤
       · exact ⟨f.ker.toAffineSubspace,hf,by rw [Submodule.toAffineSubspace_direction]⟩
     omega
 
-private theorem halfLayer_pos (k : ℕ) : 0<halfLayer k := by
+/-- The central layer has positive mass in every dimension. -/
+theorem halfLayer_pos (k : ℕ) : 0<halfLayer k := by
   unfold halfLayer
   have pos := Nat.choose_pos (n:=2*k) (k:=k) (by omega)
   positivity
-private theorem wallis_identity (k : ℕ) :
+/-- The central layer and the finite Wallis product satisfy an exact identity. -/
+theorem wallis_identity (k : ℕ) :
     halfLayer k ^ 2 * (2*k+1) * Wallis.W k = 1/4 := by
   have size : ((2*k).choose k : ℝ)*(k.factorial:ℝ)*(k.factorial:ℝ)=(2*k).factorial := by
     exact_mod_cast (by simpa [two_mul] using Nat.add_choose_mul_factorial_mul_factorial k k :
@@ -100,7 +102,8 @@ private theorem wallis_identity (k : ℕ) :
   have dk : 2*(k:ℝ)+1≠0 := by positivity
   field_simp
   ring
-private theorem even_layer_strict (k : ℕ) :
+/-- The normalized central layer in even dimension lies strictly below its limiting constant. -/
+theorem even_layer_strict (k : ℕ) :
     Real.sqrt (2*(k:ℝ))*halfLayer k < 1/Real.sqrt (2*Real.pi) := by
   have id := wallis_identity k
   have lo := Wallis.le_W k
@@ -271,3 +274,7 @@ end Green51Hyperplane
 #print axioms Green51Hyperplane.guaranteed_hyperplane_iff
 #print axioms Green51Hyperplane.one_half_codimension_one_iff
 #print axioms Green51Hyperplane.guaranteed_above_threshold
+
+#print axioms Green51Hyperplane.halfLayer_pos
+#print axioms Green51Hyperplane.wallis_identity
+#print axioms Green51Hyperplane.even_layer_strict

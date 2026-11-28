@@ -7,7 +7,8 @@ open Finset Green53ParityThreshold Green51Hyperplane
 open scoped Classical Pointwise
 namespace Green51NearThreshold
 
-private theorem extend_values {G W : Type*} [AddCommGroup G] [Module F G]
+/-- A linear map can take arbitrary prescribed values on independent directions. -/
+theorem extend_values {G W : Type*} [AddCommGroup G] [Module F G]
     [AddCommGroup W] [Module F W] {B : Set G} (ind : LinearIndepOn F id B) (w : G → W) :
     ∃ f : G →ₗ[F] W, ∀ x∈B,f x=w x := by
   classical
@@ -21,7 +22,8 @@ private theorem extend_values {G W : Type*} [AddCommGroup G] [Module F G]
     f x = f (b i) := congrArg f bi.symm
     _ = w x := by simp [f,i]
 
-private theorem frame_projection {G : Type*} [AddCommGroup G] [Module F G]
+/-- Two output coordinates suffice to avoid zero on a nonempty independent set and its sum. -/
+theorem frame_projection {G : Type*} [AddCommGroup G] [Module F G]
     (B : Finset G) (inh : B.Nonempty) (ind : LinearIndepOn F id (B:Set G)) :
     ∃ f : G →ₗ[F] F×F, (∀ b∈B,f b≠0) ∧ f (∑ b∈B,b)≠0 := by
   classical
@@ -80,6 +82,30 @@ private theorem dense_iff {s : ℕ} (A : Finset (𝔽₂ (2*(s+1)))) :
   field_simp
   constructor <;> intro h <;> linarith
 
+/-- Linear kernels of maps to two coordinates give a lower bound for the
+host's guaranteed affine coset dimension. -/
+theorem guaranteed_lower_of_two_coordinates {n : ℕ} {α : ℝ} (hα : α≤1)
+    (all : ∀ A : Finset (𝔽₂ n), α≤(A.dens:ℝ) →
+      ∃ f : (𝔽₂ n) →ₗ[F] F×F, ∀ x∈f.ker,x∈A+A) :
+    n-2≤Green51.guaranteedMaxCosetDim n α := by
+  classical
+  unfold Green51.guaranteedMaxCosetDim
+  apply le_csInf
+  · exact ⟨_,univ,by simpa using hα,rfl⟩
+  · rintro _ ⟨A,ha,rfl⟩
+    obtain ⟨f,sub⟩ := all A ha
+    have dim := f.finrank_range_add_finrank_ker
+    have r := Submodule.finrank_le f.range
+    simp only [Module.finrank_prod,Module.finrank_self] at r
+    have ambient : Module.finrank F (𝔽₂ n)=n := by simp [𝔽₂,𝔽]
+    rw [ambient] at dim
+    have gain : n-2≤Module.finrank F f.ker := by omega
+    apply gain.trans
+    apply le_csSup
+    · refine ⟨n,?_⟩
+      rintro _ ⟨S,_,rfl⟩; exact (Submodule.finrank_le S.direction).trans_eq ambient
+    · exact ⟨f.ker.toAffineSubspace,fun _ hx => sub _ hx,by rw [Submodule.toAffineSubspace_direction]⟩
+
 /-- Green's guaranteed dimension has the exact value `n−2` in the first
 interval immediately below the hyperplane cutoff in even dimension `n=2s+2`. -/
 theorem guaranteed_even_next_interval (s : ℕ) {α : ℝ}
@@ -98,24 +124,15 @@ theorem guaranteed_even_next_interval (s : ℕ) {α : ℝ}
   apply le_antisymm
   · change ¬2*(s+1)≤Green51.guaranteedMaxCosetDim (2*(s+1)) α+1 at no
     omega
-  unfold Green51.guaranteedMaxCosetDim
-  apply le_csInf
-  · exact ⟨_,univ,by simpa using one,rfl⟩
-  · rintro _ ⟨A,ha,rfl⟩
-    obtain ⟨f,sub⟩ := even_codimension_two s A ((dense_iff A).mp (large.trans_le ha))
-    have rank := f.finrank_range_add_finrank_ker
-    have r := Submodule.finrank_le f.range
-    simp only [Module.finrank_prod,Module.finrank_self] at r
-    have ambient : Module.finrank F (Fin (2*(s+1)) → F)=2*(s+1) := by simp
-    rw [ambient] at rank
-    have gain : 2*s≤Module.finrank F f.ker := by omega
-    apply gain.trans
-    apply le_csSup
-    · refine ⟨2*(s+1),?_⟩
-      rintro _ ⟨S,_,rfl⟩; exact (Submodule.finrank_le S.direction).trans_eq ambient
-    · exact ⟨f.ker.toAffineSubspace,fun _ hx => sub _ hx,by rw [Submodule.toAffineSubspace_direction]⟩
+  have lo := guaranteed_lower_of_two_coordinates (n:=2*(s+1)) one (fun A ha =>
+    even_codimension_two s A ((dense_iff A).mp (large.trans_le ha)))
+  omega
 
 end Green51NearThreshold
 #print axioms Green51NearThreshold.layer_step
 #print axioms Green51NearThreshold.even_codimension_two
 #print axioms Green51NearThreshold.guaranteed_even_next_interval
+
+#print axioms Green51NearThreshold.extend_values
+#print axioms Green51NearThreshold.frame_projection
+#print axioms Green51NearThreshold.guaranteed_lower_of_two_coordinates
