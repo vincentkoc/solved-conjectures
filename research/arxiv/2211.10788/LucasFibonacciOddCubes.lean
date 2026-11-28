@@ -7,17 +7,20 @@ namespace Arxiv.«2211.10788»
 
 open QuadraticAlgebra
 
-private abbrev ElevenRing := QuadraticAlgebra ℤ (-3) 1
+/-- The integer ring of the quadratic field of discriminant −11. -/
+abbrev ElevenRing := QuadraticAlgebra ℤ (-3) 1
 
-private theorem four_norm (z : ElevenRing) :
+namespace ElevenRing
+
+theorem four_norm (z : ElevenRing) :
     4 * z.norm = (2 * z.re + z.im) ^ 2 + 11 * z.im ^ 2 := by
   rw [norm_def]
   ring
 
-private theorem norm_nonneg' (z : ElevenRing) : 0 ≤ z.norm := by
+theorem norm_nonneg' (z : ElevenRing) : 0 ≤ z.norm := by
   nlinarith [four_norm z, sq_nonneg (2 * z.re + z.im), sq_nonneg z.im]
 
-private theorem norm_pos' {z : ElevenRing} (h : z ≠ 0) : 0 < z.norm := by
+theorem norm_pos' {z : ElevenRing} (h : z ≠ 0) : 0 < z.norm := by
   by_contra! hn
   have hi : z.im = 0 := by
     by_contra hy
@@ -80,7 +83,7 @@ private theorem quotient_error (a b : ElevenRing) (hb : b ≠ 0) :
   nlinarith [bound hx', bound hy', mul_le_mul_of_nonneg_right hf hm.le,
     mul_pos hm hm]
 
-private noncomputable local instance : EuclideanDomain ElevenRing :=
+noncomputable scoped instance : EuclideanDomain ElevenRing :=
   { (inferInstance : CommRing ElevenRing), (inferInstance : Nontrivial ElevenRing) with
     quotient := elevenQuot
     remainder := fun a b => a - b * elevenQuot a b
@@ -98,6 +101,18 @@ private noncomputable local instance : EuclideanDomain ElevenRing :=
       rw [map_mul, Int.natAbs_mul]
       have hpos : 0 < b.norm.natAbs := Int.natAbs_pos.mpr (norm_pos' hb).ne'
       exact Nat.not_lt.mpr (Nat.le_mul_of_pos_right _ hpos) }
+
+theorem unit_im_zero (u : ElevenRingˣ) : (u : ElevenRing).im = 0 := by
+  have hu := Int.isUnit_iff.mp (u.isUnit.map (QuadraticAlgebra.norm : ElevenRing →* ℤ))
+  have hn := norm_nonneg' (u : ElevenRing)
+  have hf := four_norm (u : ElevenRing)
+  by_contra hi
+  have hi' : 0 < (u : ElevenRing).im ^ 2 := sq_pos_of_ne_zero hi
+  rcases hu with h | h <;> nlinarith [sq_nonneg (2 * (u : ElevenRing).re + (u : ElevenRing).im)]
+
+end ElevenRing
+
+open ElevenRing
 
 /-- A common divisor of the trace and a cube root of the norm would divide both coordinates.
 For the ramified prime 11 the argument uses two powers of 11 in the trace square. -/
@@ -139,14 +154,6 @@ private theorem trace_coprime_root (z : ElevenRing) {t : ℤ}
   rw [norm_def, hk, hs] at he
   rw [hk]
   linear_combination he
-
-private theorem unit_im_zero (u : ElevenRingˣ) : (u : ElevenRing).im = 0 := by
-  have hu := Int.isUnit_iff.mp (u.isUnit.map (QuadraticAlgebra.norm : ElevenRing →* ℤ))
-  have hn := norm_nonneg' (u : ElevenRing)
-  have hf := four_norm (u : ElevenRing)
-  by_contra hi
-  have hi' : 0 < (u : ElevenRing).im ^ 2 := sq_pos_of_ne_zero hi
-  rcases hu with h | h <;> nlinarith [sq_nonneg (2 * (u : ElevenRing).re + (u : ElevenRing).im)]
 
 private theorem cube_im_even (z : ElevenRing) : (2 : ℤ) ∣ (z ^ 3).im := by
   have h : (z ^ 3).im = 3 * z.re ^ 2 * z.im + 3 * z.re * z.im ^ 2 - 2 * z.im ^ 3 := by
@@ -199,11 +206,11 @@ theorem hosoya_primitive_form_ne_cube {a b : ℤ} (hab : IsCoprime a b) (t : ℤ
       linear_combination he
     exact ha (even_im_of_norm_cube z hc hn)
 
-/-- Both odd-index diagonals exclude cubes. The lower term displayed here is at
-actual index `2*n+3` because its defining index is shifted by two. -/
-theorem odd_hosoya_diagonals_ne_cube (n : ℕ) (t : ℤ) :
-    (lucasFibonacciSum (2*n+1) : ℤ) ≠ t^3 ∧
-    (lowerNeighborAtAddTwo (2*n+1) : ℤ) ≠ t^3 := by
+/-- On both odd-index diagonals the half-index Fibonacci pair gives a primitive
+representation by the quadratic form of discriminant −44. -/
+theorem odd_hosoya_form_witnesses (n : ℕ) :
+    (∃ a b : ℤ, IsCoprime a b ∧ 3*a^2+2*a*b+4*b^2 = lucasFibonacciSum (2*n+1)) ∧
+    (∃ a b : ℤ, IsCoprime a b ∧ 3*a^2+2*a*b+4*b^2 = lowerNeighborAtAddTwo (2*n+1)) := by
   let a : ℤ := Nat.fib n
   let b : ℤ := Nat.fib (n+1)
   have hc : IsCoprime a b := (Nat.fib_coprime_fib_succ n).isCoprime
@@ -217,13 +224,18 @@ theorem odd_hosoya_diagonals_ne_cube (n : ℕ) (t : ℤ) :
   have hl : IsCoprime (a+b) (-b) := by
     obtain ⟨u, v, huv⟩ := hc
     exact ⟨u, u-v, by linear_combination huv⟩
-  simp only [lucasFibonacciSum, lowerNeighborAtAddTwo, Nat.cast_add, Nat.cast_mul,
-    Nat.cast_ofNat, h₁, h₂]
-  constructor
-  · intro h
-    exact hosoya_primitive_form_ne_cube hc t (by linear_combination h)
-  · intro h
-    exact hosoya_primitive_form_ne_cube hl t (by linear_combination h)
+  refine ⟨⟨a,b,hc,?_⟩,⟨a+b,-b,hl,?_⟩⟩ <;>
+    simp only [lucasFibonacciSum, lowerNeighborAtAddTwo, Nat.cast_add, Nat.cast_mul,
+      Nat.cast_ofNat, h₁, h₂] <;> ring
+
+/-- Both odd-index diagonals exclude cubes. The lower term displayed here is at
+actual index `2*n+3` because its defining index is shifted by two. -/
+theorem odd_hosoya_diagonals_ne_cube (n : ℕ) (t : ℤ) :
+    (lucasFibonacciSum (2*n+1) : ℤ) ≠ t^3 ∧
+    (lowerNeighborAtAddTwo (2*n+1) : ℤ) ≠ t^3 := by
+  obtain ⟨⟨a,b,hc,hu⟩,⟨c,d,hd,hv⟩⟩ := odd_hosoya_form_witnesses n
+  rw [←hu,←hv]
+  exact ⟨hosoya_primitive_form_ne_cube hc t, hosoya_primitive_form_ne_cube hd t⟩
 
 /-- At actual index `2*n+1`, the lower sum is `3F_{2n+1}−F_{2n}` since
 `L_k = 2F_{k+1}−F_k`. This includes its initial value 3. -/
@@ -242,6 +254,11 @@ theorem odd_lower_lucas_fibonacci_sum_ne_cube (n : ℕ) (t : ℤ) :
     rw [he]
     exact (odd_hosoya_diagonals_ne_cube n t).2
 
+#print axioms ElevenRing.four_norm
+#print axioms ElevenRing.norm_nonneg'
+#print axioms ElevenRing.norm_pos'
+#print axioms ElevenRing.unit_im_zero
+#print axioms odd_hosoya_form_witnesses
 #print axioms odd_lower_lucas_fibonacci_sum_ne_cube
 #print axioms hosoya_primitive_form_ne_cube
 #print axioms odd_hosoya_diagonals_ne_cube
