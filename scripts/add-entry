@@ -323,6 +323,29 @@ def _slug(name: str) -> str:
     return slug or "misc"
 
 
+def research_table_errors(text: str) -> list[str]:
+    """Report cells GitHub would discard from the notebook's results table."""
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.lstrip().startswith("|")), None)
+    if start is None:
+        return ["research/README.md: missing results table"]
+
+    def cell_count(line: str) -> int:
+        # GFM treats an unescaped pipe as a separator even inside inline code.
+        cells = re.split(r"(?<!\\)\|", line.strip())
+        return len(cells) - (cells[0] == "") - (cells[-1] == "")
+
+    width = cell_count(lines[start])
+    errors = []
+    for line_number, line in enumerate(lines[start + 1 :], start + 2):
+        if not line.strip():
+            break
+        count = cell_count(line)
+        if count > width:
+            errors.append(f"research/README.md:{line_number}: {count} cells in a {width}-column table")
+    return errors
+
+
 def check() -> int:
     data = load_index()
     errors = validate_index(data)
@@ -330,6 +353,7 @@ def check() -> int:
     actual = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else ""
     if actual != expected:
         errors.append("README.md is out of date; run scripts/add-entry --render")
+    errors.extend(research_table_errors((ROOT / "research/README.md").read_text(encoding="utf-8")))
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
