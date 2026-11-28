@@ -180,7 +180,7 @@ lemma amp_le_weight (hp : p % 2 = 1) {t : ZMod p} (ht : 2 * t ≠ 0) :
   rw [hgeom, norm_mul, norm_char, mul_one, ← norm_mul, geom_sum_mul]
   exact (norm_sub_le _ _).trans (by norm_num [norm_pow, hz])
 
-private lemma weight_neg (t : ZMod p) : weight (-t) = weight t := by
+lemma weight_neg (t : ZMod p) : weight (-t) = weight t := by
   unfold weight
   congr 1
   have h := norm_mul (ZMod.stdAddChar (-t) - 1) (ZMod.stdAddChar t)
@@ -189,7 +189,7 @@ private lemma weight_neg (t : ZMod p) : weight (-t) = weight t := by
   exact h.symm
 
 /-- On the lower half of the circle Jordan’s sine bound gives a reciprocal-frequency bound. -/
-private lemma weight_small {n : ℕ} (hn : 0 < n) (hle : n ≤ p / 2) :
+lemma weight_small {n : ℕ} (hn : 0 < n) (hle : n ≤ p / 2) :
     weight (n : ZMod p) ≤ (p : ℝ) / (2 * n) := by
   have hp : 0 < p := NeZero.pos p
   have hp' : (0 : ℝ) < p := by exact_mod_cast hp
