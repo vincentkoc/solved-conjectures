@@ -25,29 +25,32 @@ theorem shift {Ω : Type*} [Fintype Ω] (k l : Ω → ℕ)
   rw [he,sum_const,nsmul_eq_mul]
   field_simp
 
-theorem centered_mgf : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window), [NeZero Y.factorial] →
+theorem centered_weighted : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window), [NeZero Y.factorial] →
+    ∀ w : (ZMod Y.factorial)ˣ → ℝ, (∀ x,0≤w x) →
+    (∀ x y,key (modulus Y.factorial T) x=key (modulus Y.factorial T) y → w x=w y) →
     ∀ v : ℝ, |v|=tilt T →
-    (∑ x : (ZMod Y.factorial)ˣ, exp (v*(rowModel Y W (x:ZMod Y.factorial).val-value Y W T x))) ≤
-      exp total*Y.factorial.totient := by
+    (∑ x : (ZMod Y.factorial)ˣ, w x*exp (v*(rowModel Y W (x:ZMod Y.factorial).val-value Y W T x))) ≤
+      exp total*∑ x,w x := by
   obtain ⟨Q,hQ⟩ := eventually_atTop.mp eventual_size
   obtain ⟨L,hL⟩ := eventually_atTop.mp
     ((Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop).eventually_ge_atTop 1)
   filter_upwards [eventually_ge_atTop (max 2 (max Q L))] with T hT
-  intro Y W _ v hv
+  intro Y W _ w hw hfixed v hv
   let k (t : ℕ) := key (P:=Y.factorial) (modulus Y.factorial t)
   let g (x : (ZMod Y.factorial)ˣ) := rowModel Y W (x:ZMod Y.factorial).val
   let f (x : (ZMod Y.factorial)ˣ) := g x-value Y W T x
   have hf (t : ℕ) (ht : T≤t) (x : (ZMod Y.factorial)ˣ) :
       proj (k t) f x=value Y W t x-value Y W T x :=
     shift (k T) (k t) g (refine (modulus_dvd ht)) x
-  let F (t : ℕ) := ∑ x : (ZMod Y.factorial)ˣ, exp (v*proj (k t) f x)
-  have hF (t : ℕ) : 0≤F t := sum_nonneg fun _ _ => (exp_pos _).le
+  let F (t : ℕ) := ∑ x : (ZMod Y.factorial)ˣ, w x*exp (v*proj (k t) f x)
+  have hF (t : ℕ) : 0≤F t := sum_nonneg fun x _ => mul_nonneg (hw x) (exp_pos _).le
   have hstep (t : ℕ) (ht : T≤t) : F (t+1) ≤ exp (charge (t+1))*F t := by
     have H := within (by omega : 1≤T) (by omega : T≤t+1) hv
     have ha := hQ (t+1) (by omega)
     have hl := hL (t+1) (by omega)
     apply le_trans _ (mul_le_mul_of_nonneg_right (exp_le_exp.mpr H.2) (hF _))
-    apply step _ _ _ (refine (modulus_dvd (Nat.le_succ t)))
+    apply step_weighted _ _ _ (refine (modulus_dvd (Nat.le_succ t))) w hw
+      (fun x y he => hfixed x y (refine (modulus_dvd ht) x y he))
       (le_trans (by positivity [envelope_nonneg]) ha) H.1
     intro x y he
     have hb : value Y W T x=value Y W T y := by
@@ -64,14 +67,23 @@ theorem centered_mgf : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window), [NeZ
       apply (hstep _ ht).trans
       simpa only [mul_comm (exp (charge (t+1)))] using H
   let t := max T Y.factorial
-  have hbase : F T=Y.factorial.totient := by simp [F,hf _ le_rfl,ZMod.card_units_eq_totient]
-  have hend : F t=∑ x : (ZMod Y.factorial)ˣ,exp (v*f x) := by
+  have hbase : F T=∑ x,w x := by simp [F,hf _ le_rfl]
+  have hend : F t=∑ x : (ZMod Y.factorial)ˣ,w x*exp (v*f x) := by
     simp only [F,k,terminal (Nat.factorial_pos _) (le_max_right T Y.factorial),final_project,t]
-  change (∑ x : (ZMod Y.factorial)ˣ,exp (v*f x))≤_
+  change (∑ x : (ZMod Y.factorial)ˣ,w x*exp (v*f x))≤_
   rw [←hend,←hbase]
   exact (telescope _ (le_max_left ..)).trans
     (mul_le_mul_of_nonneg_right (exp_le_exp.mpr (bounded _)) (hF _))
 
+theorem centered_mgf : ∀ᶠ T : ℕ in atTop, ∀ (Y : ℕ) (W : Window), [NeZero Y.factorial] →
+    ∀ v : ℝ, |v|=tilt T →
+    (∑ x : (ZMod Y.factorial)ˣ, exp (v*(rowModel Y W (x:ZMod Y.factorial).val-value Y W T x))) ≤
+      exp total*Y.factorial.totient := by
+  filter_upwards [centered_weighted] with T h
+  intro Y W _ v hv
+  simpa [ZMod.card_units_eq_totient] using h Y W (fun _ => 1) (fun _ => zero_le_one) (fun _ _ _ => rfl) v hv
+
+#print axioms centered_weighted
 #print axioms centered_mgf
 end
 end Arxiv.«2501.03234».ThetaCenteredExposure
