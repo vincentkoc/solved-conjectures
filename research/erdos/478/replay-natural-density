@@ -32,6 +32,7 @@ ADAPTERS = {
     "diverse-windows": "Erdos478NaturalHitWindows",
     "first-collisions": "Erdos478NaturalFirstCollisions",
     "modular-witnesses": "Erdos478NaturalModularWitnesses",
+    "quartic-law": "Erdos478NaturalQuarticLaw",
     "paired": "Erdos478NaturalPairedDensity",
     "sextic": "Erdos478NaturalSexticCounts",
     "real-gaps": "Erdos478NaturalCubicPattern",

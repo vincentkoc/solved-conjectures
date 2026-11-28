@@ -1,0 +1,58 @@
+import Erdos478QuarticSplittingDegrees
+import Erdos478GrowingPrimeProfiles
+import Erdos478NaturalDensity
+
+/-! # Ordinary prime frequencies for the first three factorial gaps and a growing deficit -/
+
+namespace Erdos478.LowGapAction
+open Finset Filter Topology FirstCollision GapDensity GapSieve MeanDeficit
+open scoped Classical
+noncomputable section
+
+/-- Any selections of the three endpoint counts have independent margins.
+The same ordinary density holds on the single increasing-deficit family. -/
+theorem ordinary_joint_quartic (a b c : ℕ → Bool) :
+    Tendsto (fun X => fraction X (endpointBox a b c)) atTop (𝓝 (lawValue a b c)) ∧
+    Tendsto (fun X => fraction X (fun p => endpointBox a b c p ∧ growingPrime p))
+      atTop (𝓝 (lawValue a b c)) := by
+  have h := endpoint_box_limit degree_one_prime_ideal_theorem a b c
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+/-- A single explicitly specified prime family has ordinary density 1/16.
+Every member has its first collision at distance four and misses at least
+the given finite-search threshold of residues, which tends to infinity. -/
+theorem ordinary_first_four_growing :
+    Tendsto rollingThreshold atTop atTop ∧
+    Tendsto (fun X => fraction X (fun p => First p 4)) atTop (𝓝 (1/16:ℝ)) ∧
+    Tendsto (fun X => fraction X (fun p => First p 4 ∧ growingPrime p)) atTop (𝓝 (1/16:ℝ)) := by
+  have h := first_limit degree_one_prime_ideal_theorem (by decide : 2≤4)
+  rw [first_four_density] at h
+  exact ⟨threshold_grows degree_one_prime_ideal_theorem,h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+theorem ordinary_no_four_growing :
+    Tendsto (fun X => fraction X (fun p => NoShort p 4 ∧ growingPrime p)) atTop (𝓝 (5/48:ℝ)) := by
+  have h := survival_limit degree_one_prime_ideal_theorem 4
+  rw [no_four_density] at h
+  exact growing_preserves_density degree_one_prime_ideal_theorem h
+
+/-- The error bound holds simultaneously for every event at each cutoff. -/
+theorem ordinary_growing_error :
+    Tendsto cutoffError atTop (𝓝 0) ∧ ∀ X (P : ℕ → Prop),
+    0≤fraction X P-fraction X (fun p => P p ∧ growingPrime p) ∧
+    fraction X P-fraction X (fun p => P p ∧ growingPrime p)≤cutoffError X :=
+  ⟨cutoff_error_zero degree_one_prime_ideal_theorem,thinning_bounds⟩
+
+theorem first_four_large_examples (B D : ℕ) :
+    ∃ p>B, p.Prime ∧ First p 4 ∧ rollingThreshold p≤deficit p ∧ D≤deficit p := by
+  obtain ⟨N,hN⟩ := eventually_atTop.mp (ordinary_first_four_growing.1.eventually_ge_atTop D)
+  obtain ⟨p,hp,prime,first,large⟩ := large_prime_of_fraction (by norm_num : (0:ℝ)<1/16)
+    ordinary_first_four_growing.2.2 (max B N)
+  exact ⟨p,(le_max_left ..).trans_lt hp,prime,first,large,(hN p ((le_max_right ..).trans hp.le)).trans large⟩
+
+#print axioms first_four_large_examples
+#print axioms ordinary_joint_quartic
+#print axioms ordinary_first_four_growing
+#print axioms ordinary_no_four_growing
+#print axioms ordinary_growing_error
+end
+end Erdos478.LowGapAction
