@@ -1,0 +1,19 @@
+# Conditional spacing of almost primes on the two Hosoya diagonals
+
+Write `Uₙ = Fₙ + Lₙ₊₁` and `Vₙ = Fₙ + Lₙ₋₁`. Assume the trace-one, determinant-minus-one case of the Toral Affine Sieve Conjecture described below. Fix a width `H` and a bound `K`. For all sufficiently large `a`, **at most one** of the two values per index in `a ≤ n ≤ a+H` has at most `K` prime factors, counted with multiplicity. In particular, simultaneous prime neighbors occur only finitely often. The proof gives no upper bound on their indices. Ching et al. found both neighbors prime at indices 2 and 6 and asked whether another example exists. [Lean proof](LucasFibonacciToralGaps.lean) · [Ching et al., p. 3](https://arxiv.org/pdf/2211.10788#page=3)
+
+**The sieve hypothesis.** Conjecture 1.1 of Kontorovich and Lagarias predicts a lower limit of at least `β₂ ≈ 0.373365` for `Ω(xy)/log log |xy|` on an infinite integral orbit of a hyperbolic rational matrix. The Lean hypothesis `TraceOneToralSieveBound` restricts to positive integral coordinates, a strictly increasing first coordinate, trace 1, and determinant −1. The characteristic polynomial is `X²−X−1`, with discriminant 5. Choosing any fixed `0 < c < β₂` gives the eventual lower bound `Ω(xy) ≥ c log log(xy)` used in the proof. The first coordinate tends to infinity, so the right side eventually exceeds every fixed bound. [Kontorovich and Lagarias, Conjecture 1.1](https://arxiv.org/pdf/1808.03235#page=4)
+
+**Which pairs give an orbit?** Choose either diagonal for `xₙ` and either diagonal shifted by `h ≥ 0` for `yₙ`, starting at physical index 2. Put `B = [[x₀,x₁],[y₀,y₁]]`. When its determinant is nonzero, the Fibonacci recurrence shows that `B [[0,1],[1,1]] B⁻¹` advances both coordinates at every step. The determinant itself follows the Fibonacci recurrence as a function of `h`. Its first four values are
+
+| First and second diagonal | h = 0 | h = 1 | h = 2 | h = 3 |
+| --- | ---: | ---: | ---: | ---: |
+| U, U or V, V | 0 | −11 | −11 | −22 |
+| U, V | 7 | −10 | −3 | −13 |
+| V, U | −7 | −17 | −24 | −41 |
+
+All four determinants stay negative from `h = 2` onward. At `h = 0` on the same diagonal, a matrix advancing the repeated coordinate would force `x₀x₂ = x₁²`, whereas the difference is −11. This gives an unconditional equivalence between distinct sites and existence of the advancing matrix. Applying the sieve to the finitely many choices of sides and shifts up to `H` supplies a common threshold. Two sites with at most `K` factors each would have a product with at most `2K` factors.
+
+The pinned DeepMind declaration asks for infinitely many **values** on the upper diagonal that are prime. The spacing implication is compatible with either answer. It also leaves open whether indices 2 and 6 are the only simultaneous examples. [Pinned DeepMind declaration](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2211.10788/LucasFibonacciSumPrimes.lean) · [Unconditional semiprime criterion](NeighboringPrimePairs.md)
+
+The four declarations in `Arxiv.«2211.10788»` are `hosoya_shifted_orbit_iff`, `hosoya_window_factor_growth`, `hosoya_almost_prime_sites_separated`, and `finite_neighboring_prime_indices_of_toral_sieve`. Each uses only `propext`, `Classical.choice`, and `Quot.sound`. The last three take the sieve bound as an explicit hypothesis. Searches of DeepMind and Open Math Agents issues and PRs and Left to Solve’s solved records found the canonical upper-diagonal question and no matching spacing result. Codex assisted with the formalization. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/8155) · [Canonical PR](https://github.com/google-deepmind/formal-conjectures/pull/8156) · [Left to Solve](https://lefttosolve.com/api/solved) · [Notebook replay](../../README.md#replay)
