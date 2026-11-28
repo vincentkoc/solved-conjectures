@@ -123,7 +123,8 @@ private lemma primeMean_of_close {f g : ℕ → ℝ} {L : ℝ}
   intro X
   simp only [primeMean,sum_sub_distrib,sub_div,sub_add_cancel]
 
-private lemma chi_prime_mean (hAP : ProgressionMangoldt) :
+/-- The nonprincipal character modulo three has ordinary prime mean zero. -/
+theorem chi_prime_mean (hAP : ProgressionMangoldt) :
     Tendsto (primeMean (fun n => (chi n : ℝ))) atTop (𝓝 0) := by
   have hper : OnMod 3 (fun n => (chi n : ℝ)) := by intro n; simp [chi]
   have hz : unitMean 3 (fun n => (chi n : ℝ)) = 0 := by
@@ -411,5 +412,6 @@ theorem S_prime_class_statistics (hAP : ProgressionMangoldt) :
 #print axioms S_prime_class_statistics
 #print axioms twisted_approx_eventually
 #print axioms residual_twist
+#print axioms chi_prime_mean
 
 end Arxiv.«2501.03234».ThetaCharacterPrimeMeans
