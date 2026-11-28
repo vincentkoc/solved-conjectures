@@ -26,7 +26,8 @@ private theorem frob_base {p : ℕ} [Fact p.Prime] {K : Type*} [Field K] [Algebr
     [CharP K p] (u : ZMod p) : frobenius K p (algebraMap (ZMod p) K u)=algebraMap (ZMod p) K u := by
   rw [frobenius_def,←map_pow,ZMod.pow_card]
 
-private theorem frob_fibonacci {p : ℕ} [Fact p.Prime] (h5 : p≠5) {K : Type*} [Field K]
+/-- Frobenius exchanges the Fibonacci roots precisely at the two nonsplit residues modulo five. -/
+theorem frobenius_fibonacci_root {p : ℕ} [Fact p.Prime] (h5 : p≠5) {K : Type*} [Field K]
     [Algebra (ZMod p) K] [CharP K p] {a b : K} (ha : a^2=a+1) (hb : b=1-a) :
     frobenius K p a = (if p%5=2 ∨ p%5=3 then b else a) := by
   let f := frobenius K p
@@ -87,6 +88,53 @@ private theorem frob_ratio_iterate {K : Type*} [Field K] {p ℓ : ℕ} [Fact p.P
     · change ((w^(((ℓ-1)*p)^n))^p)⁻¹=w^(((ℓ-1)*p)^(n+1))
       rw [←inv_pow,←inv_pow,←inv,←pow_mul,←pow_mul,pow_succ]
       congr 1; ring
+
+/-- A marked fractional linear coordinate of finite order determines the
+Frobenius degree of its point, without a restriction on that order. -/
+theorem upper_ratio_frobenius_degree {p t : ℕ} [Fact p.Prime] (hp5 : p≠5)
+    {K : Type*} [Field K] [Algebra (ZMod p) K] [CharP K p] {a b x : K}
+    (ha : a^2=a+1) (hba : b=1-a) (hab : a≠b) (u v : ZMod p)
+    {g : (ZMod p)[X]} (hg : Irreducible g) (hx : g.aeval x=0)
+    (hUa : algebraMap (ZMod p) K u+algebraMap (ZMod p) K v*a≠0)
+    (hUb : algebraMap (ZMod p) K u+algebraMap (ZMod p) K v*b≠0) (hxb : x+b≠0)
+    (ht : 0<t) (hord : orderOf (((x+a)*(algebraMap (ZMod p) K u+algebraMap (ZMod p) K v*b)) /
+      ((x+b)*(algebraMap (ZMod p) K u+algebraMap (ZMod p) K v*a)))=t)
+    (hw : (x+a)≠0) :
+    g.natDegree=orderOf (if p%5=2 ∨ p%5=3 then -(p:ZMod t) else (p:ZMod t)) := by
+  let incl := algebraMap (ZMod p) K
+  let w := ratio a b (incl u) (incl v) x
+  change orderOf w=t at hord
+  have hwl : w^t=1 := by rw [←hord,pow_orderOf_eq_one]
+  have hnon : w≠0 := div_ne_zero (mul_ne_zero hw hUb) (mul_ne_zero hxb hUa)
+  let W := Units.mk0 w hnon
+  have ho : orderOf W=t := by rw [←orderOf_units]; exact hord
+  let sw := decide (p%5=2 ∨ p%5=3)
+  let M := if sw then (t-1)*p else p
+  have hfa : frobenius K p a=if sw then b else a := by simpa [sw] using frobenius_fibonacci_root hp5 ha hba
+  have hfb : frobenius K p b=if sw then a else b := by
+    rw [hba,map_sub,map_one,hfa,hba]; cases sw <;> simp
+  have hM : (M:ZMod t)=(if p%5=2 ∨ p%5=3 then -(p:ZMod t) else (p:ZMod t)) := by
+    by_cases hn : p%5=2 ∨ p%5=3 <;> simp [M,sw,hn,Nat.cast_sub ht]
+  rw [←hM]
+  have fixed_iff (n : ℕ) : g.natDegree ∣ n ↔ orderOf (M:ZMod t) ∣ n := by
+    have orbit := frob_ratio_iterate sw ht a b (incl u) (incl v) x hfa hfb
+      (frob_base u) (frob_base v) hwl n
+    change ratio a b (incl u) (incl v) (x^(p^n))=w^(M^n) at orbit
+    have hxb' : x^(p^n)+b≠0 := by
+      intro he
+      exact (pow_ne_zero (M^n) hnon) (by simpa [ratio,he] using orbit.symm)
+    calc
+      g.natDegree ∣ n ↔ x^(p^n)=x := by
+        rw [hg.natDegree_dvd_iff_dvd_X_pow_card_pow_sub_X,←hg.dvd_iff_aeval_eq_zero hx]
+        simp [Nat.card_eq_fintype_card,sub_eq_zero]
+      _ ↔ w^(M^n)=w := by rw [←orbit]; exact (ratio_inj hab hUa hUb hxb' hxb).symm
+      _ ↔ M^n ≡ 1 [MOD t] := by
+        change (W^(M^n):Kˣ).val=W.val ↔ _
+        have we : W^(M^n)=W^1 ↔ M^n ≡ 1 [MOD t] := by rw [pow_eq_pow_iff_modEq,ho]
+        simpa only [pow_one,Units.ext_iff] using we
+      _ ↔ orderOf (M:ZMod t) ∣ n := by
+        rw [orderOf_dvd_iff_pow_eq_one,←ZMod.natCast_eq_natCast_iff,Nat.cast_pow,Nat.cast_one]
+  exact Nat.dvd_antisymm ((fixed_iff _).mpr dvd_rfl) ((fixed_iff _).mp dvd_rfl)
 
 /-- After choosing one projective zero, every irreducible factor away from it
 has degree equal to the order of the signed residue of the characteristic.
@@ -168,33 +216,8 @@ theorem upperIndexPolynomial_factor_degree {p ℓ r : ℕ} [Fact p.Prime]
     exact haway _ hmatch (incl.injective (heval.trans incl.map_zero.symm))
   let W := Units.mk0 w hw
   have hord : orderOf W=ℓ := orderOf_eq_prime (by apply Units.ext; exact hwl) (fun h => hwo (congrArg Units.val h))
-  let sw := decide (p%5=2 ∨ p%5=3)
-  let M := if sw then (ℓ-1)*p else p
-  have hfa : frobenius K p a=if sw then b else a := by simpa [sw] using frob_fibonacci hp5 ha hba
-  have hfb : frobenius K p b=if sw then a else b := by
-    rw [hba,map_sub,map_one,hfa,hba]; cases sw <;> simp
-  have hM : (M:ZMod ℓ)=(if p%5=2 ∨ p%5=3 then -(p:ZMod ℓ) else (p:ZMod ℓ)) := by
-    by_cases hn : p%5=2 ∨ p%5=3 <;> simp [M,sw,hn,Nat.cast_sub hl.one_le]
-  rw [←hM]
-  have fixed_iff (n : ℕ) : g.natDegree ∣ n ↔ orderOf (M:ZMod ℓ) ∣ n := by
-    have orbit := frob_ratio_iterate sw hl.pos a b (incl u) (incl v) x hfa hfb
-      (frob_base u) (frob_base v) hwl n
-    change ratio a b (incl u) (incl v) (x^(p^n))=w^(M^n) at orbit
-    have hxb' : x^(p^n)+b≠0 := by
-      intro he
-      exact (pow_ne_zero (M^n) hw) (by simpa [ratio,he] using orbit.symm)
-    calc
-      g.natDegree ∣ n ↔ x^(p^n)=x := by
-        rw [hg.natDegree_dvd_iff_dvd_X_pow_card_pow_sub_X,←hg.dvd_iff_aeval_eq_zero hx]
-        simp [F,Nat.card_eq_fintype_card,sub_eq_zero]
-      _ ↔ w^(M^n)=w := by rw [←orbit]; exact (ratio_inj hab hUa hUb hxb' hxb).symm
-      _ ↔ M^n ≡ 1 [MOD ℓ] := by
-        change (W^(M^n):Kˣ).val=W.val ↔ _
-        have we : W^(M^n)=W^1 ↔ M^n ≡ 1 [MOD ℓ] := by rw [pow_eq_pow_iff_modEq,hord]
-        simpa only [pow_one,Units.ext_iff] using we
-      _ ↔ orderOf (M:ZMod ℓ) ∣ n := by
-        rw [orderOf_dvd_iff_pow_eq_one,←ZMod.natCast_eq_natCast_iff,Nat.cast_pow,Nat.cast_one]
-  exact Nat.dvd_antisymm ((fixed_iff _).mpr dvd_rfl) ((fixed_iff _).mp dvd_rfl)
+  exact upper_ratio_frobenius_degree hp5 ha hba hab u v hg hx hUa hUb hxb hl.pos
+    (orderOf_units.trans hord : orderOf (W:K)=ℓ) hxa
 
 /-- With a projective zero, the degrees of all nonlinear factors agree. -/
 theorem upperIndexPolynomial_nonlinear_factor_degree {p ℓ r : ℕ} [Fact p.Prime]
@@ -382,6 +405,8 @@ example : Irreducible ((upperIndexPolynomial 0 7).map (Int.castRingHom (ZMod 29)
 #print axioms upperIndexPolynomial_degree_at_infinity
 #print axioms upperIndexPolynomial_irreducible_at_infinity
 
+#print axioms frobenius_fibonacci_root
+#print axioms upper_ratio_frobenius_degree
 #print axioms upperIndexPolynomial_factor_degree
 
 #print axioms upperIndexPolynomial_nonlinear_factor_degree
