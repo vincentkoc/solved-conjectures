@@ -33,6 +33,7 @@ ADAPTERS = {
     "real-gaps": "Erdos478NaturalCubicPattern",
     "gap-bands": "Erdos478NaturalPowerBands",
     "dyadic-collisions": "Erdos478NaturalDyadicCollisions",
+    "proportional-collisions": "Erdos478NaturalProportionalCollisions",
 }
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
