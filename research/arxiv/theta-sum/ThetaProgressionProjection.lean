@@ -42,7 +42,7 @@ theorem predictor_periodic (m : ℕ) [NeZero m] : OnMod m (predictor m) := by
   intro n
   simp only [predictor,model,symbol,ZMod.natCast_mod]
 
-private def select {m : ℕ} (v : (ZMod m)ˣ) (p : ℕ) : ℝ := if (p:ZMod m)=(v:ZMod m) then 1 else 0
+def select {m : ℕ} (v : (ZMod m)ˣ) (p : ℕ) : ℝ := if (p:ZMod m)=(v:ZMod m) then 1 else 0
 
 private theorem transform_select {m : ℕ} [NeZero m] (v : (ZMod m)ˣ) (χ : DirichletCharacter ℂ m) :
     transform m (select v) χ=χ (v:ZMod m)/m.totient := by
@@ -50,7 +50,7 @@ private theorem transform_select {m : ℕ} [NeZero m] (v : (ZMod m)ˣ) (χ : Dir
   simp only [transform,select,ZMod.natCast_zmod_val,Units.val_inj,apply_ite Complex.ofReal,
     ofReal_one,ofReal_zero,ite_mul,one_mul,zero_mul,sum_ite_eq',mem_univ,if_true]
 
-private theorem select_mean {m : ℕ} [NeZero m] (v : (ZMod m)ˣ) (hAP : ProgressionMangoldt) :
+theorem select_mean {m : ℕ} [NeZero m] (v : (ZMod m)ˣ) (hAP : ProgressionMangoldt) :
     Tendsto (primeMean (fun p => centered p*select v p)) atTop
       (𝓝 (predictor m (v:ZMod m).val/m.totient)) := by
   let b := transform m (select v)
