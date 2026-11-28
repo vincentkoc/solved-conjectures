@@ -29,12 +29,12 @@ theorem double_bracket (x y z : K) :
 
 
 /-- Three squares of independent field elements occur as the three pair minors. -/
-theorem realize_minors [Fintype K] (u v w : K) (non : moore u v w ≠ 0)
-    (large : 10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+theorem realize_minors_of_meeting [Fintype K] (u v w : K) (non : moore u v w ≠ 0)
+    (meets : Green51BCHOptimality.MeetsSeventhPowers K) :
     ∃ t a b c : K, t≠0 ∧ moore t b c=u^2 ∧ moore t a c=v^2 ∧ moore t a b=w^2 := by
   let D := moore u v w
   let g : Fin 3 → K := ![bracket v w,bracket u w,bracket u v]
-  obtain ⟨s,ns,ok⟩ := Green51BCHOptimality.simultaneous_artin_schreier (fun i => D^2*g i) large
+  obtain ⟨s,ns,ok⟩ := Green51BCHOptimality.simultaneous_of_meeting (fun i => D^2*g i) meets
   choose z hz using ok
   let t := (s^3*D)⁻¹
   have nt : t≠0 := inv_ne_zero (mul_ne_zero (pow_ne_zero _ ns) non)
@@ -60,8 +60,15 @@ theorem realize_minors [Fintype K] (u v w : K) (non : moore u v w ≠ 0)
     change bracket (bracket v w) (bracket u w) /D=w^2
     rw [sym v w,sym u w,double_bracket,←(law w u v).1,←(law u v w).2.2,mul_div_cancel_right₀ _ non]
 
+/-- Three squares of independent field elements occur as the three pair minors. -/
+theorem realize_minors [Fintype K] (u v w : K) (non : moore u v w ≠ 0)
+    (large : 10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+    ∃ t a b c : K, t≠0 ∧ moore t b c=u^2 ∧ moore t a c=v^2 ∧ moore t a b=w^2 :=
+  realize_minors_of_meeting u v w non (Green51BCHOptimality.meets_of_large large)
+
 end Green51BCHCompression
 
 #print axioms Green51BCHCompression.moore_bracket
 #print axioms Green51BCHCompression.double_bracket
+#print axioms Green51BCHCompression.realize_minors_of_meeting
 #print axioms Green51BCHCompression.realize_minors

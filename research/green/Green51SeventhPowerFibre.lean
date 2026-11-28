@@ -84,23 +84,38 @@ theorem seventh_meets_coprime [Fintype K] (L : K →ₗ[F] Cube 3)
   have id : z.val^7=w.val := congrArg Units.val eq
   rw [id];exact w.property
 
-/-- A common nonzero multiplier makes three prescribed Artin–Schreier equations soluble. -/
-theorem simultaneous_artin_schreier [Fintype K] (v : Fin 3 → K) (large :
+/-- Every system of three binary linear tests vanishes on a nonzero seventh power. -/
+def MeetsSeventhPowers (K : Type*) [Field K] [Algebra F K] : Prop :=
+  ∀ L : K →ₗ[F] Cube 3, ∃ x : K, x≠0 ∧ L (x^7)=0
+
+theorem meets_of_large [Fintype K] (large :
     10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+    MeetsSeventhPowers K :=
+  fun L => large.elim (seventh_meets L)
+    (fun ⟨room,coprime⟩ => seventh_meets_coprime L room coprime)
+
+/-- A common nonzero multiplier makes three prescribed Artin–Schreier equations soluble. -/
+theorem simultaneous_of_meeting [Fintype K] (v : Fin 3 → K) (meets : MeetsSeventhPowers K) :
     ∃ a : K,a≠0 ∧ ∀ i,∃ z : K,z^2+z=a^7*v i := by
   obtain ⟨Q,test⟩ := trace_test (K:=K)
   let L : K →ₗ[F] Cube 3 :=
     { toFun x i := Q (x*v i)
       map_add' x y := by funext i; simp [add_mul]
       map_smul' r x := by funext i; simp }
-  have ex : ∃ x:K,x≠0 ∧ L (x^7)=0 := large.elim (seventh_meets L)
-    (fun ⟨room,coprime⟩ => seventh_meets_coprime L room coprime)
-  obtain ⟨x,nz,eq⟩ := ex
+  obtain ⟨x,nz,eq⟩ := meets L
   exact ⟨x,nz,fun i => (test _).mp (congrFun eq i)⟩
+
+/-- A common nonzero multiplier makes three prescribed Artin–Schreier equations soluble. -/
+theorem simultaneous_artin_schreier [Fintype K] (v : Fin 3 → K) (large :
+    10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+    ∃ a : K,a≠0 ∧ ∀ i,∃ z : K,z^2+z=a^7*v i :=
+  simultaneous_of_meeting v (meets_of_large large)
 
 end Green51BCHOptimality
 #print axioms Green51BCHOptimality.seventh_meets
 #print axioms Green51BCHOptimality.seventh_cubic
 #print axioms Green51BCHOptimality.trace_test
 #print axioms Green51BCHOptimality.seventh_meets_coprime
+#print axioms Green51BCHOptimality.meets_of_large
+#print axioms Green51BCHOptimality.simultaneous_of_meeting
 #print axioms Green51BCHOptimality.simultaneous_artin_schreier

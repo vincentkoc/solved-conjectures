@@ -116,11 +116,10 @@ private theorem from_minor_table [Finite K] {H : Type*} [AddCommGroup H] [Module
   obtain ⟨p,W,d,sub⟩ := produces_flat L U t ht nt kill
   exact ⟨p,W,by omega,sub⟩
 
-/-- For fields of binary dimension at least ten, and for smaller fields
-meeting the seventh-power coprimality condition, discarding three binary
-coordinates always produces an affine three-space. -/
-theorem three_iff [Fintype K] {H : Type*} [AddCommGroup H] [Module F H] (L : K →ₗ[F] H)
-    (large : 10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+/-- Three discarded dimensions force a flat whenever every codimension-three
+linear test meets the nonzero seventh powers. -/
+theorem three_iff_of_meeting [Fintype K] {H : Type*} [AddCommGroup H] [Module F H] (L : K →ₗ[F] H)
+    (meets : Green51BCHOptimality.MeetsSeventhPowers K) :
     (∃ (p : Space K × H) (W : Submodule F (Space K × H)),Module.finrank F W=3 ∧
       p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L)) ↔
     3≤Module.finrank F L.ker := by
@@ -151,7 +150,7 @@ theorem three_iff [Fintype K] {H : Type*} [AddCommGroup H] [Module F H] (L : K �
       all_goals intro eq; have z := congrArg (fun x : K => x^2) eq
       all_goals simp only [CharTwo.add_sq,hu,hv,hw,zero_pow (by decide : 2≠0),←map_add] at z
       all_goals exact nonzero _ (by decide +kernel) z
-    obtain ⟨t,a,b,c,_,ab,ac,bc⟩ := realize_minors u v w non large
+    obtain ⟨t,a,b,c,_,ab,ac,bc⟩ := realize_minors_of_meeting u v w non meets
     apply from_minor_table L t a b c
     · rw [bc,hw];exact (j (e 2)).property
     · rw [ac,hv];exact (j (e 1)).property
@@ -161,7 +160,18 @@ theorem three_iff [Fintype K] {H : Type*} [AddCommGroup H] [Module F H] (L : K �
     · rw [ab,hu];exact nonzero _ (by decide +kernel)
     · rw [bc,ac,hw,hv];exact fun eq => (by decide +kernel : e 2≠e 1) (ji eq)
 
+/-- For fields of binary dimension at least ten, and for smaller fields
+meeting the seventh-power coprimality condition, discarding three binary
+coordinates always produces an affine three-space. -/
+theorem three_iff [Fintype K] {H : Type*} [AddCommGroup H] [Module F H] (L : K →ₗ[F] H)
+    (large : 10 ≤ Module.finrank F K ∨ 4 ≤ Module.finrank F K ∧ (Nat.card Kˣ).Coprime 7) :
+    (∃ (p : Space K × H) (W : Submodule F (Space K × H)),Module.finrank F W=3 ∧
+      p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L)) ↔
+    3≤Module.finrank F L.ker :=
+  three_iff_of_meeting L (Green51BCHOptimality.meets_of_large large)
+
 end Green51BCHCompression
 
 #print axioms Green51BCHCompression.produces_flat
+#print axioms Green51BCHCompression.three_iff_of_meeting
 #print axioms Green51BCHCompression.three_iff
