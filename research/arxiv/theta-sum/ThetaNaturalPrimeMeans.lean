@@ -12,12 +12,11 @@ exclusive endpoint used by `WeakPNT_AP` in `PrimeNumberTheoremAnd.Wiener`. -/
 noncomputable def selectedPsi (P : ℕ → Prop) (N : ℕ) : ℝ := by
   classical exact ∑ n ∈ range N, if P n then vonMangoldt n else 0
 
-/-- The signed difference between the weighted sum and its prime-count
-approximation is trapped between two errors independent of the selection. -/
-theorem selected_count_bounds (P : ℕ → Prop) (N : ℕ) :
-    let E := ((primeSet P N).card : ℝ) * Real.log N - selectedPsi P (N+1);
-    -(Chebyshev.psi N - Chebyshev.theta N) ≤ E ∧
-      E ≤ (N.primeCounting : ℝ) * Real.log N - Chebyshev.theta N := by
+/-- The von Mangoldt weight on higher prime powers bounds the discrepancy from
+the prime logarithmic weight, independently of the selected set. -/
+theorem selected_prime_weight_bounds (P : ℕ → Prop) (N : ℕ) :
+    let T := ∑ p ∈ primeSet P N, Real.log p
+    T ≤ selectedPsi P (N+1) ∧ selectedPsi P (N+1)-T ≤ Chebyshev.psi N-Chebyshev.theta N := by
   classical
   let T := ∑ p ∈ primeSet P N, Real.log p
   have hsplit : selectedPsi P (N+1) - T =
@@ -39,6 +38,18 @@ theorem selected_count_bounds (P : ℕ → Prop) (N : ℕ) :
     apply sub_nonneg.mp
     rw [hsplit]
     exact sum_nonneg fun n _ => by split_ifs <;> simp [vonMangoldt_nonneg]
+  exact ⟨hT,hpower⟩
+
+#print axioms selected_prime_weight_bounds
+
+/-- The signed difference between the weighted sum and its prime-count
+approximation is trapped between two errors independent of the selection. -/
+theorem selected_count_bounds (P : ℕ → Prop) (N : ℕ) :
+    let E := ((primeSet P N).card : ℝ) * Real.log N - selectedPsi P (N+1);
+    -(Chebyshev.psi N - Chebyshev.theta N) ≤ E ∧
+      E ≤ (N.primeCounting : ℝ) * Real.log N - Chebyshev.theta N := by
+  classical
+  obtain ⟨hT,hpower⟩ := selected_prime_weight_bounds P N
   have hlog (p : ℕ) (hp : p ∈ Nat.primesLE N) :
       0 ≤ Real.log N - Real.log p :=
     sub_nonneg.mpr (Real.log_le_log (by exact_mod_cast (Nat.prime_of_mem_primesLE hp).pos)
@@ -51,7 +62,6 @@ theorem selected_count_bounds (P : ℕ → Prop) (N : ℕ) :
   simp only [sum_sub_distrib, sum_const, nsmul_eq_mul, Nat.primesLE_card_eq_primeCounting,
     ← Chebyshev.theta_eq_sum_primesLE_log] at hinc hpos
   change _ ≤ (primeSet P N).card * Real.log N - selectedPsi P (N+1) ∧ _
-  dsimp only [T] at hT hpower
   constructor <;> linarith
 
 #print axioms selected_count_bounds
