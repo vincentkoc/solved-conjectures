@@ -313,6 +313,17 @@ theorem quartic_norm_forty_four_iff (x y : ℕ) :
         first | decide | exact absurd hn (by decide)
   · rintro (⟨rfl,rfl⟩|⟨rfl,rfl⟩|⟨rfl,rfl⟩|⟨rfl,rfl⟩) <;> decide
 
+/-- At each dyadic scale one prime congruent to three modulo four reverses the sign
+of every Fibonacci recurrence when the index advances by four times that power of two. -/
+theorem dyadic_sign_prime (r : ℕ) :
+    ∃ p : ℕ, p.Prime ∧ p % 4 = 3 ∧ ∀ s : ℕ → ℤ,
+      (∀ n, s (n+2) = s n + s (n+1)) → ∀ a m,
+      (s (a+(4*2^r)*m) : ZMod p) = (-1)^m * (s a : ZMod p) := by
+  obtain ⟨p,hp,hd,h4⟩ := prime_three_factor _ (trace_mod_four r)
+  exact ⟨p,hp,h4,fun s hs a m => signed_period s hs r a m p hd⟩
+
+#print axioms dyadic_sign_prime
+
 #print axioms lucasFibonacciSum_isSquare_iff
 #print axioms lowerNeighbor_isSquare_iff
 #print axioms quartic_norm_forty_four_iff
