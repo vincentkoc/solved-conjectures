@@ -9,6 +9,36 @@ namespace Green51BCHCompression
 local notation "F" => ZMod 2
 
 open Finset in
+/-- Transport the projected curve and its double along a binary linear equivalence. -/
+theorem transport_curve {K H : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
+    [AddCommGroup H] [Module F H] {n : ℕ} (L : K →ₗ[F] H)
+    (E : (Space K × H) ≃ₗ[F] Cube n)
+    (avoid : ∀ (p : Space K × H) (W : Submodule F (Space K × H)),
+      p+ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L) → Module.finrank F W≤2) :
+    ∃ A : Finset (Cube n), A.card=Fintype.card K ∧
+      ∀ (W : Submodule F (Cube n)) (p : Cube n),p+ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) → Module.finrank F W≤2 := by
+  classical
+  let v := fun x : K => E (lifted L x)
+  let A := univ.image v
+  have iv : Function.Injective v := fun x y eq => congrArg (fun z : Space K × H => z.1.1) (E.injective eq)
+  refine ⟨A,(Finset.card_image_of_injective _ iv).trans Finset.card_univ,?_⟩
+  intro W p within
+  let V := W.comap E.toLinearMap
+  have eq : V.map E.toLinearMap=W := Submodule.map_comap_eq_self (by rw [E.range];exact le_top)
+  have rank := (V.equivMapOfInjective E.toLinearMap E.injective).finrank_eq
+  rw [eq] at rank
+  rw [←rank]
+  apply avoid (E.symm p)
+  rintro _ ⟨w,hw,rfl⟩
+  have pre : p+E w∈A+A := within ⟨E w,hw,rfl⟩
+  obtain ⟨_,ha,_,hb,sum⟩ := Finset.mem_add.mp pre
+  obtain ⟨a,_,rfl⟩ := Finset.mem_image.mp ha
+  obtain ⟨b,_,rfl⟩ := Finset.mem_image.mp hb
+  refine ⟨_,⟨a,rfl⟩,_,⟨b,rfl⟩,E.injective ?_⟩
+  change E (lifted L a+lifted L b)=E (E.symm p+w)
+  rwa [map_add,map_add,LinearEquiv.apply_symm_apply]
+
+open Finset in
 /-- Two bits of the fourth BCH coordinate may be omitted. -/
 theorem affine_examples (n : ℕ) (hn : 6≤n) :
     ∃ A : Finset (Cube n), A.card=2^((n+2)/4) ∧
@@ -40,38 +70,19 @@ theorem affine_examples (n : ℕ) (hn : 6≤n) :
     dsimp only [extra,m] at ⊢
     dsimp only [m] at rest
     omega)
-  let v := fun x : K => E (lifted L x)
-  let A := univ.image v
-  have iv : Function.Injective v := fun x y eq => congrArg (fun z : Space K × H => z.1.1) (E.injective eq)
-  have card : A.card=2^m := by
-    rw [show A=univ.image v from rfl,card_image_of_injective _ iv,card_univ,←Nat.card_eq_fintype_card]
-    exact GaloisField.card 2 m (by omega)
-  refine ⟨A,card,?_⟩
-  intro W p within
-  let V := W.comap E.toLinearMap
-  have eq : V.map E.toLinearMap=W := Submodule.map_comap_eq_self (by rw [E.range];exact le_top)
-  have rank := (V.equivMapOfInjective E.toLinearMap E.injective).finrank_eq
-  rw [eq] at rank
-  rw [←rank]
-  apply excludes_three L small (E.symm p)
-  rintro _ ⟨w,hw,rfl⟩
-  have pre : p+E w∈A+A := within ⟨E w,hw,rfl⟩
-  obtain ⟨_,ha,_,hb,sum⟩ := Finset.mem_add.mp pre
-  obtain ⟨a,_,rfl⟩ := Finset.mem_image.mp ha
-  obtain ⟨b,_,rfl⟩ := Finset.mem_image.mp hb
-  refine ⟨_,⟨a,rfl⟩,_,⟨b,rfl⟩,E.injective ?_⟩
-  change E (lifted L a+lifted L b)=E (E.symm p+w)
-  rwa [map_add,map_add,LinearEquiv.apply_symm_apply]
+  obtain ⟨A,card,avoid⟩ := transport_curve L E (excludes_three L small)
+  exact ⟨A,card.trans (by rw [←Nat.card_eq_fintype_card];exact GaloisField.card 2 m (by omega)),avoid⟩
 
 open Finset Green51SparseBounds Green51LocalFlats in
-/-- The pinned affine guarantee is two throughout the enlarged density interval. -/
-theorem plateau {n : ℕ} (hn : 6≤n) {α : ℝ}
-    (lo : 2/(2:ℝ)^n<α) (hi : α≤(2:ℝ)^((n+2)/4)/2^n) :
+/-- A finite example excluding three-spaces certifies the affine two-dimensional plateau. -/
+theorem plateau_of_example {n : ℕ} {α : ℝ} (A : Finset (Cube n))
+    (avoid : ∀ (W : Submodule F (Cube n)) (p : Cube n),
+      p+ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) → Module.finrank F W≤2)
+    (lo : 2/(2:ℝ)^n<α) (hi : α≤(A.card:ℝ)/2^n) :
     Green51.guaranteedMaxCosetDim n α=2 := by
   classical
-  obtain ⟨A,sz,avoid⟩ := Green51BCHCompression.affine_examples n hn
   have admitted : α≤(A.dens:ℝ) := by
-    rw [nnratCast_dens,sz]
+    rw [nnratCast_dens]
     simpa [Cube] using hi
   have upper : Green51.guaranteedMaxCosetDim n α ≤ maxCosetDim F (𝔽₂ n) ↑(A+A) :=
     csInf_le (OrderBot.bddBelow _) ⟨A,admitted,rfl⟩
@@ -80,6 +91,19 @@ theorem plateau {n : ℕ} (hn : 6≤n) {α : ℝ}
   obtain ⟨W,p,rank,sub⟩ := (le_iff_coset (by decide : 0<3) _).mp big
   exact (by decide : ¬ 3 ≤ 2) (rank ▸ avoid W p sub)
 
+
+open Finset Green51SparseBounds Green51LocalFlats in
+/-- The pinned affine guarantee is two throughout the enlarged density interval. -/
+theorem plateau {n : ℕ} (hn : 6≤n) {α : ℝ}
+    (lo : 2/(2:ℝ)^n<α) (hi : α≤(2:ℝ)^((n+2)/4)/2^n) :
+    Green51.guaranteedMaxCosetDim n α=2 := by
+  classical
+  obtain ⟨A,sz,avoid⟩ := Green51BCHCompression.affine_examples n hn
+  apply plateau_of_example A avoid lo
+  simpa [sz] using hi
+
 end Green51BCHCompression
+#print axioms Green51BCHCompression.transport_curve
+#print axioms Green51BCHCompression.plateau_of_example
 #print axioms Green51BCHCompression.affine_examples
 #print axioms Green51BCHCompression.plateau
