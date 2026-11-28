@@ -107,13 +107,13 @@ private theorem low_endpoint {N X : ℕ} (hN : 2≤N) (K : ℕ → ℕ) (a : ℕ
         _ ≤ ((N:ℝ)^2)^2*(2*((N^2:ℕ):ℝ)^2*(6*B*(N:ℝ)^2)^2) := by gcongr
         _ = _ := by push_cast; ring))
 
-/-- On prime arguments between N and N^64, the low-row prime second moment
-saves the full prime-density logarithm. -/
-theorem low_prime_band : ∃ C : ℝ, 0≤C ∧ ∀ (N : ℕ), 2≤N →
-    ∀ (K : ℕ → ℕ) (a : ℕ → ℝ) (B : ℝ), 0≤B → (∀ d∈Icc 2 N, |a d|≤B) →
+/-- The prime second moment remains bounded on the prime-counting scale when
+coefficient sizes grow as the sixteenth root of the denominator. -/
+theorem weighted_low_prime_band : ∃ C : ℝ, 0≤C ∧ ∀ (N : ℕ), 2≤N →
+    ∀ (K : ℕ → ℕ) (a : ℕ → ℝ) (B : ℝ), 0≤B → (∀ d∈Icc 2 N, |a d|≤B*denominatorWeight d) →
     ∀ s : Finset ℕ, (∀ p∈s, p.Prime ∧ N<p ∧ p≤N^64) →
       ∑ p∈s,(low N K a p)^2 ≤ C*B^2*(N:ℝ)^64/Real.log N := by
-  obtain ⟨C,hC,hcomplete⟩ := low_complete
+  obtain ⟨C,hC,hcomplete⟩ := weighted_low_complete
   let Z := ∑' i : ℕ, ((i:ℝ)^2)⁻¹
   have hZ : 0≤Z := tsum_nonneg (fun _ => by positivity)
   refine ⟨2*Z*C+72,by positivity,?_⟩
@@ -128,24 +128,63 @@ theorem low_prime_band : ∃ C : ℝ, 0≤C ∧ ∀ (N : ℕ), 2≤N →
     (fun r hr => hdvd r (mem_Icc.mp (mem_filter.mp hr).1).1 (mem_Icc.mp (mem_filter.mp hr).1).2) K a B hB ha
   have hg := normalizer_bound hN
   have hmajor := hmean.trans (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hg (sq_nonneg B)) hC)
-  have h := low_endpoint (X:=N^64+1) hN K a hB ha s
+  have hbound (d : ℕ) (hd : d∈Icc 2 N) : |a d|≤B*N := by
+    apply (ha d hd).trans; apply mul_le_mul_of_nonneg_left _ hB
+    calc
+      denominatorWeight d ≤ (d:ℝ)^((1:ℝ)) :=
+        Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast (show 1≤d by have := (mem_Icc.mp hd).1; omega)) (by norm_num)
+      _ ≤ N := by rw [Real.rpow_one]; exact_mod_cast (mem_Icc.mp hd).2
+  have h := low_endpoint (X:=N^64+1) hN K a (mul_nonneg hB (Nat.cast_nonneg _)) hbound s
     (fun p hp => ⟨(hs p hp).1,(hs p hp).2.1,Nat.lt_succ_of_le (hs p hp).2.2⟩)
   have hp64 : 1≤(N:ℝ)^64 := one_le_pow₀ hN'
   have hX : ((N^64+1:ℕ):ℝ) ≤ 2*(N:ℝ)^64 := by push_cast; linarith
   have hmul := mul_le_mul hX hmajor (show 0 ≤ mean P (fun x => weight N x*low N K a x^2) by
     unfold mean; apply div_nonneg (sum_nonneg (fun _ _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))) (Nat.cast_nonneg _))
     (by positivity)
-  have htail : (N:ℝ)^12*Real.log N ≤ (N:ℝ)^64 := calc
-    _ ≤ (N:ℝ)^12*N := mul_le_mul_of_nonneg_left (Real.log_le_self (Nat.cast_nonneg N)) (by positivity)
-    _ = (N:ℝ)^13 := by ring
+  have htail : (N:ℝ)^14*Real.log N ≤ (N:ℝ)^64 := calc
+    _ ≤ (N:ℝ)^14*N := mul_le_mul_of_nonneg_left (Real.log_le_self (Nat.cast_nonneg N)) (by positivity)
+    _ = (N:ℝ)^15 := by ring
     _ ≤ _ := pow_le_pow_right₀ hN' (by decide)
   apply h.trans ((add_le_add hmul le_rfl).trans ?_)
-  change 2*(N:ℝ)^64*(Z/Real.log N*B^2*C)+72*B^2*(N:ℝ)^12 ≤ _
+  change 2*(N:ℝ)^64*(Z/Real.log N*B^2*C)+72*(B*N)^2*(N:ℝ)^12 ≤ _
   rw [le_div_iff₀ hl]
   have hh := mul_le_mul_of_nonneg_left htail (show 0≤72*B^2 by positivity)
   calc
-    _ = 2*Z*C*B^2*(N:ℝ)^64+72*B^2*((N:ℝ)^12*Real.log N) := by field_simp
+    _ = 2*Z*C*B^2*(N:ℝ)^64+72*B^2*((N:ℝ)^14*Real.log N) := by field_simp
     _ ≤ _ := by linarith only [hh]
 
+/-- On prime arguments between N and N^64, the low-row prime second moment
+saves the full prime-density logarithm. -/
+theorem low_prime_band : ∃ C : ℝ, 0≤C ∧ ∀ (N : ℕ), 2≤N →
+    ∀ (K : ℕ → ℕ) (a : ℕ → ℝ) (B : ℝ), 0≤B → (∀ d∈Icc 2 N, |a d|≤B) →
+    ∀ s : Finset ℕ, (∀ p∈s, p.Prime ∧ N<p ∧ p≤N^64) →
+      ∑ p∈s,(low N K a p)^2 ≤ C*B^2*(N:ℝ)^64/Real.log N := by
+  obtain ⟨C,hC,H⟩ := weighted_low_prime_band
+  refine ⟨C,hC,?_⟩; intro N hN K a B hB ha s hs
+  apply H N hN K a B hB _ s hs; intro d hd
+  apply (ha d hd).trans
+  apply le_mul_of_one_le_right hB (Real.one_le_rpow _ (by norm_num))
+  exact_mod_cast (show 1≤d by have := (mem_Icc.mp hd).1; omega)
+
+/-- Discarding denominators through T saves T^(-1/8) in the squared moment
+over primes from N to N^64, with no loss from the endpoint. -/
+theorem tail_prime_band : ∃ C : ℝ, 0≤C ∧ ∀ (N T : ℕ), 2≤N → 0<T →
+    ∀ (K : ℕ → ℕ) (a : ℕ → ℝ) (B : ℝ), 0≤B → (∀ d∈Icc 2 N, |a d|≤B) →
+    ∀ s : Finset ℕ, (∀ p∈s, p.Prime ∧ N<p ∧ p≤N^64) →
+      ∑ p∈s,(low N K (fun d => if T<d then a d else 0) p)^2 ≤
+        C*(B/denominatorWeight T)^2*(N:ℝ)^64/Real.log N := by
+  obtain ⟨C,hC,H⟩ := weighted_low_prime_band
+  refine ⟨C,hC,?_⟩; intro N T hN hT K a B hB ha s hs
+  have hpos : 0<denominatorWeight T := Real.rpow_pos_of_pos (Nat.cast_pos.mpr hT) _
+  apply H N hN K _ _ (div_nonneg hB hpos.le) _ s hs
+  intro d hd; split_ifs with hh
+  · apply (ha d hd).trans
+    rw [div_mul_eq_mul_div,le_div_iff₀ hpos]
+    apply mul_le_mul_of_nonneg_left _ hB
+    exact Real.rpow_le_rpow (Nat.cast_nonneg _) (by exact_mod_cast hh.le) (by norm_num)
+  · rw [abs_zero]; unfold denominatorWeight; positivity
+
 end Arxiv.«2501.03234».ThetaSievedWindows
+#print axioms Arxiv.«2501.03234».ThetaSievedWindows.weighted_low_prime_band
+#print axioms Arxiv.«2501.03234».ThetaSievedWindows.tail_prime_band
 #print axioms Arxiv.«2501.03234».ThetaSievedWindows.low_prime_band

@@ -8,7 +8,8 @@ namespace Arxiv.«2501.03234».ThetaPrimeMeanSquare
 open Finset ThetaReciprocalInversion ThetaPrimeAsymptotic ThetaPrimeDensity
 open ThetaDivisibleDiagonal ThetaNondivisibleCone
 
-private def coneWidth (N : ℕ) : ℕ := 2*((N-1)/2)+1
+/-- Largest odd cone width at most a positive prime scale. -/
+def coneWidth (N : ℕ) : ℕ := 2*((N-1)/2)+1
 
 private lemma scale_control : ∃ C : ℝ, 0<C ∧ ∀ {N p : ℕ}, 2≤N → p.Prime → N^56≤p → p≤N^64 →
     |(S p:ℝ)/p-Real.log p/2| ≤ C+(8/Real.pi^2)*
