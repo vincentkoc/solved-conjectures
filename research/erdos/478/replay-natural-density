@@ -34,6 +34,7 @@ ADAPTERS = {
     "gap-bands": "Erdos478NaturalPowerBands",
     "dyadic-collisions": "Erdos478NaturalDyadicCollisions",
     "proportional-collisions": "Erdos478NaturalProportionalCollisions",
+    "frobenius-bands": "Erdos478NaturalFrobeniusBands",
 }
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 

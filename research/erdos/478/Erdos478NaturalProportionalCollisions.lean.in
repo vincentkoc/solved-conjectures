@@ -89,27 +89,8 @@ private theorem enough_fraction {K H X : ℕ} {c b : ℝ} (hK : 1<K) :
     fraction X (good K H c (c-b))≤fraction X (fun p =>
       let D := ⌈b*K/Real.log K⌉₊
       D≤(joined (gaps K H) p).card ∧
-      ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
-  have pos : 0<(K:ℝ) := by positivity
-  have lg : 0<Real.log K := Real.log_pos (by exact_mod_cast hK)
-  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
-  apply Nat.cast_le.mpr
-  apply card_le_card
-  intro p hp
-  obtain ⟨hm,hg⟩ := mem_filter.mp hp
-  obtain ⟨hc,hd⟩ := hg
-  let U := joined (gaps K H) p
-  have hlow := (abs_lt.mp hc).1
-  have hbound : b< (U.card:ℝ)*scale K := by linarith only [hlow]
-  have enough : ⌈b*K/Real.log K⌉₊≤U.card := by
-    apply Nat.ceil_le.mpr
-    apply (div_le_iff₀ lg).mpr
-    change b<(U.card:ℝ)*(Real.log K/K) at hbound
-    rw [← mul_div_assoc] at hbound
-    exact ((lt_div_iff₀ pos).mp hbound).le
-  simp only [mem_filter]
-  exact ⟨hm,enough,(Nat.add_le_add_left enough _).trans hd⟩
-
+      ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) :=
+  family_deficit_fraction (gaps K H) hK
 
 /-- Every coefficient strictly below the band density yields both that
 many distinct colliding upper endpoints and the same factorial-image deficit. -/

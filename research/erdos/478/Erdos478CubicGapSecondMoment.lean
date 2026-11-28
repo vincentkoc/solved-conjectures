@@ -12,7 +12,10 @@ open PrimeDifferences CollisionLaw GapVariance
 open scoped Polynomial
 noncomputable section
 
-theorem square_mean (A : PrimeAverage) (l : Nat.Primes) (sel : selected l.val) :
+theorem square_mean_of_pair_conjugacy (A : PrimeAverage) (l : Nat.Primes)
+    (transitive : ∀ {a b c d : (rationalGap l.val).rootSet (rationalGap l.val).SplittingField},
+      a≠b → c≠d → ∃ σ : (rationalGap l.val).SplittingField ≃ₐ[ℚ] (rationalGap l.val).SplittingField,
+        σ (a:_)=(c:_) ∧ σ (b:_)=(d:_)) :
     Tendsto (fun X => A.avg X (observation l*observation l)) atTop (𝓝 2) := by
   classical
   let f := gap l.val
@@ -39,7 +42,7 @@ theorem square_mean (A : PrimeAverage) (l : Nat.Primes) (sel : selected l.val) :
     apply (entry _).mp
     rw [mon.mem_rootSet,aeval_algHom_apply, (mon.mem_rootSet.mp (r i).property : aeval (v i) F=0),map_zero]
   have conj (i j a b : Fin l.val) (hij : i≠j) (hab : a≠b) :=
-    root_pair_conjugate (a:=r i) (b:=r j) (c:=r a) (d:=r b) l.property sel (ri.ne hij) (ri.ne hab)
+    transitive (a:=r i) (b:=r j) (c:=r a) (d:=r b) (ri.ne hij) (ri.ne hab)
   obtain ⟨M,hmon,hpos,hsep,hfac⟩ := pair_word_two f l.property.two_le v hv closed conj
   let W := pairWord f l.val M
   have hw : Tendsto (fun X => A.avg X (RootMoments.roots W)) atTop (𝓝 2) := by
@@ -56,6 +59,11 @@ theorem square_mean (A : PrimeAverage) (l : Nat.Primes) (sel : selected l.val) :
     M p (fun _ => hs) hW
   simpa only [Fin.prod_univ_two,Pi.mul_apply,observation,W,pairWord,f] using eq.symm
 
+theorem square_mean (A : PrimeAverage) (l : Nat.Primes) (sel : selected l.val) :
+    Tendsto (fun X => A.avg X (observation l*observation l)) atTop (𝓝 2) :=
+  square_mean_of_pair_conjugacy A l (root_pair_conjugate l.property sel)
+
+#print axioms square_mean_of_pair_conjugacy
 #print axioms square_mean
 end
 end Erdos478.BinaryGap

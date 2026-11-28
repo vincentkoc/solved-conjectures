@@ -21,18 +21,21 @@ private theorem distinct_mean (A : PrimeAverage) {i j : Nat.Primes} (h : i≠j) 
 private def covariance (i j : Nat.Primes) : ℕ → ℝ :=
   observation i*observation j-observation i-observation j+1
 
-private theorem covariance_mean (A : PrimeAverage) (i j : Nat.Primes) (hi : selected i.val) :
+def secondMomentTwo (A : PrimeAverage) (i : Nat.Primes) :=
+  Tendsto (fun X => A.avg X (observation i*observation i)) atTop (𝓝 2)
+
+private theorem covariance_mean (A : PrimeAverage) (i j : Nat.Primes) (hi : secondMomentTwo A i) :
     Tendsto (fun X => A.avg X (covariance i j)) atTop (𝓝 (if i=j then 1 else 0)) := by
   simp only [covariance,map_add,map_sub]
   by_cases he : i=j
   · subst j
-    have h := (((square_mean A i hi).sub (first A i)).sub (first A i)).add (constant_mean A)
+    have h := ((hi.sub (first A i)).sub (first A i)).add (constant_mean A)
     norm_num at h ⊢
     exact h
   · simpa [he] using (((distinct_mean A he).sub (first A i)).sub (first A j)).add (constant_mean A)
 
-theorem endpoint_variance (A : PrimeAverage) (s : Finset Nat.Primes)
-    (hs : ∀ i∈s, selected i.val) :
+theorem endpoint_variance_of_moments (A : PrimeAverage) (s : Finset Nat.Primes)
+    (hs : ∀ i∈s, secondMomentTwo A i) :
     Tendsto (fun X => A.avg X (fun p => ((joined s p).card-(s.card:ℝ))^2)) atTop (𝓝 (s.card:ℝ)) := by
   classical
   let C : ℕ → ℝ := ∑ i ∈ s, ∑ j ∈ s, covariance i j
@@ -48,10 +51,15 @@ theorem endpoint_variance (A : PrimeAverage) (s : Finset Nat.Primes)
   simp only [C,Finset.sum_apply,covariance,Pi.add_apply,Pi.sub_apply,Pi.mul_apply,Pi.one_apply]
   exact sum_congr rfl fun i _ => sum_congr rfl fun j _ => by ring
 
+theorem endpoint_variance (A : PrimeAverage) (s : Finset Nat.Primes)
+    (hs : ∀ i∈s, selected i.val) :
+    Tendsto (fun X => A.avg X (fun p => ((joined s p).card-(s.card:ℝ))^2)) atTop (𝓝 (s.card:ℝ)) :=
+  endpoint_variance_of_moments A s (fun i hi => square_mean A i (hs i hi))
+
 /-- Two-sided Chebyshev bound on the natural proportion of observation
 primes for a fixed selected family. -/
-theorem finite_concentration (pit : DegreeOnePrimeIdealTheorem) (s : Finset Nat.Primes)
-    (hs : ∀ i∈s, selected i.val) {t ε : ℝ} (ht : 0<t) (hε : 0<ε) :
+theorem finite_concentration_of_moments (pit : DegreeOnePrimeIdealTheorem) (s : Finset Nat.Primes)
+    (hs : ∀ i∈s, secondMomentTwo (countingAverage pit) i) {t ε : ℝ} (ht : 0<t) (hε : 0<ε) :
     ∀ᶠ X : ℕ in atTop, fraction X (fun p => t≤|((joined s p).card:ℝ)-s.card|) <
       (s.card:ℝ)/t^2+ε := by
   classical
@@ -66,7 +74,7 @@ theorem finite_concentration (pit : DegreeOnePrimeIdealTheorem) (s : Finset Nat.
     push_cast
     rfl
   have tt : 0<t^2 := sq_pos_of_pos ht
-  have H := (endpoint_variance A s hs).eventually_lt_const
+  have H := (endpoint_variance_of_moments A s hs).eventually_lt_const
     (show (s.card:ℝ)<s.card+ε*t^2 by linarith only [mul_pos hε tt])
   filter_upwards [H] with X hX
   have b := A.mono X (a:=t^2 • ind) (b:=fun p => ((joined s p).card-(s.card:ℝ))^2) (fun p _ => by
@@ -79,6 +87,15 @@ theorem finite_concentration (pit : DegreeOnePrimeIdealTheorem) (s : Finset Nat.
   have hb : fraction X P<(s.card+ε*t^2)/t^2 := (lt_div_iff₀ tt).mpr (by linarith only [b,hX])
   simpa [add_div,tt.ne'] using hb
 
+theorem finite_concentration (pit : DegreeOnePrimeIdealTheorem) (s : Finset Nat.Primes)
+    (hs : ∀ i∈s, selected i.val) {t ε : ℝ} (ht : 0<t) (hε : 0<ε) :
+    ∀ᶠ X : ℕ in atTop, fraction X (fun p => t≤|((joined s p).card:ℝ)-s.card|) <
+      (s.card:ℝ)/t^2+ε :=
+  finite_concentration_of_moments pit s (fun i hi => square_mean _ i (hs i hi)) ht hε
+
+#print axioms secondMomentTwo
+#print axioms endpoint_variance_of_moments
+#print axioms finite_concentration_of_moments
 #print axioms endpoint_variance
 #print axioms finite_concentration
 end
