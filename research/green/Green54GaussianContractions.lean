@@ -189,11 +189,13 @@ private theorem triangular_preserving (μ : Measure V) (ν : Measure W)
     rw [hfun]
     exact whole
 
-private def normalizedSum (n : ℕ) (x : Fin n → E) : E :=
+/-- The Euclidean sum of the increments divided by the square root of the step count. -/
+def normalizedSum (n : ℕ) (x : Fin n → E) : E :=
   (Real.sqrt n)⁻¹ • ∑ i, x i
 
 omit [DecidableEq ι] in
-private theorem normalizedSum_preserving {n : ℕ} (hn : 0 < n) :
+/-- Normalizing the sum of independent standard Gaussian increments restores its standard law. -/
+theorem normalizedSum_preserving {n : ℕ} (hn : 0 < n) :
     MeasurePreserving (normalizedSum (ι := ι) n)
       (Measure.pi fun _ => stdGaussian E) (stdGaussian E) := by
   refine ⟨by unfold normalizedSum; fun_prop, Measure.ext_of_charFun (funext fun t => ?_)⟩
@@ -346,6 +348,7 @@ theorem closure_adaptedLaws_subset :
   obtain ⟨ρ, h₁, h₂, hout⟩ := adapted_gaussian_midpoint hn A hm hA
   exact ⟨ρ, h₁, h₂, hout.trans he⟩
 
+#print axioms normalizedSum_preserving
 #print axioms adapted_gaussian_midpoint
 #print axioms isCompact_midpointLaws
 #print axioms closure_adaptedLaws_subset
