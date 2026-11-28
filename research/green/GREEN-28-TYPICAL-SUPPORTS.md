@@ -1,0 +1,21 @@
+# Green 28 on typical interval supports
+
+For all sufficiently large $n$, among the $2^n$ subsets of any $n$ consecutive integers at most $c^n$ can support an independent sum of two nonconstant integer laws, for an absolute $0<c<2$. The probability of an exception under a uniformly chosen subset is at most $(c/2)^n$. On every remaining support one marginal is a point mass, regardless of the positive weights of the output. If the output is uniform, both original marginal laws are uniform. Green 28 for an arbitrary exceptional support remains open. [`typical_green_28`](Green28TypicalSupports.lean) · [Pinned source](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/28.lean)
+
+Bienvenu and Geroldinger proved exponential rarity of genuine sumsets in an integer interval in Theorem 6.2, improving an earlier estimate by Shitov. Their three cases are the starting point for the finite-group proof here. The group count includes distinct summands, overlapping summands and sums that wrap around a cyclic group. For every finite abelian group of order $n$, the formal bound for the number of distinct $B+C$ with $|B|,|C|\ge2$ is
+\[
+25n^{16}(2-2^{-23})^n.
+\]
+The constants are explicit and deliberately loose. [Bienvenu and Geroldinger, Theorem 6.2 and Remark 6.3](https://imsc.uni-graz.at/geroldinger/121-power-monoids.pdf) · [`card_nontrivialSumsets_le` and `exponentially_few_sumsets`](Green28TypicalSupports.lean)
+
+## Counting the exceptional supports
+
+Order the summands by $|B|\ge |C|$. When both sizes are at most $n/32$, a binomial generating function bounds the number of ordered pairs. For $2\le |C|\le 15$, each occupied point of $B+C$ has another occupied point at an offset in a fixed set of at most 16 offsets including zero. A maximal disjoint family of these translated blocks has at least $n/256$ members. Each block excludes its central singleton pattern. [Forbidden-pattern and packing arguments](Green28TypicalSupports.lean) · [Mathlib's Ruzsa covering lemma](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Combinatorics/Additive/RuzsaCovering.html)
+
+In the remaining case $|B|\ge n/32$ and $|C|\ge16$. Choose any 16-point $D\subseteq C$. A maximal packing by $B$-centered translates of $D$ supplies $k=\lfloor n/8192\rfloor$ disjoint copies fully inside $B+C$. For each fixed $D$, their centers and the free sites leave at most $\binom{n}{k}2^{n-16k}$ possibilities. Summing over all $D$ and bounding the weighted binomial coefficient gives the explicit count. [Large-summand count](Green28TypicalSupports.lean)
+
+## Transfer to the original laws
+
+The exceptional family consists of nontrivial sumsets in $\mathbb Z/n\mathbb Z$. Its elements index integer subsets via the canonical representatives $0,\ldots,n-1$ and an arbitrary common shift. Reduction modulo $n$ is injective on the interval. Fixing a supported value of one marginal transfers that injectivity to the other marginal's support. Two nonconstant marginals would therefore project to two subsets of size at least two whose sum is the exceptional index. The proof uses the pinned `Green28.indepSum` and `Green28.IsUniformOnSupport` directly. It places no prior finiteness assumption on the marginal laws. [`pure_of_typical_support`](Green28TypicalSupports.lean) · [Uniformity when a summand is a point mass](Green28PrimitiveSupport.lean)
+
+The DeepMind issue and statement PR, Left to Solve, and the two located OMA reductions were checked for a matching formal result. The unrestricted declaration stays open. Lean 4.33.1 rebuilt the pinned source and the five notebook modules in the closure. Every module passed a separate kernel replay. The 26 axiom reports list exactly `propext`, `Classical.choice` and `Quot.sound`. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/1563) · [Statement PR](https://github.com/google-deepmind/formal-conjectures/pull/2380) · [Left to Solve](https://lefttosolve.com/api/problems/Green28.green_28) · [OMA first reduction](https://github.com/lefttosolve2/open-math-agents/pull/9606) · [OMA polynomial formulation](https://github.com/lefttosolve2/open-math-agents/pull/21793)
