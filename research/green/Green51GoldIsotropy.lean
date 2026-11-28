@@ -76,31 +76,10 @@ private theorem flat_from_isotropic (l Q : K →ₗ[F] F) (c t : K) (nt : t≠0)
     (iso : ∀ x∈A,∀ y∈A,Q ((c*t^7)*bracket x y)=0) :
     ∃ (p : Space K × F) (W : Submodule F (Space K × F)), Module.finrank F W=Module.finrank F A ∧
       p+ᵥ (W:Set _) ⊆ Set.range (lifted l)+Set.range (lifted l) := by
-  let AS := artinSchreier (K:=K)
-  let U := A.comap AS
-  have ker : AS.ker≤U := by intro x hx;change AS x∈A;rw [show AS x=0 from hx];exact A.zero_mem
-  have dim := Green51QuadraticFlats.map_rank AS U ker
-  change Module.finrank F ((A.comap AS).map AS)+Module.finrank F (artinSchreier (K:=K)).ker=Module.finrank F U at dim
-  rw [Submodule.map_comap_eq_self inTrace,artinSchreier_ker,finrank_span_singleton one_ne_zero] at dim
-  let f := LinearMap.mulLeft F t
-  let V := U.map f
-  have inj : Function.Injective f := fun _ _ h => mul_left_cancel₀ nt h
-  have rank := (U.equivMapOfInjective f inj).finrank_eq
-  have one : (1:K)∈U := ker (by change (1:K)^2+1=0; rw [one_pow,CharTwo.add_self_eq_zero])
-  have ht : t∈V := ⟨1,one,mul_one t⟩
-  have kill (x : K) (hx : x∈V) (y : K) (hy : y∈V) : l (moore t x y)=0 := by
-    obtain ⟨a,ha,rfl⟩ := hx
-    obtain ⟨b,hb,rfl⟩ := hy
-    have eq : moore t (f a) (f b)=t^7*bracket (AS a) (AS b) := by
-      rw [moore_bracket]
-      change _=t^7*bracket (a^2+a) (b^2+b)
-      simp only [f,LinearMap.mulLeft_apply,bracket]
-      ring
-    rw [eq,rep,←mul_assoc]
-    exact iso (AS a) ha (AS b) hb
-  obtain ⟨p,W,d,inside⟩ := produces_flat l V t ht nt kill
-  change Module.finrank F U=Module.finrank F V at rank
-  exact ⟨p,W,by omega,inside⟩
+  apply Green51BracketRank.flat_of_trace_space l t nt A inTrace
+  intro x hx y hy
+  rw [rep,←mul_assoc]
+  exact iso x hx y hy
 
 /-- Seventh powers meeting every three binary linear tests align a polar radical with the trace hyperplane. -/
 theorem maximal_of_meeting (l : K →ₗ[F] F) (nl : l≠0) (meets : MeetsSeventhPowers K) :

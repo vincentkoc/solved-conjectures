@@ -28,7 +28,8 @@ private theorem exists_noncube {k:ℕ} (dim : Module.finrank F K=2*k) :
   simp [eq] at hw
 
 omit [Fintype K] in
-private theorem pair_surjective (Q : K →ₗ[F] F) (nq : Q≠0) {c:K} (nc:c≠0) (n1:c≠1) :
+/-- Distinct nonzero trace coefficients give a surjective pair of binary coordinates. -/
+theorem pair_surjective (Q : K →ₗ[F] F) (nq : Q≠0) {c:K} (nc:c≠0) (n1:c≠1) :
     Function.Surjective (Q.prod (Q.comp (LinearMap.mulLeft F c))) := by
   let L := Q.prod (Q.comp (LinearMap.mulLeft F c))
   change Function.Surjective L
@@ -114,6 +115,7 @@ theorem guaranteed {k:ℕ} (hk : 2≤k) {α:ℝ} (density : α≤(2:ℝ)^(2*k)/2
   exact (Nat.not_succ_le_self k) (rank.symm.trans_le (bound W p sub))
 
 end Green51TwoGold
+#print axioms Green51TwoGold.pair_surjective
 #print axioms Green51TwoGold.two_tests_bound
 #print axioms Green51TwoGold.optimal
 #print axioms Green51TwoGold.guaranteed

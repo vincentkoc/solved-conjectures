@@ -51,6 +51,38 @@ theorem trace_space_of_flat {H : Type*} [AddCommGroup H] [Module F H]
     rw [eq]
     exact kill b hb c hc
 
+/-- Lift an isotropic subspace of the Artin–Schreier image to an affine flat of the same dimension. -/
+theorem flat_of_trace_space {H : Type*} [AddCommGroup H] [Module F H] (l : K →ₗ[F] H)
+    (t : K) (nt : t≠0) (A : Submodule F K) (inTrace : A≤(artinSchreier (K := K)).range)
+    (iso : ∀ x∈A, ∀ y∈A,l (t^7*bracket x y)=0) :
+    ∃ (p : Space K × H) (W : Submodule F (Space K × H)), Module.finrank F W=Module.finrank F A ∧
+      p+ᵥ (W : Set _) ⊆ Set.range (lifted l)+Set.range (lifted l) := by
+  let AS := artinSchreier (K := K)
+  let U := A.comap AS
+  have ker : AS.ker≤U := by intro x hx; change AS x∈A; rw [show AS x=0 from hx]; exact A.zero_mem
+  have dim := Green51QuadraticFlats.map_rank AS U ker
+  change Module.finrank F ((A.comap AS).map AS)+Module.finrank F (artinSchreier (K := K)).ker=Module.finrank F U at dim
+  rw [Submodule.map_comap_eq_self inTrace,artinSchreier_ker,finrank_span_singleton one_ne_zero] at dim
+  let f := LinearMap.mulLeft F t
+  let V := U.map f
+  have inj : Function.Injective f := fun _ _ h => mul_left_cancel₀ nt h
+  have rank := (U.equivMapOfInjective f inj).finrank_eq
+  have one : (1 : K)∈U := ker (by change (1 : K)^2+1=0; rw [one_pow,CharTwo.add_self_eq_zero])
+  have ht : t∈V := ⟨1,one,mul_one t⟩
+  have kill (x : K) (hx : x∈V) (y : K) (hy : y∈V) : l (moore t x y)=0 := by
+    obtain ⟨a,ha,rfl⟩ := hx
+    obtain ⟨b,hb,rfl⟩ := hy
+    have eq : moore t (f a) (f b)=t^7*bracket (AS a) (AS b) := by
+      rw [moore_bracket]
+      change _=t^7*bracket (a^2+a) (b^2+b)
+      simp only [f,LinearMap.mulLeft_apply,bracket]
+      ring
+    rw [eq]
+    exact iso (AS a) ha (AS b) hb
+  obtain ⟨p,W,d,inside⟩ := produces_flat l V t ht nt kill
+  change Module.finrank F U=Module.finrank F V at rank
+  exact ⟨p,W,by omega,inside⟩
+
 /-- A flat of dimension at least three in a projected BCH double requires
 at least that many discarded seventh-coordinate dimensions. -/
 theorem dim_le_kernel {H : Type*} [AddCommGroup H] [Module F H]
@@ -68,4 +100,5 @@ theorem dim_le_kernel {H : Type*} [AddCommGroup H] [Module F H]
 
 end Green51BracketRank
 #print axioms Green51BracketRank.trace_space_of_flat
+#print axioms Green51BracketRank.flat_of_trace_space
 #print axioms Green51BracketRank.dim_le_kernel
