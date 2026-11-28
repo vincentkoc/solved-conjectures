@@ -1,0 +1,35 @@
+# Steiner quadruple systems with prescribed elementary abelian point groups
+
+Fix $d\ge6$, put $n=2^d$, and write $b=\binom n3/4$. For each integer $0\le j\le 2(d+1)$ there is a fixed pattern of marked incidences for which the offset construction gives exactly
+$$
+4^{b-n}2^j
+$$
+unrestricted isomorphism classes of Steiner quadruple systems on $4n$ points. Every member has binary incidence rank $4n-d-1$ and full point automorphism group elementary abelian of order $2^j$. A point permutation may relabel the entire ground set when comparing these designs. The count concerns all offsets of the chosen pattern. [Spectrum theorem](Erdos722MarkedGroupSpectrum.lean) · [class count](Erdos722MarkedClassCounts.lean) · [point group](Erdos722MarkedPointGroup.lean)
+
+Taking a three-cycle at every mark gives $4^{b-n}$ pairwise nonisomorphic point-asymmetric systems. In dimension six the ground set has 256 points, the rank is 249 and the count is $4^{10352}$. At those same parameters every elementary abelian group order from $1$ to $2^{14}$ in powers of two occurs. [Asymmetric family and 256-point count](Erdos722MarkedGroupSpectrum.lean)
+
+## Construction
+
+Use the affine quadruples on $\mathbf F_2^d$ as the base. Replace each base point by a copy of $F=\mathbf F_2^2$. Keep the notebook's rigid path matching for blocks contained in one or two fibres. Mark the origin and the $d$ coordinate unit vectors. For each mark $q$, choose a base quadruple $B_q$ meeting the marked set only at $q$. With first point $q$ and second point outside the marked set $A$, at most $2|A|+1$ third points are forbidden, since fourth-point completion is an involution. The resulting $B_q$ are distinct. [Private quadruples](Erdos722PrivateMarkedBlocks.lean) · [cube coefficients](Erdos722CubeMarkedCoefficients.lean) · [rigid path matching](Erdos722RigidCubeWord.lean)
+
+For each $B$ prescribe an offset $u_B\in F$. A transversal with coordinates $x_i$ lies over $B$ when $\sum_{i\in B} C_{B,i}x_i=u_B$. The coefficient is the identity except at $(B_q,q)$, where it is a chosen $c_q\in\mathrm{GL}(2,2)$. Conjugating the fourth-point operation in the coordinates of each projected quadruple preserves symmetry and cancellation. It also preserves the repeated-fibre matching equations. The binary-rank theorem for arbitrary compatible transversal fillings therefore applies to every choice of offsets. [Blockwise coordinates](Erdos722BlockwiseFibreCoordinates.lean) · [marked incidence map](Erdos722MarkedIncidence.lean) · [rank theorem](Erdos722FourFibreLabelled.lean)
+
+## Recovering point isomorphisms
+
+Binary parity checks distinguish the fibres. A point isomorphism descends to a base permutation and acts by an affine permutation on each four-point fibre. At most $4(d+1)$ base points belong to marked quadruples. Since $8(d+1)<2^d$, some base point lies outside the source marks and maps outside the target marks. Transversals through this point have ordinary coordinate addition on both sides. Moving one input vector between two positions in a transversal forces the same linear part in every fibre. Repeated-fibre completions then recover the matching frame. Rigidity of the path matching forces the base permutation and this common linear part to be identities. [Common linear part](Erdos722CleanAnchorFrame.lean) · [unrestricted isomorphisms](Erdos722SparseMarkedIsomorphisms.lean)
+
+Thus two offsets $u,v$ are isomorphic exactly when $v=u+Gt$ for a fibre translation $t$, where $(Gt)_B=\sum_{i\in B}C_{B,i}t_i$. The point group is isomorphic to $\ker G$. For a point $o$ outside all marked quadruples the kernel equations imply $t(i+j+o)=t(i)+t(j)+t(o)$ for all $i,j$. This makes $t$ affine on the entire cube. On $B_q$ the remaining equation is precisely $c_qt(q)=t(q)$. Conversely these conditions suffice. An affine function has independent values on the $d+1$ basis marks, so $\ker G$ has dimension $\sum_q\dim\mathrm{Fix}(c_q)$. A three-cycle, a transposition and the identity give dimensions zero, one and two respectively. There are $4^b$ offsets, and each class contains $4^n/|\ker G|$ of them. [Translations](Erdos722WeightedBlockTranslations.lean) · [affine recovery](Erdos722AffineAnchorTranslations.lean) · [kernel equivalence](Erdos722MarkedTranslationKernel.lean) · [fixed values](Erdos722MarkedBasisValues.lean)
+
+## Scope and prior work
+
+Mendelsohn's 1978 theorem already realizes every finite group as the full automorphism group of a finite Steiner quadruple system. Zinoviev and Zinoviev's Construction II permits independent transversal codes in systems of prescribed corank. The marked equations above specialize that construction. The notebook contribution is the joint control of order, binary rank, full group and exact unrestricted class count for explicit coefficient patterns. The preceding notebook family used identity coefficients everywhere and retained a point group of order $4n^2$. Historical priority for the joint formula is unestablished. [Mendelsohn](https://doi.org/10.1016/0097-3165(78)90072-9) · [Zinoviev and Zinoviev, Construction II](https://www.moi.math.bas.bg/oc2013/a33.pdf) · [previous offset family](https://github.com/vincentkoc/solved-conjectures/pull/415)
+
+The pinned Erdős 722 statement asks for existence for every $1\le r<k$ and every sufficiently large admissible order. This result constructs and classifies families in its exact predicate `H.IsBlockDesign 3 4` on `Fin (4*2^d)`. Hanani's existence spectrum for quadruple systems was already formalized in the notebook. The live DeepMind, Left to Solve and Open Math Agents checks covered both existence and the marked-group construction. [Pinned statement](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/ErdosProblems/722.lean) · [Hanani spectrum](Erdos722QuadrupleSpectrum.lean) · [DeepMind design definitions](https://github.com/google-deepmind/formal-conjectures/pull/5495) · [Left to Solve](https://www.lefttosolve.com/p/Erdos722.erdos_722) · [OMA assembly](https://github.com/lefttosolve2/open-math-agents/pull/35115) · [OMA divisibility](https://github.com/lefttosolve2/open-math-agents/pull/35931)
+
+## Verification
+
+From the pinned Formal Conjectures checkout run `lake env python3 "$NOTEBOOK/scripts/replay-research" Erdos722MarkedGroupSpectrum`.
+
+Independent binary elimination on the 64-point base found each predicted translation-kernel dimension from zero through fourteen. A separate enumeration constructed a marked 256-point example with nonconstant offsets. Its 690,880 blocks covered all 2,763,520 triples exactly once, and its binary incidence matrix had rank 249.
+
+Independent Lean 4.33.1 replay rebuilt and kernel-checked 98 notebook modules. All thirteen new objects matched the development build byte for byte. The audit covered 69 new public declarations and used only `propext`, `Classical.choice` and `Quot.sound`. Seventeen direct comparisons checked the pinned predicate and quantifiers, unrestricted isomorphisms, binary rank, group structure and boundary examples.
