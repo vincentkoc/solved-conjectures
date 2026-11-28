@@ -231,7 +231,7 @@ theorem prime_dvd_lucasFibonacciSum_on_progression_iff {p : ℕ} [Fact p.Prime] 
     simp [eleven_not_dvd]
   · simpa [he] using ordinary_prime (Fact.out : p.Prime) hp he r d
 
-private lemma rank_dvd_iff (m d t : ℕ) [NeZero m] :
+lemma fibonacciStepRank_dvd_iff (m d t : ℕ) [NeZero m] :
     fibonacciStepRank m d ∣ t ↔ m ∣ Nat.fib (d * t) := by
   let e := fibonacciStepRank m d
   have he : 0 < e ∧ m ∣ Nat.fib (d * e) := Nat.find_spec (fib_return m d)
@@ -265,7 +265,7 @@ theorem lucasFibonacciSum_dvd_after_hit_iff {m s : ℕ} [NeZero m]
   let z := start * w ^ s
   have hy : m ∣ z.im := term_coeff s ▸ hs
   have hx : m.Coprime z.re := (coefficients_coprime s).of_dvd_left hy
-  rw [rank_dvd_iff, ← term_coeff, pow_add, ← mul_assoc]
+  rw [fibonacciStepRank_dvd_iff, ← term_coeff, pow_add, ← mul_assoc]
   change m ∣ (z * w ^ (d * t)).im ↔ _
   have hother : m ∣ z.im * (w ^ (d * t)).re + z.im * (w ^ (d * t)).im :=
     dvd_add (dvd_mul_of_dvd_left hy _) (dvd_mul_of_dvd_left hy _)
