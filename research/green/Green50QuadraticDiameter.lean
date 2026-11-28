@@ -233,6 +233,89 @@ theorem span_iff_represented [Fintype K] [FiniteDimensional K V] (B : U →ₗ[K
     exact represented_pad B h (Nat.le_sqrt.mpr (length_square_le B hB h (fun m => Nat.find_min' hex)))
   · rintro ⟨x, y, rfl⟩
     exact Submodule.sum_mem _ (fun i _ => Submodule.subset_span ⟨(x i, y i), rfl⟩)
+
+/-- A shortest sum of k polar products also needs at least 2k input dimensions,
+over any field. -/
+theorem length_twice_le_input [FiniteDimensional K U] (B : U →ₗ[K] U →ₗ[K] V)
+    (hB : ∀ x, B x x = 0) {v : V} {k : ℕ} (h : Represented B k v)
+    (least : ∀ m, Represented B m v → k ≤ m) : 2 * k ≤ Module.finrank K U := by
+  classical
+  let n := Module.finrank K U
+  let p := Module.finBasis K U
+  let coeff (x : U) : Module.Dual K (E K (Fin n)) :=
+    ∑ i, (p.repr x i) • (LinearMap.proj i : Module.Dual K (E K (Fin n)))
+  have realize_coeff (x : U) : realize p (coeff x) = x := by
+    change ∑ i, (coeff x) (basisVector i) • p i = x
+    simp [coeff, basisVector, LinearMap.sum_apply, Pi.single_apply]
+  obtain ⟨x, y, hxy⟩ := h
+  let F := ∑ i, wedge (coeff (x i)) (coeff (y i))
+  have ha : F.IsAlt := by intro z; simp [F, LinearMap.sum_apply, wedge_apply, mul_comm]
+  have he : evaluate B p F = v := by
+    dsimp only [F]
+    rw [map_sum]
+    simp only [evaluate_wedge B hB, realize_coeff, hxy]
+  obtain ⟨m, hm, _, a, b, hab⟩ := Green50SymplecticSpaces.alternating_decomposition K n F ha
+    (by simp [E])
+  have hrep := evaluation_rep B hB p F m a b hab
+  rw [he] at hrep
+  have := least m hrep
+  omega
+
+/-- The smaller of half the input dimension and the square root of the polar span dimension
+suffices for every output in the span. -/
+theorem span_iff_radius [Fintype K] [FiniteDimensional K U] [FiniteDimensional K V]
+    (B : U →ₗ[K] U →ₗ[K] V) (hB : ∀ u, B u u = 0) (r : ℕ)
+    (hr : min (Module.finrank K U / 2) (Module.finrank K (valueSpan B)).sqrt ≤ r) (v : V) :
+    v ∈ valueSpan B ↔ Represented B r v := by
+  classical
+  constructor
+  · intro hv
+    have hex : ∃ m, Represented B m v := ⟨_, (span_iff_represented B hB v).mp hv⟩
+    have least := Nat.find_spec hex
+    have lower (m : ℕ) (hm : Represented B m v) : Nat.find hex ≤ m := Nat.find_min' hex hm
+    have byInput := length_twice_le_input B hB least lower
+    have byOutput := Nat.le_sqrt.mpr (length_square_le B hB least lower)
+    exact represented_pad B least (le_trans (le_min (by omega) byOutput) hr)
+  · rintro ⟨x, y, rfl⟩
+    exact Submodule.sum_mem _ (fun i _ => Submodule.subset_span ⟨(x i, y i), rfl⟩)
+
+
+/-- The polar span on n inputs has dimension at most n choose two. -/
+theorem value_span_le_pairs [FiniteDimensional K U] [FiniteDimensional K V]
+    (B : U →ₗ[K] U →ₗ[K] V) (hB : ∀ x, B x x = 0) :
+    Module.finrank K (valueSpan B) ≤ (Module.finrank K U).choose 2 := by
+  classical
+  let b := Module.finBasis K U
+  let v (p : PairIndex (Fin (Module.finrank K U))) := B (b p.val.1) (b p.val.2)
+  let W := Submodule.span K (Set.range v)
+  have swap (x y : U) : -B x y = B y x := by
+    have h := hB (x + y)
+    simp [hB] at h
+    exact neg_eq_of_add_eq_zero_left (by simpa only [add_comm] using h)
+  have basis_mem i j : B (b i) (b j) ∈ W := by
+    rcases lt_trichotomy i j with h | rfl | h
+    · exact Submodule.subset_span ⟨⟨(i, j), h⟩, rfl⟩
+    · rw [hB]; exact W.zero_mem
+    · rw [← swap (b j) (b i)]
+      exact W.neg_mem (Submodule.subset_span ⟨⟨(j, i), h⟩, rfl⟩)
+  have incl : valueSpan B ≤ W := by
+    apply Submodule.span_le.mpr
+    rintro _ ⟨⟨x, y⟩, rfl⟩
+    change B x y ∈ W
+    have left (j) : B x (b j) ∈ W := by
+      rw [← b.sum_repr x]
+      simp only [map_sum, LinearMap.sum_apply, map_smul, LinearMap.smul_apply]
+      exact W.sum_mem fun i _ => W.smul_mem _ (basis_mem i j)
+    rw [← b.sum_repr y, map_sum]
+    apply W.sum_mem
+    intro j _
+    rw [map_smul]
+    exact W.smul_mem _ (left j)
+  have hw : Module.finrank K W ≤ Fintype.card (PairIndex (Fin (Module.finrank K U))) :=
+    finrank_range_le_card (R := K) v
+  have bound := (Submodule.finrank_mono incl).trans hw
+  simpa only [card_pairs, Fintype.card_fin] using bound
+
 section Binary
 open Green50QuadraticGraphs Green50QuadraticFibres
 variable {D E' : Type*} [AddCommGroup D] [Module (ZMod 2) D] [Fintype D] [DecidableEq D]
@@ -252,11 +335,11 @@ private theorem polar_alt (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
   rw [add_self_zero, add_comm (f 0), eq_comm] at he
   exact add_right_cancel (he.trans (zero_add _).symm)
 
-/-- From the square-root threshold onward, each odd sumset contains exactly one coset
+/-- Once either dimension bound holds, each odd sumset contains exactly one coset
 of the value span above each input. -/
-theorem graph_fibre (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
+theorem graph_fibre_of_radius (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
     (hf : ∀ a x : D, f x + f (x + a) = B a x + (f 0 + f a)) {r : ℕ}
-    (hr : (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) (u : D) (v : E') :
+    (hr : min (Module.finrank F₂ D / 2) (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) (u : D) (v : E') :
     (u, v) ∈ (2 * r + 1) • graph f ↔ v-f u ∈ valueSpan B := by
   rw [odd_sumset f B hf, mem_add]
   constructor
@@ -277,8 +360,16 @@ theorem graph_fibre (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
   · intro h
     refine ⟨(u, f u), mem_image_of_mem _ (mem_univ u), (0, v-f u), ?_, Prod.ext (add_zero _) ?_⟩
     · exact (mem_vertical_sum B r _).mpr
-        (represented_pad B ((span_iff_represented B (polar_alt f B hf) _).mp h) hr)
+        ((span_iff_radius B (polar_alt f B hf) r hr _).mp h)
     · change f u + (v-f u) = v; abel
+
+/-- From the square-root threshold onward, each odd sumset contains exactly one coset
+of the value span above each input. -/
+theorem graph_fibre (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
+    (hf : ∀ a x : D, f x + f (x + a) = B a x + (f 0 + f a)) {r : ℕ}
+    (hr : (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) (u : D) (v : E') :
+    (u, v) ∈ (2 * r + 1) • graph f ↔ v-f u ∈ valueSpan B :=
+  graph_fibre_of_radius f B hf ((min_le_right _ _).trans hr) u v
 
 omit [Fintype D] [Fintype E'] in
 private theorem odd_in_span (S : Finset (D × E')) (k : ℕ) :
@@ -296,11 +387,10 @@ private theorem odd_in_span (S : Finset (D × E')) (k : ℕ) :
       (subset_affineSpan _ _ hy) (subset_affineSpan _ _ hx)
     simpa only [one_smul, vsub_eq_sub, vadd_eq_add, sub_eq_add_neg, neg_self] using h
 
-/-- Every binary quadratic graph fills its affine span in 2⌊√d⌋+1 summands, where d is
-the dimension of the subspace spanned by its polarization. -/
-theorem graph_affine_span (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
+/-- The input dimension and the polar span dimension both bound the covering order. -/
+theorem graph_affine_span_of_radius (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
     (hf : ∀ a x : D, f x + f (x + a) = B a x + (f 0 + f a)) {r : ℕ}
-    (hr : (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) :
+    (hr : min (Module.finrank F₂ D / 2) (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) :
     (↑((2 * r + 1) • graph f) : Set (D × E')) = affineSpan F₂ (graph f : Set (D × E')) := by
   let n := 2 * r + 1
   let S := n • graph f
@@ -310,7 +400,7 @@ theorem graph_affine_span (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
       exact add_mem_add (add_mem_add hp hq) hz
     have he : n + n + n = 2 * (3 * r + 1) + 1 := by dsimp [n]; omega
     rw [he] at hsum
-    exact (graph_fibre f B hf hr _ _).mpr ((graph_fibre f B hf (r := 3 * r + 1) (by omega) _ _).mp hsum)
+    exact (graph_fibre_of_radius f B hf hr _ _).mpr ((graph_fibre_of_radius f B hf (r := 3 * r + 1) (by omega) _ _).mp hsum)
   let H : AffineSubspace F₂ (D × E') :=
     { carrier := (S : Set _)
       smul_vsub_vadd_mem' := by
@@ -324,7 +414,15 @@ theorem graph_affine_span (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
   apply affineSpan_le.mpr
   intro p hp
   obtain ⟨u, _, rfl⟩ := mem_image.mp hp
-  exact (graph_fibre f B hf hr _ _).mpr (by simp)
+  exact (graph_fibre_of_radius f B hf hr _ _).mpr (by simp)
+
+/-- Every binary quadratic graph fills its affine span in 2⌊√d⌋+1 summands, where d is
+the dimension of the subspace spanned by its polarization. -/
+theorem graph_affine_span (f : D → E') (B : D →ₗ[F₂] D →ₗ[F₂] E')
+    (hf : ∀ a x : D, f x + f (x + a) = B a x + (f 0 + f a)) {r : ℕ}
+    (hr : (Module.finrank F₂ (valueSpan B)).sqrt ≤ r) :
+    (↑((2 * r + 1) • graph f) : Set (D × E')) = affineSpan F₂ (graph f : Set (D × E')) :=
+  graph_affine_span_of_radius f B hf ((min_le_right _ _).trans hr)
 
 private theorem binary_card (X : Type*) [AddCommGroup X] [Module F₂ X] [Fintype X] :
     Nat.card X = 2 ^ Module.finrank F₂ X := by
@@ -407,3 +505,8 @@ end Green50QuadraticDiameter
 #print axioms Green50QuadraticDiameter.affine_span_dimension
 #print axioms Green50QuadraticDiameter.fivefold_of_le_eight
 #print axioms Green50QuadraticDiameter.tenfold_coset_of_le_eight
+#print axioms Green50QuadraticDiameter.length_twice_le_input
+#print axioms Green50QuadraticDiameter.span_iff_radius
+#print axioms Green50QuadraticDiameter.graph_fibre_of_radius
+#print axioms Green50QuadraticDiameter.graph_affine_span_of_radius
+#print axioms Green50QuadraticDiameter.value_span_le_pairs
