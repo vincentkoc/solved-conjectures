@@ -11,7 +11,8 @@ Counting such blocks gives an obstruction beyond divisibility at index one.
 namespace Erdos722.IntegralDesign
 open Finset
 
-private theorem flag_count {n r k : ℕ} {H : Finset (Finset (Fin n))} (hH : H.IsBlockDesign r k)
+/-- Count incident blocks through a fixed subset by double counting extensions to the design rank. -/
+theorem flag_count {n r k : ℕ} {H : Finset (Finset (Fin n))} (hH : H.IsBlockDesign r k)
     (I : Finset (Fin n)) (hi : I.card≤r) :
     (k-I.card).choose (r-I.card)*(H.filter (I⊆·)).card=(n-I.card).choose (r-I.card) := by
   classical
@@ -89,6 +90,7 @@ theorem signed_separation :
     have h := exterior_point_bound (s:=1) (by decide : 1+2≤7) (by decide : 7<22) hH
     omega
 
+#print axioms flag_count
 #print axioms exterior_point_bound
 #print axioms signed_separation
 end Erdos722.IntegralDesign
