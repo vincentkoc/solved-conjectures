@@ -486,6 +486,14 @@ theorem chainConstant_log_asymptotic :
     field_simp
     linarith
 
+/-- Two elementary bounds for the prime Euler product, with absolute constants. -/
+theorem prime_euler_product_log_bounds : ∀ᶠ z : ℕ in atTop,
+    log ((z:ℝ)+1) ≤ ∏ p ∈ z.primesLE, (1-1/(p:ℝ))⁻¹ ∧
+    (∏ p ∈ z.primesLE, (1-1/(p:ℝ))⁻¹) ≤ (2*exp 4)*log z := by
+  filter_upwards [mertens_upper] with z hz
+  exact ⟨mertens_lower z,hz⟩
+
+#print axioms prime_euler_product_log_bounds
 #print axioms chainConstant_spec
 #print axioms chainConstant_log_bounds
 #print axioms chainConstant_log_asymptotic
