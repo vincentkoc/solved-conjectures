@@ -8,7 +8,8 @@ namespace CunninghamChain.PairedGaps
 
 open ArtinPrimitiveRootsConjecture
 
-private theorem safe_prime_generator {p q : ℕ} (hp : p.Prime) (hq : q.Prime)
+/-- A safe prime congruent to three modulo eight has primitive root two. -/
+theorem safe_prime_generator {p q : ℕ} (hp : p.Prime) (hq : q.Prime)
     (he : q = 2*p+1) (h8 : q%8 = 3) (h3 : 3 < q) : q ∈ S 2 := by
   let : Fact q.Prime := ⟨hq⟩
   have htwo : (2:ZMod q) ≠ 0 := by
@@ -60,6 +61,7 @@ theorem infinite_primitive_two_of_prime_tuples
   have hq : (8*n+3).Prime := hn 1
   exact ⟨8*n+3,safe_prime_generator hp hq (by omega) (by omega) (by omega),by omega⟩
 
+#print axioms safe_prime_generator
 #print axioms infinite_primitive_two_of_prime_tuples
 
 /-- At gap h, the second-kind seed is p+h and the first-kind seed is p.
