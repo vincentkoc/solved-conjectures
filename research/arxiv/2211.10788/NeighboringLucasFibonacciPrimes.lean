@@ -9,7 +9,7 @@ namespace Arxiv.«2211.10788»
 /-- The lower neighbor at index m + 2, since Lₘ₊₁ = Fₘ + Fₘ₊₂. -/
 def lowerNeighborAtAddTwo (m : ℕ) : ℕ := 2 * Nat.fib (m + 2) + Nat.fib m
 
-private theorem fib_norm (m : ℕ) :
+theorem fib_pair_norm (m : ℕ) :
     (Nat.fib (m + 1) : ℤ) ^ 2 - Nat.fib m * Nat.fib (m + 1) - (Nat.fib m : ℤ) ^ 2 =
       (-1) ^ m := by
   induction m with
@@ -24,7 +24,7 @@ theorem lucasFibonacciSum_mul_lowerNeighbor (m : ℕ) :
       11 * (Nat.fib (m + 2) : ℤ) ^ 2 - (-1) ^ m := by
   simp only [lucasFibonacciSum, lowerNeighborAtAddTwo, Nat.fib_add_two, Nat.cast_add,
     Nat.cast_mul, Nat.cast_ofNat]
-  linear_combination -(fib_norm m)
+  linear_combination -(fib_pair_norm m)
 
 private theorem fib_period_42 (m : ℕ) : Nat.fib (m + 48) ≡ Nat.fib m [MOD 42] := by
   induction m using Nat.twoStepInduction with
@@ -99,6 +99,7 @@ theorem neighboring_primes_iff_semiprime (m : ℕ) :
       exact ⟨ArithmeticFunction.cardFactors_eq_one_iff_prime.mp (by omega),
         ArithmeticFunction.cardFactors_eq_one_iff_prime.mp (by omega)⟩
 
+#print axioms fib_pair_norm
 #print axioms lucasFibonacciSum_mul_lowerNeighbor
 #print axioms neighboring_product_coprime_42_iff
 #print axioms neighboring_primes_iff_semiprime
