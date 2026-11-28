@@ -86,31 +86,17 @@ private theorem syndrome_kernel {N t : ℕ} (v : Fin N → K)
 private theorem twice {E : Type*} [AddCommGroup E] [Module F₂ E] (x:E) : x+x=0 := by
   rw [←two_smul F₂ x,show (2:F₂)=0 by decide,zero_smul]
 
-/-- Below a quarter of the shortest nonzero kernel weight, every affine flat
-in the image of a Hamming ball lifts to an affine flat in the ball. -/
-theorem sparse_image_flat {G : Type*} [AddCommGroup G] [Module F₂ G] [DecidableEq G]
-    {N r : ℕ} (P : Cube N →ₗ[F₂] G)
-    (hk : ∀ z, (supp z).card ≤ 4*r → P z=0 → z=0)
-    (W : Submodule F₂ G) (t : G)
-    (h : t +ᵥ (W : Set G) ⊆ ↑((ball N r).image P)) :
+/-- An affine family of lifts of Hamming weight at most r has dimension at
+most r as soon as its basepoint parallelograms lift. -/
+theorem affine_lift_dimension {G : Type*} [AddCommGroup G] [Module F₂ G]
+    {N r : ℕ} (P : Cube N →ₗ[F₂] G) (W : Submodule F₂ G) (t : G) (f : W → Cube N)
+    (hf : ∀ x, f x∈ball N r) (hP : ∀ x, P (f x)=t+x.val)
+    (relations : ∀ x y, (f (x+y)+f 0)+(f x+f y)=0) :
     Module.finrank F₂ W ≤ r := by
   classical
-  have ex (x : W) : ∃ y ∈ ball N r, P y = t + x.val := by
-    have ht : t+x.val ∈ t +ᵥ (W : Set G) := ⟨x.val,x.property,rfl⟩
-    exact mem_image.mp (h ht)
-  choose f hf hP using ex
   let lift (x : W) := f x+f 0
   have hmap (x y : W) : lift (x+y)=lift x+lift y := by
-    let z := (f (x+y)+f 0)+(f x+f y)
-    have hz : z ∈ (4:ℕ) • ball N r := by
-      rw [show (4:ℕ)=2+2 by decide,add_nsmul,two_nsmul]
-      exact add_mem_add (add_mem_add (hf _) (hf _)) (add_mem_add (hf _) (hf _))
-    have hzero : P z=0 := by
-      simp only [z,map_add,hP,Submodule.coe_add,Submodule.coe_zero,add_zero]
-      calc
-        _ = ((t+t)+(t+t))+((x.val+x.val)+(y.val+y.val)) := by abel
-        _ = 0 := by simp [twice]
-    have flat := hk z (weight_of_mem_sum hz) hzero
+    have flat := relations x y
     have e := congrArg (fun a => a+(f x+f y)) flat
     change ((f (x+y)+f 0)+(f x+f y))+(f x+f y) = 0+(f x+f y) at e
     rw [add_assoc (f (x+y)+f 0),twice,add_zero,zero_add] at e
@@ -139,6 +125,32 @@ theorem sparse_image_flat {G : Type*} [AddCommGroup G] [Module F₂ G] [Decidabl
   have dim := L.finrank_range_of_inj inj
   rw [dim] at hd
   exact hd.trans (mem_filter.mp (hf x)).2
+
+/-- Below a quarter of the shortest nonzero kernel weight, every affine flat
+in the image of a Hamming ball lifts to an affine flat in the ball. -/
+theorem sparse_image_flat {G : Type*} [AddCommGroup G] [Module F₂ G] [DecidableEq G]
+    {N r : ℕ} (P : Cube N →ₗ[F₂] G)
+    (hk : ∀ z, (supp z).card ≤ 4*r → P z=0 → z=0)
+    (W : Submodule F₂ G) (t : G)
+    (h : t +ᵥ (W : Set G) ⊆ ↑((ball N r).image P)) :
+    Module.finrank F₂ W ≤ r := by
+  classical
+  have ex (x : W) : ∃ y ∈ ball N r, P y = t + x.val := by
+    have ht : t+x.val ∈ t +ᵥ (W : Set G) := ⟨x.val,x.property,rfl⟩
+    exact mem_image.mp (h ht)
+  choose f hf hP using ex
+  apply affine_lift_dimension P W t f hf hP
+  intro x y
+  let z := (f (x+y)+f 0)+(f x+f y)
+  have hz : z ∈ (4:ℕ) • ball N r := by
+    rw [show (4:ℕ)=2+2 by decide,add_nsmul,two_nsmul]
+    exact add_mem_add (add_mem_add (hf _) (hf _)) (add_mem_add (hf _) (hf _))
+  have hzero : P z=0 := by
+    simp only [z,map_add,hP,Submodule.coe_add,Submodule.coe_zero,add_zero]
+    calc
+      _ = ((t+t)+(t+t))+((x.val+x.val)+(y.val+y.val)) := by abel
+      _ = 0 := by simp [twice]
+  exact hk z (weight_of_mem_sum hz) hzero
 
 /-- A binary BCH check map in dimension t·m is injective on the radius-one
 ball and has no nonzero kernel word of weight at most 2t. -/
@@ -235,6 +247,7 @@ theorem tenfold_requires_twenty_nineteenths (C : ℝ)
 end Green50BCH
 
 #print axioms Green50BCH.column_girth
+#print axioms Green50BCH.affine_lift_dimension
 #print axioms Green50BCH.sparse_image_flat
 #print axioms Green50BCH.sparse_check_map
 #print axioms Green50BCH.sparse_cube_examples

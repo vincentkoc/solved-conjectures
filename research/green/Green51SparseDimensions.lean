@@ -189,9 +189,14 @@ theorem sparse_linear_flat {G : Type*} [AddCommGroup G] [Module F G] [DecidableE
   obtain ⟨w,rfl⟩ := mem
   exact (L.finrank_range_of_inj inj).symm.trans_le (rank.trans (mem_filter.mp (hf w)).2)
 
-private theorem rank_without_relation (A : Finset G)
-    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0)
-    (W : Submodule F G) (inside : ∀ x∈W,x∈A+A) : Module.finrank F W≤2 := by
+/-- With all four- and six-point relations excluded, the augmented label
+columns give a binary check map of distance at least seven. Every nonzero
+pair sum has a two-coordinate representative. -/
+theorem pair_check (A : Finset G)
+    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0) :
+    ∃ P : Cube A.card →ₗ[F] F×G,
+      (∀ z, (supp z).card≤6 → P z=0 → z=0) ∧
+      ∀ w∈A+A, ∃ z, P z=(0,w) ∧ (supp z).card≤2 ∧ (w≠0 → (supp z).card=2) := by
   classical
   let index : Fin A.card ↪ G :=
     ⟨fun i => (A.equivFin.symm i).val,Subtype.val_injective.comp A.equivFin.symm.injective⟩
@@ -227,8 +232,6 @@ private theorem rank_without_relation (A : Finset G)
       rw [h,sum_pair ne] at total
       exact (ne (add_right_cancel (total.trans (ZModModule.add_self b).symm))).elim
     exact (free T ta (by omega) total).elim
-  let J := LinearMap.inr F F G
-  have inj : Function.Injective J := LinearMap.inr_injective
   have single (i : Fin A.card) : P (Pi.single i 1)=col i := by
     rw [eval]
     have eq : supp (Pi.single i (1:F))={i} := by
@@ -237,25 +240,36 @@ private theorem rank_without_relation (A : Finset G)
       · simp [h,supp]
       · simp [h,supp]
     rw [eq,sum_singleton]
+  refine ⟨P,kernel,?_⟩
+  rintro w hw
+  obtain ⟨a,ha,b,hb,rfl⟩ := mem_add.mp hw
+  let i := A.equivFin ⟨a,ha⟩
+  let j := A.equivFin ⟨b,hb⟩
+  refine ⟨Pi.single i 1+Pi.single j 1,?_,?_⟩
+  · rw [map_add,single,single]
+    apply Prod.ext
+    · rfl
+    · simp [col,index,i,j]
+  · by_cases eq : i=j
+    · have ab : a=b := congrArg Subtype.val (A.equivFin.injective eq)
+      simp [eq,ab,ZModModule.add_self,supp]
+    · have support : supp (Pi.single i (1:F)+Pi.single j 1)={i,j} := by
+        ext l
+        by_cases li : l=i <;> by_cases lj : l=j <;> simp [supp,Pi.single_apply,li,lj,eq,Ne.symm eq]
+      simp [support,eq]
+
+/-- Every linear flat in this double has rank at most two. -/
+theorem rank_without_relation (A : Finset G)
+    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0)
+    (W : Submodule F G) (inside : ∀ x∈W,x∈A+A) : Module.finrank F W≤2 := by
+  classical
+  obtain ⟨P,kernel,lift⟩ := pair_check A free
+  let J := LinearMap.inr F F G
+  have inj : Function.Injective J := LinearMap.inr_injective
   have bound := sparse_linear_flat P kernel (W.map J) (by
     rintro _ ⟨w,hw,rfl⟩
-    obtain ⟨a,ha,b,hb,rfl⟩ := mem_add.mp (inside w hw)
-    let i := A.equivFin ⟨a,ha⟩
-    let j := A.equivFin ⟨b,hb⟩
-    have unit (t : Fin A.card) : Pi.single t (1:F)∈ball A.card 1 := by
-      apply mem_filter.mpr
-      refine ⟨mem_univ _,card_le_one.mpr ?_⟩
-      intro e he g hg
-      have only (l : Fin A.card) (h : l∈supp (Pi.single t (1:F))) : l=t := by
-        by_contra ne; simp [supp,Pi.single_eq_of_ne ne] at h
-      exact (only e he).trans (only g hg).symm
-    refine mem_image.mpr ⟨Pi.single i 1+Pi.single j 1,?_,?_⟩
-    · apply mem_filter.mpr
-      exact ⟨mem_univ _,weight_of_mem_sum (show Pi.single i (1:F)+Pi.single j 1∈(2:ℕ) • ball A.card 1 by
-        rw [two_nsmul]; exact add_mem_add (unit _) (unit _))⟩
-    · rw [map_add,single,single]; apply Prod.ext
-      · change (1:F)+1=0; rfl
-      · simp [col,index,i,j,J])
+    obtain ⟨z,eq,small,_⟩ := lift w (inside w hw)
+    exact mem_image.mpr ⟨z,mem_filter.mpr ⟨mem_univ _,small⟩,eq⟩)
   exact (W.equivMapOfInjective J inj).finrank_eq.trans_le bound
 
 /-- For at least five labels, the double contains a three-dimensional
@@ -276,4 +290,6 @@ end Green51SparseDimensions
 #print axioms Green51SparseDimensions.quadruple_space
 #print axioms Green51SparseDimensions.triple_packing
 #print axioms Green51SparseDimensions.sparse_linear_flat
+#print axioms Green51SparseDimensions.pair_check
+#print axioms Green51SparseDimensions.rank_without_relation
 #print axioms Green51SparseDimensions.linear_three_iff
