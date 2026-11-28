@@ -87,6 +87,48 @@ lemma rank_min (p d t : ℕ) [NeZero p] (ht : 0<t) (hf : p ∣ Nat.fib (d*t)) :
   unfold fibonacciStepRank
   exact Nat.find_min' _ ⟨ht,hf⟩
 
+/-- The Fibonacci return rank on any step is at most p+1. For p≠5 the
+two roots are fixed or exchanged by Frobenius, giving a return at p−1 or p+1. -/
+theorem rank_le_prime_add_one {p : ℕ} [Fact p.Prime] (d : ℕ) :
+    fibonacciStepRank p d ≤ p+1 := by
+  have hp : p.Prime := Fact.out
+  have lift (s : ℕ) (hs : 0<s) (hf : p ∣ Nat.fib s) (le : s≤p+1) :
+      fibonacciStepRank p d ≤ p+1 :=
+    (rank_min p d s hs (hf.trans (Nat.fib_dvd _ _ (dvd_mul_left s d)))).trans le
+  by_cases h5 : p=5
+  · subst p
+    exact lift 5 (by decide) (by decide) (by decide)
+  let K := AlgebraicClosure (ZMod p)
+  obtain ⟨a,b,ha,hb,hs,hab⟩ := fibonacci_roots p h5
+  let F := frobenius K p
+  have hma : (F a)^2=F a+1 := by simpa using congrArg F ha
+  have hms : F a+F b=1 := by simpa using congrArg F hs
+  have prod : (F a-a)*(F a-b)=0 := by linear_combination hma-ha+(a-F a)*hs
+  have a0 : a≠0 := by rintro rfl; simp at ha
+  have b0 : b≠0 := by rintro rfl; simp at hb
+  have hit (t : ℕ) (eq : a^t=b^t) : p ∣ Nat.fib t := by
+    apply (CharP.cast_eq_zero_iff K p _).mp
+    apply mul_left_cancel₀ (sub_ne_zero.mpr hab)
+    rw [mul_zero,(binet ha hb hs t).1,eq,sub_self]
+  rcases mul_eq_zero.mp prod with h|h
+  · have e₁ := sub_eq_zero.mp h
+    have e₂ : F b=b := by linear_combination hms-hs-e₁
+    have fix {x : K} (hx : x≠0) (he : F x=x) : x^(p-1)=1 := by
+      apply mul_right_cancel₀ hx
+      rw [←pow_succ,Nat.sub_add_cancel hp.one_le,one_mul]
+      exact he
+    exact lift (p-1) (by have := hp.one_lt; omega)
+      (hit _ ((fix a0 e₁).trans (fix b0 e₂).symm)) (by omega)
+  · have e₁ := sub_eq_zero.mp h
+    have e₂ : F b=a := by linear_combination hms-hs-e₁
+    apply lift (p+1) (by omega) _ le_rfl
+    apply hit
+    simp only [pow_succ]
+    change F a*a=F b*b
+    rw [e₁,e₂,mul_comm]
+
+#print axioms rank_le_prime_add_one
+
 theorem rank_tame {p : ℕ} [Fact p.Prime] (h5 : p≠5) :
     ¬p ∣ fibonacciStepRank p 1 := by
   obtain ⟨hr,hf⟩ := rank_properties p 1
