@@ -15,13 +15,12 @@ private theorem triple_space (S : Finset G) (x y z : G)
   have eval (v : Fin 3 → F) : L v=v 0 • x+v 1 • y+v 2 • z := by
     simp [L,Fintype.linearCombination_apply,Fin.sum_univ_three]
   have bit (c : F) : c=0 ∨ c=1 := by fin_cases c <;> first | exact Or.inl rfl | exact Or.inr rfl
+  obtain ⟨x0,y0,z0,xy0,xz0,yz0,xyz0⟩ := distinct
   have inj : Function.Injective L := by
     apply (injective_iff_map_eq_zero L).mpr
     intro v hv
     rcases bit (v 0) with h0|h0 <;> rcases bit (v 1) with h1|h1 <;>
-      rcases bit (v 2) with h2|h2 <;> simp [eval,h0,h1,h2,distinct.1,distinct.2.1,
-        distinct.2.2.1,distinct.2.2.2.1,distinct.2.2.2.2.1,distinct.2.2.2.2.2.1,
-        distinct.2.2.2.2.2.2] at hv
+      rcases bit (v 2) with h2|h2 <;> simp [eval,h0,h1,h2,x0,y0,z0,xy0,xz0,yz0,xyz0] at hv
     funext j; fin_cases j <;> assumption
   refine ⟨L.range,by rw [L.finrank_range_of_inj inj]; simp,?_⟩
   rintro _ ⟨v,rfl⟩
@@ -54,7 +53,6 @@ theorem quadruple_space (A : Finset G) (a b c d : G)
     · simpa only [pair] using (triple ▸ hs : (a+b)+(a+c)+(a+d)∈A+A)
   · rw [triple,pair,pair,pair]
     exact ⟨nonzero _ _ ab,nonzero _ _ ac,nonzero _ _ ad,nonzero _ _ bc,nonzero _ _ bd,nonzero _ _ cd,nz⟩
-
 
 /-- A zero sum on four distinct labels gives a plane, and a fifth label
 completes a three-dimensional linear subspace in the double. -/
@@ -97,7 +95,6 @@ private theorem from_six (A T : Finset G) (sub : T⊆A)
   apply quadruple_space A a b c d sites.1 sites.2.1 sites.2.2.1 sites.2.2.2 ab ac ad bc bd cd
   · rw [split]; intro eq; exact ef (add_right_cancel (eq.trans (ZModModule.add_self f).symm))
   · rw [split]; exact add_mem_add (efA (mem_insert_self _ _)) (efA (mem_insert_of_mem (mem_singleton_self _)))
-
 
 private theorem small_collision (A U V : Finset G) (large : 5≤A.card)
     (ua : U⊆A) (va : V⊆A) (us : U.card=1 ∨ U.card=3) (vs : V.card=1 ∨ V.card=3)
@@ -192,8 +189,91 @@ theorem sparse_linear_flat {G : Type*} [AddCommGroup G] [Module F G] [DecidableE
   obtain ⟨w,rfl⟩ := mem
   exact (L.finrank_range_of_inj inj).symm.trans_le (rank.trans (mem_filter.mp (hf w)).2)
 
+private theorem rank_without_relation (A : Finset G)
+    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0)
+    (W : Submodule F G) (inside : ∀ x∈W,x∈A+A) : Module.finrank F W≤2 := by
+  classical
+  let index : Fin A.card ↪ G :=
+    ⟨fun i => (A.equivFin.symm i).val,Subtype.val_injective.comp A.equivFin.symm.injective⟩
+  let col (i : Fin A.card) : F×G := (1,index i)
+  let P := Fintype.linearCombination F col
+  have eval (z : Cube A.card) : P z=∑ i∈supp z,col i := by
+    simp only [P,Fintype.linearCombination_apply,supp,sum_filter]
+    apply sum_congr rfl
+    intro i _
+    rcases (show ∀ u:F,u=0 ∨ u=1 from by decide) (z i) with h|h <;> simp [h]
+  have kernel (z : Cube A.card) (small : (supp z).card≤3*2) (zero : P z=0) : z=0 := by
+    rw [eval] at zero
+    have first := congrArg Prod.fst zero
+    have even : 2∣(supp z).card := by
+      simpa only [Prod.fst_sum,Prod.fst_zero,col,sum_const,nsmul_eq_mul,mul_one,ZMod.natCast_eq_zero_iff] using first
+    let T := (supp z).map index
+    have size : T.card=(supp z).card := card_map _
+    have ta : T⊆A := by
+      intro a ha
+      obtain ⟨i,_,rfl⟩ := mem_map.mp ha
+      exact (A.equivFin.symm i).property
+    have total : ∑ a∈T,a=0 := by
+      rw [sum_map]
+      simpa only [Prod.snd_sum,col,Prod.snd_zero] using congrArg Prod.snd zero
+    by_cases empty : (supp z).card=0
+    · funext i
+      by_contra! ne
+      have mem : i∈supp z := mem_filter.mpr ⟨mem_univ _,ne⟩
+      rw [card_eq_zero.mp empty] at mem
+      exact notMem_empty i mem
+    by_cases two : T.card=2
+    · obtain ⟨a,b,ne,h⟩ := card_eq_two.mp two
+      rw [h,sum_pair ne] at total
+      exact (ne (add_right_cancel (total.trans (ZModModule.add_self b).symm))).elim
+    exact (free T ta (by omega) total).elim
+  let J := LinearMap.inr F F G
+  have inj : Function.Injective J := LinearMap.inr_injective
+  have single (i : Fin A.card) : P (Pi.single i 1)=col i := by
+    rw [eval]
+    have eq : supp (Pi.single i (1:F))={i} := by
+      ext j
+      by_cases h : j=i
+      · simp [h,supp]
+      · simp [h,supp]
+    rw [eq,sum_singleton]
+  have bound := sparse_linear_flat P kernel (W.map J) (by
+    rintro _ ⟨w,hw,rfl⟩
+    obtain ⟨a,ha,b,hb,rfl⟩ := mem_add.mp (inside w hw)
+    let i := A.equivFin ⟨a,ha⟩
+    let j := A.equivFin ⟨b,hb⟩
+    have unit (t : Fin A.card) : Pi.single t (1:F)∈ball A.card 1 := by
+      apply mem_filter.mpr
+      refine ⟨mem_univ _,card_le_one.mpr ?_⟩
+      intro e he g hg
+      have only (l : Fin A.card) (h : l∈supp (Pi.single t (1:F))) : l=t := by
+        by_contra ne; simp [supp,Pi.single_eq_of_ne ne] at h
+      exact (only e he).trans (only g hg).symm
+    refine mem_image.mpr ⟨Pi.single i 1+Pi.single j 1,?_,?_⟩
+    · apply mem_filter.mpr
+      exact ⟨mem_univ _,weight_of_mem_sum (show Pi.single i (1:F)+Pi.single j 1∈(2:ℕ) • ball A.card 1 by
+        rw [two_nsmul]; exact add_mem_add (unit _) (unit _))⟩
+    · rw [map_add,single,single]; apply Prod.ext
+      · change (1:F)+1=0; rfl
+      · simp [col,index,i,j,J])
+  exact (W.equivMapOfInjective J inj).finrank_eq.trans_le bound
+
+/-- For at least five labels, the double contains a three-dimensional
+linear space exactly when four or six distinct labels sum to zero. -/
+theorem linear_three_iff (A : Finset G) (large : 5≤A.card) :
+    (∃ W : Submodule F G, Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A) ↔
+      ∃ T⊆A,(T.card=4 ∨ T.card=6) ∧ (∑ t∈T,t)=0 := by
+  constructor
+  · rintro ⟨W,dim,inside⟩
+    by_contra! free
+    have low := rank_without_relation A free W inside
+    omega
+  · rintro ⟨T,sub,h|h,sum⟩
+    · exact from_four A T large sub h sum
+    · exact from_six A T sub h sum
+
 end Green51SparseDimensions
 #print axioms Green51SparseDimensions.quadruple_space
-
 #print axioms Green51SparseDimensions.triple_packing
 #print axioms Green51SparseDimensions.sparse_linear_flat
+#print axioms Green51SparseDimensions.linear_three_iff

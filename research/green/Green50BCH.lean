@@ -140,12 +140,11 @@ theorem sparse_image_flat {G : Type*} [AddCommGroup G] [Module F₂ G] [Decidabl
   rw [dim] at hd
   exact hd.trans (mem_filter.mp (hf x)).2
 
-/-- For every positive r,m an explicit image of a binary radius-one ball has 2^m
-points in dimension 2rm, and every affine flat in its r-fold sum has dimension at most r. -/
-theorem sparse_cube_examples (r m : ℕ) (hr : 0 < r) (hm : 0 < m) :
-    ∃ A : Finset (Cube (2*r*m)), A.card=2^m ∧
-      ∀ (W : Submodule F₂ (Cube (2*r*m))) (x : Cube (2*r*m)),
-        x +ᵥ (W : Set (Cube (2*r*m))) ⊆ ↑(r • A) → Module.finrank F₂ W ≤ r := by
+/-- A binary BCH check map in dimension t·m is injective on the radius-one
+ball and has no nonzero kernel word of weight at most 2t. -/
+theorem sparse_check_map (t m : ℕ) (ht : 0 < t) (hm : 0 < m) :
+    ∃ N : ℕ, ∃ P : Cube N →ₗ[F₂] Cube (t*m),
+      (∀ z, (supp z).card≤2*t → P z=0 → z=0) ∧ ((ball N 1).image P).card=2^m := by
   classical
   let K := GaloisField 2 m
   let : Fintype K := Fintype.ofFinite K
@@ -153,38 +152,46 @@ theorem sparse_cube_examples (r m : ℕ) (hr : 0 < r) (hm : 0 < m) :
   let v (i : Fin N) : K := ((Fintype.equivFin Kˣ).symm i).val
   have hv : Function.Injective v := Units.val_injective.comp (Fintype.equivFin Kˣ).symm.injective
   have hn (i : Fin N) : v i ≠ 0 := Units.ne_zero _
-  let e : (Fin (2*r) → K) ≃ₗ[F₂] Cube (2*r*m) := LinearEquiv.ofFinrankEq _ _ (by
+  let e : (Fin t → K) ≃ₗ[F₂] Cube (t*m) := LinearEquiv.ofFinrankEq _ _ (by
     rw [Module.finrank_pi_fintype,Module.finrank_pi,Fintype.card_fin]
     simp [K,GaloisField.finrank _ hm.ne'])
-  let P := e.toLinearMap.comp (Fintype.linearCombination F₂ (fun i => column (2*r) (v i)))
-  have kernel (z : Cube N) (hw : (supp z).card ≤ 4*r) (hz : P z = 0) : z = 0 := by
-    apply syndrome_kernel v hv hn z (t:=2*r) (by omega)
+  let P := e.toLinearMap.comp (Fintype.linearCombination F₂ (fun i => column t (v i)))
+  have kernel (z : Cube N) (hw : (supp z).card ≤ 2*t) (hz : P z = 0) : z = 0 := by
+    apply syndrome_kernel v hv hn z (t:=t) hw
     exact e.injective (hz.trans e.map_zero.symm)
+  refine ⟨N,P,kernel,?_⟩
+  rw [(card_image_iff.mpr (show Set.InjOn P ↑(ball N 1) from by
+    intro x hx y hy eq
+    have small := weight_of_mem_sum (show x+y∈(2:ℕ) • ball N 1 by
+      rw [two_nsmul]; exact add_mem_add hx hy)
+    have z := kernel (x+y) (by omega) (by rw [map_add,eq,twice])
+    exact (add_right_cancel (z.trans (twice y).symm) : x=y)))]
+  rw [Green50HammingDensity.ball_count]
+  have card : Fintype.card K = 2^m := by rw [←Nat.card_eq_fintype_card]; exact GaloisField.card 2 m hm.ne'
+  have pos := Fintype.card_pos (α:=K)
+  have hu : N = Fintype.card K - 1 := Fintype.card_units K
+  calc
+    _ = N + 1 := by simp [sum_range_succ,Nat.add_comm]
+    _ = 2^m := by omega
+
+/-- For every positive r,m an explicit image of a binary radius-one ball has 2^m
+points in dimension 2rm, and every affine flat in its r-fold sum has dimension at most r. -/
+theorem sparse_cube_examples (r m : ℕ) (hr : 0 < r) (hm : 0 < m) :
+    ∃ A : Finset (Cube (2*r*m)), A.card=2^m ∧
+      ∀ (W : Submodule F₂ (Cube (2*r*m))) (x : Cube (2*r*m)),
+        x +ᵥ (W : Set (Cube (2*r*m))) ⊆ ↑(r • A) → Module.finrank F₂ W ≤ r := by
+  obtain ⟨N,P,kernel,size⟩ := sparse_check_map (2*r) m (by omega) hm
   let A := (ball N 1).image P
-  refine ⟨A,?_,?_⟩
-  · change ((ball N 1).image P).card=_
-    rw [(card_image_iff.mpr (show Set.InjOn P ↑(ball N 1) from by
-      intro x hx y hy eq
-      have small := weight_of_mem_sum (show x+y∈(2:ℕ) • ball N 1 by
-        rw [two_nsmul]; exact add_mem_add hx hy)
-      have z := kernel (x+y) (by omega) (by rw [map_add,eq,twice])
-      exact (add_right_cancel (z.trans (twice y).symm) : x=y)))]
-    rw [Green50HammingDensity.ball_count]
-    have card : Fintype.card K = 2^m := by rw [←Nat.card_eq_fintype_card]; exact GaloisField.card 2 m hm.ne'
-    have pos := Fintype.card_pos (α:=K)
-    have hu : N = Fintype.card K - 1 := Fintype.card_units K
-    calc
-      _ = N + 1 := by simp [sum_range_succ,Nat.add_comm]
-      _ = 2^m := by omega
-  · intro W x hW
-    apply sparse_image_flat P kernel W x
-    have incl : r • A ⊆ (ball N r).image P := by
-      change r • (ball N 1).image P ⊆ _
-      rw [←image_nsmul]
-      apply image_subset_image
-      intro z hz
-      exact mem_filter.mpr ⟨mem_univ _,by simpa using weight_of_mem_sum hz⟩
-    exact hW.trans incl
+  refine ⟨A,size,?_⟩
+  intro W x hW
+  apply sparse_image_flat P (fun z hw hz => kernel z (by omega) hz) W x
+  have incl : r • A ⊆ (ball N r).image P := by
+    change r • (ball N 1).image P ⊆ _
+    rw [←image_nsmul]
+    apply image_subset_image
+    intro z hz
+    exact mem_filter.mpr ⟨mem_univ _,by simpa using weight_of_mem_sum hz⟩
+  exact hW.trans incl
 
 /-- These witnesses force (2r−1)C ≥ 2r for an all-dimensions r-fold Green bound. -/
 theorem bch_coefficient_bound (r : ℕ) (hr : 0 < r) (C : ℝ)
@@ -229,6 +236,7 @@ end Green50BCH
 
 #print axioms Green50BCH.column_girth
 #print axioms Green50BCH.sparse_image_flat
+#print axioms Green50BCH.sparse_check_map
 #print axioms Green50BCH.sparse_cube_examples
 #print axioms Green50BCH.bch_coefficient_bound
 #print axioms Green50BCH.tenfold_requires_twenty_nineteenths
