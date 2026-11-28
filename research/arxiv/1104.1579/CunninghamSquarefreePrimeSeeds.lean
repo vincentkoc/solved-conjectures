@@ -7,14 +7,18 @@ namespace CunninghamChain.SquarefreeSeeds
 
 open Finset
 
-private abbrev term (first : Bool) := if first then firstKindTerm else secondKindTerm
+/-- The canonical Cunningham term for the chosen recurrence. -/
+abbrev term (first : Bool) := if first then firstKindTerm else secondKindTerm
 
-private def fixed (first : Bool) (A : Type*) [Ring A] : A := if first then -1 else 1
+/-- The affine fixed point, −1 for the first kind and 1 for the second. -/
+def fixed (first : Bool) (A : Type*) [Ring A] : A := if first then -1 else 1
 
-private def value {A : Type*} [Ring A] (first : Bool) (i : ℕ) (x : A) : A :=
+/-- The affine formula for the term at a given site. -/
+def value {A : Type*} [Ring A] (first : Bool) (i : ℕ) (x : A) : A :=
   2^i * (x - fixed first A) + fixed first A
 
-private theorem term_bounds (first : Bool) {p : ℕ} (hp : 0 < p) (i : ℕ) :
+/-- Positivity and a uniform linear bound for all canonical terms at a positive seed. -/
+theorem term_bounds (first : Bool) {p : ℕ} (hp : 0 < p) (i : ℕ) :
     0 < term first p i ∧ term first p i + 1 ≤ 2^i*(p+1) := by
   induction i with
   | zero => cases first <;> simpa [term, firstKindTerm, secondKindTerm] using hp
@@ -24,7 +28,8 @@ private theorem term_bounds (first : Bool) {p : ℕ} (hp : 0 < p) (i : ℕ) :
       simp only [term, Bool.false_eq_true, if_false, if_true, firstKindTerm, secondKindTerm] at ih ⊢ <;>
       omega
 
-private theorem cast_term (first : Bool) {p : ℕ} (hp : 0 < p) (i m : ℕ) :
+/-- For a positive seed, the modular image agrees with the affine formula. -/
+theorem cast_term (first : Bool) {p : ℕ} (hp : 0 < p) (i m : ℕ) :
     (term first p i : ZMod m) = value first i (p : ZMod m) := by
   induction i with
   | zero => cases first <;> simp [term, firstKindTerm, secondKindTerm, value]
@@ -42,16 +47,19 @@ private theorem cast_term (first : Bool) {p : ℕ} (hp : 0 < p) (i m : ℕ) :
       simp [value, fixed, pow_succ]
       ring
 
-private def root (first : Bool) (m i : ℕ) : ℕ :=
+/-- The least residue of the candidate root for an odd modulus. -/
+def root (first : Bool) (m i : ℕ) : ℕ :=
   (fixed first (ZMod m) - ((2:ZMod m)^i)⁻¹ * fixed first (ZMod m)).val
 
-private theorem root_spec (first : Bool) {m : ℕ} [NeZero m] (hodd : Nat.Coprime 2 m) (i : ℕ) :
+/-- At odd modulus the candidate residue zeros the affine form. -/
+theorem root_spec (first : Bool) {m : ℕ} [NeZero m] (hodd : Nat.Coprime 2 m) (i : ℕ) :
     value first i (root first m i : ZMod m) = 0 := by
   have hu : IsUnit ((2 : ZMod m)^i) := ((ZMod.isUnit_iff_coprime 2 m).mpr hodd).pow i
   simp only [value, root, ZMod.natCast_zmod_val]
   linear_combination -(fixed first (ZMod m)) * (ZMod.mul_inv_of_unit _ hu)
 
-private theorem root_iff (first : Bool) {p m : ℕ} [NeZero m] (hp : 0 < p)
+/-- Divisibility of the term is the single root congruence at odd modulus. -/
+theorem root_iff (first : Bool) {p m : ℕ} [NeZero m] (hp : 0 < p)
     (hodd : Nat.Coprime 2 m) (i : ℕ) :
     m ∣ term first p i ↔ p ≡ root first m i [MOD m] := by
   rw [← ZMod.natCast_eq_zero_iff, cast_term first hp, ← ZMod.natCast_eq_natCast_iff]

@@ -36,7 +36,8 @@ private theorem pair_mass {m b q a : ℕ} [NeZero m] (hc : b.Coprime m) (hp : q.
   rw [Nat.totient_mul cop,Nat.totient_prime_pow_succ hp 1,pow_one] at lim
   simpa only [Nat.cast_mul,mul_inv_rev,one_div,mul_comm] using lim
 
-private def largeHits (a : ℕ → ℕ) (D L : ℕ) : Set ℕ :=
+/-- Seeds meeting a square residue above the cutoff within a linear size bound. -/
+def largeHits (a : ℕ → ℕ) (D L : ℕ) : Set ℕ :=
   {p | ∃ q, q.Prime ∧ L<q ∧ q^2≤D*p ∧ p%q^2=a q}
 
 private theorem big_weight (a : ℕ → ℕ) (D L : ℕ) (hL : 0<L) :
@@ -89,6 +90,31 @@ private theorem small_sum {Q : Finset ℕ} {R L k : ℕ} {u : ℝ} (hu : 0≤u) 
     _ ≤ u/2 := by
       simpa only [div_eq_mul_inv,one_mul,mul_assoc] using mul_le_mul_of_nonneg_left hscale hu
 
+/-- The omitted large-prime square classes have normalized prime mass
+eventually below every strict upper bound for 1632k/L. -/
+theorem largeHits_mass_lt {k : ℕ} (a : Fin k → ℕ → ℕ) (D L : ℕ) (hL : 0<L) {c : ℝ}
+    (hc : (k:ℝ)*(1632/L)<c) :
+    ∀ᶠ s : ℝ in 𝓝[>] 1, (s-1)*mass {p | ∃ i, p∈largeHits (a i) D L} s < c := by
+  classical
+  let Z (i : Fin k) := largeHits (a i) D L
+  let B := {p | ∃ i, p∈Z i}
+  apply eventually_mass_lt_of_sum_le B (by positivity) hc
+  have each (i : Fin k) := big_weight (a i) D L hL
+  filter_upwards [eventually_all.mpr each] with X hX
+  have per (n : ℕ) : weight B n ≤ ∑ i : Fin k,weight (Z i) n := by
+    by_cases hn : n.Prime ∧ n∈B
+    · obtain ⟨i,hi⟩ := hn.2
+      rw [weight,if_pos hn]
+      have hw := single_le_sum (f:=fun i : Fin k => weight (Z i) n)
+        (fun j _ => weight_nonneg (Z j) n) (mem_univ i)
+      rwa [show weight (Z i) n=Real.log n from if_pos ⟨hn.1,hi⟩] at hw
+    · rw [weight,if_neg hn]; exact sum_nonneg (fun _ _ => weight_nonneg ..)
+  calc
+    _ ≤ ∑ n ∈ range X, ∑ i : Fin k,weight (Z i) n := sum_le_sum (fun n _ => per n)
+    _ = _ := sum_comm
+    _ ≤ ∑ _ : Fin k,(1632/(L:ℝ))*X := sum_le_sum (fun i _ => hX i)
+    _ = _ := by simp [mul_assoc]
+
 /-- Infinitely many prime seeds in a reduced progression avoid all the prescribed
 square classes above R, up to the sizes that can divide a linear value at the seed. -/
 theorem infinitely_many_avoiding_squares {m b k R : ℕ} [NeZero m] (hb : b.Coprime m)
@@ -129,28 +155,12 @@ theorem infinitely_many_avoiding_squares {m b k R : ℕ} [NeZero m] (hb : b.Copr
     · have hqin : q∈Q := mem_filter.mpr ⟨Nat.mem_primesLE.mpr ⟨hqL,hq⟩,hr⟩
       exact Or.inl ⟨(q,i),mem_product.mpr ⟨hqin,mem_univ _⟩,hm,he⟩
     · exact Or.inr (Or.inl ⟨i,q,hq,by omega,hsize,he⟩)
-  have hBsum : ∀ᶠ X : ℕ in atTop, ∑ n ∈ range X,weight B n ≤ ((k:ℝ)*(1632/L))*X := by
-    have each (i : Fin k) := big_weight (fun q => a i q%q^2) D L hL
-    filter_upwards [eventually_all.mpr each] with X hX
-    have per (n : ℕ) : weight B n ≤ ∑ i : Fin k,weight (Z i) n := by
-      by_cases hn : n.Prime ∧ n∈B
-      · obtain ⟨i,hi⟩ := hn.2
-        rw [weight,if_pos hn]
-        have hw := single_le_sum (f:=fun i : Fin k => weight (Z i) n)
-          (fun j _ => weight_nonneg (Z j) n) (mem_univ i)
-        rwa [show weight (Z i) n=Real.log n from if_pos ⟨hn.1,hi⟩] at hw
-      · rw [weight,if_neg hn]; exact sum_nonneg (fun _ _ => weight_nonneg ..)
-    calc
-      _ ≤ ∑ n ∈ range X, ∑ i : Fin k,weight (Z i) n := sum_le_sum (fun n _ => per n)
-      _ = _ := sum_comm
-      _ ≤ ∑ _ : Fin k,(1632/(L:ℝ))*X := sum_le_sum (fun i _ => hX i)
-      _ = _ := by simp [mul_assoc]
   have hC : (k:ℝ)*(1632/L)<u/4 := by
     have hl : (k:ℝ)*1632/(u/4)<L := by linarith only [hlarge,Nat.cast_nonneg (α:=ℝ) R]
     rw [div_lt_iff₀ (by positivity : 0<u/4)] at hl
     rw [←mul_div_assoc,div_lt_iff₀ hL']
     linarith
-  have hBad := eventually_mass_lt_of_sum_le B (by positivity) hC hBsum
+  have hBad := largeHits_mass_lt (fun i q => a i q%q^2) D L hL hC
   have hsmall : Tendsto (fun s : ℝ => (s-1)*(∑ j ∈ J,mass (S j) s)) (𝓝[>] 1) (𝓝 (∑ j∈J,v j)) := by
     simp only [mul_sum]
     apply tendsto_finsetSum
