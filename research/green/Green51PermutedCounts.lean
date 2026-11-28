@@ -32,7 +32,7 @@ def WitnessWithCount {G:Type*} [AddCommGroup G] [Module F G] [DecidableEq G]
   A.card=2^(n+1) ∧
     (¬∃ W:Submodule F G,Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A) ∧ (familyAt n A).ncard=cnt
 
-private theorem witness_of_copy {A:Finset U} {B:Finset T} {n cnt:ℕ} (copy:AffineCopy A B)
+theorem witness_of_copy {A:Finset U} {B:Finset T} {n cnt:ℕ} (copy:AffineCopy A B)
     (profile:WitnessWithCount n cnt B) : WitnessWithCount n cnt A := by
   exact ⟨(copy_card copy).trans profile.1,avoids_of_copy copy profile.2.1,
     (count_copy_at n copy).symm.trans profile.2.2⟩
