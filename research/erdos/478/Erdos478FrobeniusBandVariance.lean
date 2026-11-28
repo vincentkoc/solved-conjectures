@@ -20,7 +20,7 @@ theorem family_mem {K H : ℕ} {l : Nat.Primes} : l∈family K H ↔ K<l.val ∧
   apply (mem_subtype (a:=⟨l.val,l.property⟩) (p:=Nat.Prime) (s:=lengths broad K H)).trans
   simp [lengths,l.property,and_assoc]
 
-private theorem family_card (K H : ℕ) : (family K H).card=(lengths broad K H).card := by
+theorem family_card (K H : ℕ) : (family K H).card=(lengths broad K H).card := by
   change ((lengths broad K H).subtype Nat.Prime).card=_
   rw [card_subtype,filter_eq_self.mpr (fun _ hi => (mem_filter.mp hi).2.2)]
 
@@ -53,6 +53,7 @@ theorem rate_of_inputs (pit : DegreeOnePrimeIdealTheorem) (mass : countingInput 
     exact broad_square_mean _ l hb (by omega)
 
 #print axioms family
+#print axioms family_card
 #print axioms family_mem
 #print axioms broad_square_mean
 #print axioms broad_endpoint_variance

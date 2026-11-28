@@ -38,7 +38,7 @@ def family_good (K : ℕ) (s : Finset Nat.Primes) (c η : ℝ) (p : ℕ) :=
 
 def good (K H : ℕ) := family_good K (gaps K H)
 
-private theorem fraction_lower {X : ℕ} (hX : 2≤X) {bad good : ℕ → Prop}
+theorem fraction_lower {X : ℕ} (hX : 2≤X) {bad good : ℕ → Prop}
     (hg : ∀ p, ¬bad p → good p) : 1-fraction X bad≤fraction X good := by
   have pos : 0<(Nat.primesLE X).card := card_pos.mpr ⟨2,Nat.mem_primesLE.mpr ⟨hX,Nat.prime_two⟩⟩
   have total : fraction X bad+fraction X (fun p => ¬bad p)=1 := by
@@ -159,6 +159,7 @@ theorem family_deficit_fraction {K X : ℕ} (s : Finset Nat.Primes) {c b : ℝ} 
 #print axioms family_rate
 #print axioms gap_mem
 #print axioms gap_card
+#print axioms fraction_lower
 #print axioms scale_zero
 #print axioms scaled_variance_zero
 #print axioms endpoint_rate

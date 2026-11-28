@@ -32,14 +32,13 @@ private theorem affine_derangement_pow (g : Perm (ZMod p)) (hf : ∀ x, g x≠x)
   intro x
   simp [iterate]
 
-/-- A faithful prime-degree action containing a derangement whose
-p-th power is nonidentity has just one orbit on distinct ordered pairs. -/
-theorem two_transitive_of_derangement {G Y : Type*} [Group G] [Finite G] [Fintype Y]
-    (ρ : G →* Perm Y) (hi : Injective ρ) (hc : Fintype.card Y=p) (hd : p∣Nat.card G)
-    {σ : G} (hf : ∀ x, ρ σ x≠x) (hp : σ^p≠1)
-    {a b c d : Y} (hab : a≠b) (hcd : c≠d) : ∃ g : G, ρ g a=c ∧ ρ g b=d := by
-  apply two_transitive_of_nonaffine ρ hi hc hd _ hab hcd
-  intro e ha
+/-- A fixed-point-free element whose p-th power is nontrivial prevents
+affine coordinates on the whole action. -/
+theorem nonaffine_of_derangement {G Y : Type*} [Group G]
+    (ρ : G →* Perm Y) (hi : Injective ρ) {σ : G}
+    (hf : ∀ x, ρ σ x≠x) (hp : σ^p≠1) (e : ZMod p ≃ Y) :
+    ¬∀ g, ∃ a b : ZMod p, ∀ x, e.symm (ρ g (e x))=a*x+b := by
+  intro ha
   let τ := e.symm.permCongrHom.toMonoidHom.comp ρ
   have ht : Injective τ := e.symm.permCongrHom.injective.comp hi
   apply hp
@@ -49,6 +48,15 @@ theorem two_transitive_of_derangement {G Y : Type*} [Group G] [Finite G] [Fintyp
   intro x hx
   exact hf (e x) (e.symm.injective (hx.trans (e.symm_apply_apply x).symm))
 
+/-- A faithful prime-degree action containing a derangement whose
+p-th power is nonidentity has just one orbit on distinct ordered pairs. -/
+theorem two_transitive_of_derangement {G Y : Type*} [Group G] [Finite G] [Fintype Y]
+    (ρ : G →* Perm Y) (hi : Injective ρ) (hc : Fintype.card Y=p) (hd : p∣Nat.card G)
+    {σ : G} (hf : ∀ x, ρ σ x≠x) (hp : σ^p≠1)
+    {a b c d : Y} (hab : a≠b) (hcd : c≠d) : ∃ g : G, ρ g a=c ∧ ρ g b=d := by
+  exact two_transitive_of_nonaffine ρ hi hc hd (nonaffine_of_derangement ρ hi hf hp) hab hcd
+
+#print axioms nonaffine_of_derangement
 #print axioms two_transitive_of_derangement
 end
 end Erdos478.PrimeDifferences

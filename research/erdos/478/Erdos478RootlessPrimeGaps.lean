@@ -64,13 +64,10 @@ private theorem fixes_no_gap_root {K : Type*} [Field K] [NumberField K] {l : ℕ
 
 attribute [local instance] Int.ideal_span_isMaximal_of_prime
 
-/-- The root action is doubly transitive for both classes 3 and 4 modulo
-seven, including the prime lengths congruent to one modulo three. -/
-theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 3<l)
-    {a b c d : (rationalGap l).rootSet (rationalGap l).SplittingField}
-    (hab : a≠b) (hcd : c≠d) :
-    ∃ σ : (rationalGap l).SplittingField ≃ₐ[ℚ] (rationalGap l).SplittingField,
-      σ (a:_)=(c:_) ∧ σ (b:_)=(d:_) := by
+/-- The Frobenius obstruction on the roots in the splitting field. -/
+theorem broad_derangement {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 3<l) :
+    ∃ σ : (rationalGap l).Gal, (∀ x : (rationalGap l).rootSet (rationalGap l).SplittingField,
+      σ (x:_)≠(x:_)) ∧ σ^l≠1 := by
   classical
   let : Fact l.Prime := ⟨hl⟩
   let F := rationalGap l
@@ -95,6 +92,25 @@ theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 
   have hp : σ^l≠1 := by
     intro hh
     rcases (Nat.dvd_prime hl).mp (h₃.trans (hord.trans (orderOf_dvd_of_pow_eq_one hh))) with he|he <;> omega
+  exact ⟨σ,fixes_no_gap_root (by omega) J σ hfix,hp⟩
+
+/-- The root action is doubly transitive for both classes 3 and 4 modulo
+seven, including the prime lengths congruent to one modulo three. -/
+theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 3<l)
+    {a b c d : (rationalGap l).rootSet (rationalGap l).SplittingField}
+    (hab : a≠b) (hcd : c≠d) :
+    ∃ σ : (rationalGap l).SplittingField ≃ₐ[ℚ] (rationalGap l).SplittingField,
+      σ (a:_)=(c:_) ∧ σ (b:_)=(d:_) := by
+  classical
+  let : Fact l.Prime := ⟨hl⟩
+  let F := rationalGap l
+  let K := F.SplittingField
+  let : NumberField K := ⟨⟩
+  let : Normal ℚ K := SplittingField.instNormal F
+  let : Fact ((F.map (algebraMap ℚ K)).Splits) := ⟨SplittingField.splits F⟩
+  let : IsGalois ℚ K := { to_isSeparable := inferInstance, to_normal := SplittingField.instNormal F }
+  obtain ⟨σ,hfix,hp⟩ : ∃ σ : K ≃ₐ[ℚ] K, (∀ x : F.rootSet K, σ (x:K)≠(x:K)) ∧ σ^l≠1 :=
+    broad_derangement hl h hl3
   have irr : Irreducible F := GapFamilies.irreducible_gap_rat hl.pos
   have hd : F.natDegree=l := by
     change (descPochhammer ℚ l-1).natDegree=l
@@ -102,7 +118,7 @@ theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 
   let ρ := (Gal.galActionHom F K).comp (Gal.restrict F K)
   have ri : Injective (Gal.restrict F K) := (Finite.injective_iff_surjective).mpr (Gal.restrict_surjective F K)
   have hf (x : F.rootSet K) : ρ σ x≠x := fun he =>
-    fixes_no_gap_root (by omega) J σ hfix x ((Gal.galActionHom_restrict F K σ x).symm.trans (congrArg Subtype.val he))
+    hfix x ((Gal.galActionHom_restrict F K σ x).symm.trans (congrArg Subtype.val he))
   obtain ⟨τ,ha,hb⟩ := PrimeDifferences.two_transitive_of_derangement ρ ((Gal.galActionHom_injective F K).comp ri)
     ((card_rootSet_eq_natDegree irr.separable (SplittingField.splits F)).trans hd)
     (hd ▸ Gal.prime_degree_dvd_card irr (hd ▸ hl)) hf hp hab hcd
@@ -110,6 +126,7 @@ theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 
     (Gal.galActionHom_restrict F K τ b).symm.trans (congrArg Subtype.val hb)⟩
 
 #print axioms broad
+#print axioms broad_derangement
 #print axioms broad_root_pair_conjugate
 end
 end Erdos478.BinaryGap
