@@ -60,7 +60,8 @@ theorem direction_alternative {G : Type*} [AddCommGroup G] [Module F G]
   exact hd
 
 
-private theorem folded_pullback {G : Type*} [AddCommGroup G] [Module F G] [Fintype G] [DecidableEq G]
+/-- Averaging an independent folded-cube preimage over all its translates bounds the density. -/
+theorem folded_pullback {G : Type*} [AddCommGroup G] [Module F G] [Fintype G] [DecidableEq G]
     (A : Finset G) (k : ℕ) (v : Fin (2*k) → G)
     (miss : ∀ i,v i∉A+A) (last : (∑ i,v i)∉A+A) :
     (2*A.card)*2^(2*k) + Fintype.card G*(2*k).choose k ≤ Fintype.card G*2^(2*k) := by
@@ -127,3 +128,4 @@ theorem hyperplane_above {n : ℕ} (A : Finset (Fin n → F))
 end Green51Hyperplane
 #print axioms Green51Hyperplane.direction_alternative
 #print axioms Green51Hyperplane.hyperplane_above
+#print axioms Green51Hyperplane.folded_pullback
