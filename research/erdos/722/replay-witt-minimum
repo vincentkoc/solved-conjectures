@@ -49,6 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, help="reuse the source archive at the pinned revision")
     parser.add_argument("--with-products", action="store_true", help="also replay the six-point-block product family")
+    parser.add_argument("--with-two-stem", action="store_true", help="also replay Hanani’s 4v+2 construction")
     args = parser.parse_args()
     upstream = Path.cwd().resolve()
     manifest = json.loads((upstream / "lake-manifest.json").read_text())
@@ -69,6 +70,9 @@ def main():
     if args.with_products:
         selected.append(TOPIC / "Erdos722PrimePowerProducts.lean")
         adapters.append("Erdos722WittPointedProducts")
+    if args.with_two_stem:
+        selected.append(TOPIC / "Erdos722HananiSpectrum.lean")
+        adapters.append("Erdos722WittTwoStemOrders")
     order, _, aliases = runner["dependency_order"](selected, files, upstream, env)
     with TemporaryDirectory(prefix="steiner-minimum-orders-") as directory:
         work = Path(directory)
