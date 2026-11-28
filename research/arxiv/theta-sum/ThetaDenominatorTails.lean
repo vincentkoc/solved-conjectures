@@ -110,7 +110,8 @@ theorem cut_variance : ∃ B : ℝ, 0≤B ∧ ∀ {T : ℕ}, 1≤T → ∀ L : �
 
 open ThetaReciprocalInversion ThetaCotangentTriangle
 
-private lemma primitive_reflect {p d : ℕ} (hd : 1<d) (hc : p.Coprime d) {j : ℕ} (hj : j≤2*d) :
+/-- Reflection in the numerator reverses the sign on unit arguments. -/
+theorem primitive_reflect {p d : ℕ} (hd : 1<d) (hc : p.Coprime d) {j : ℕ} (hj : j≤2*d) :
     primitiveTerm p d (2*d-j) = -primitiveTerm p d j := by
   let : NeZero d := ⟨by omega⟩
   let : Nontrivial (ZMod d) := ZMod.nontrivial_iff.mpr (by omega)
@@ -133,7 +134,8 @@ private lemma primitive_reflect {p d : ℕ} (hd : 1<d) (hc : p.Coprime d) {j : �
     split_ifs <;> norm_num <;> omega
   · exact neg_zero.symm
 
-private lemma primitive_period (p d j : ℕ) :
+/-- The numerator sign has period twice the reduced modulus. -/
+theorem primitive_period (p d j : ℕ) :
     primitiveTerm p d (2*d+j) = primitiveTerm p d j := by
   have hz : ((2*d+j:ℕ):ZMod d) = (j:ZMod d) := by simp
   have hc : (2*d+j).Coprime d ↔ j.Coprime d := by rw [← ZMod.isUnit_iff_coprime,← ZMod.isUnit_iff_coprime,hz]
@@ -209,3 +211,5 @@ end Arxiv.«2501.03234».ThetaDenominatorTails
 #print axioms Arxiv.«2501.03234».ThetaDenominatorTails.cut_energy
 #print axioms Arxiv.«2501.03234».ThetaDenominatorTails.cut_variance
 #print axioms Arxiv.«2501.03234».ThetaDenominatorTails.small_rows_bound
+#print axioms Arxiv.«2501.03234».ThetaDenominatorTails.primitive_reflect
+#print axioms Arxiv.«2501.03234».ThetaDenominatorTails.primitive_period

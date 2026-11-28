@@ -323,7 +323,13 @@ theorem prime_mean_absolute_rate : ∃ C : ℝ, 0<C ∧ ∀ᶠ X : ℕ in Filter
   rw [← Real.sqrt_div hA.le,Real.le_sqrt (by positivity) (by positivity)]
   exact hr
 
+/-- Pointwise global bound at the bottom of a prime scale. -/
+theorem small_scale_error {N p : ℕ} (hN : 2≤N) (hp : p.Prime) (hhi : p≤N^64) :
+    |(S p:ℝ)/p-Real.log p/2| ≤ (|(S 2:ℝ)/2-Real.log 2/2|+17000)*(N:ℝ)^2 := by
+  simpa only [error,Nat.cast_ofNat] using small_error hN hp hhi
+
 end Arxiv.«2501.03234».ThetaPrimeMeanSquare
+#print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.small_scale_error
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.prime_error_second_moment
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.prime_error_count
 #print axioms Arxiv.«2501.03234».ThetaPrimeMeanSquare.relative_second_moment
