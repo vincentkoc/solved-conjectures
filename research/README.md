@@ -25,6 +25,7 @@ These Lean files develop partial results for six problems in [Formal Conjectures
 | [Neighboring Lucas–Fibonacci prime pairs](arxiv/2211.10788/NeighboringPrimePairs.md) | After index 6, both neighbors are prime iff the index is 0, 6 or 18 modulo 24 and `11Fₙ² − 1` is semiprime. | Existence of another pair remains open. |
 | [Conic for neighboring primes](arxiv/2211.10788/NeighboringPrimeConic.md) | For primes `p < q`, the two neighbors equal `(p,q)` at a common index iff `11(p+q)² = 49(pq+1)`. Every positive ordered integer point comes from an even index. | Existence of a third prime pair remains open. |
 | [Pell criterion for Lucas–Fibonacci values](arxiv/2211.10788/PellCriterion.md) | An integer `y ≥ 0` occurs on the upper diagonal iff some natural `x` satisfies `x² − 5y² = ±44` and `x ≡ 7y (mod 22)`. | Infinitude of primes satisfying this criterion remains open. |
+| [Both Lucas–Fibonacci diagonals](arxiv/2211.10788/DiagonalUnion.md) | A natural number occurs on either diagonal iff `x² − 5y² = ±44` for some natural `x`. The lower diagonal uses `x ≡ −7y (mod 22)`. The only common value is 5. | Infinitude of prime values on either diagonal remains open. |
 
 ## Replay
 
