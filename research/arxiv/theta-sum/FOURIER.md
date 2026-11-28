@@ -8,6 +8,8 @@ At every odd prime `p`, with `m = (p−1)/2` and `H_m = 1 + 1/2 + ⋯ + 1/m`, th
 
 In particular, `|S(p)| ≤ p [1 + 4(1 + log p)²]`. The Lean theorem `S_isBigO_prime_log_sq` also states `S(p) = O(p log² p)` on the filter of primes tending to infinity. For every `ε > 0`, the sum is therefore `o(p^(1+ε))` along the primes. In particular, for every `C > 0` and `ε > 0`, all sufficiently large primes satisfy `S(p) < C p^(1+ε)`. This proves the upper inequality of the paper’s revised Conjecture 3.3. Its lower inequality requires `C₁p < S(p)` for every positive `C₁`; the pinned DeepMind declaration `conjecture_4_4` formulates this lower growth condition using natural multipliers. Positivity and the lower inequality remain open. [Conjecture 3.3, v3, p. 4](https://arxiv.org/pdf/2501.03234v3#page=4) [Proof](ThetaFourierBound.lean) · [Pinned upstream declarations](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/2501.03234/ArithmeticSumS.lean#L41-L95)
 
+The [composite-denominator estimate](COMPOSITE-DENOMINATORS.md) identifies the gcd correction at odd moduli and gives an explicit negative leading term on powers with at least three distinct prime factors.
+
 ## Proof
 
 Let `A = {1, 3, …, p−2}` in the field of residues modulo `p`, and count ordered pairs `N = #{(a,b) ∈ A² : ab ∈ A}`. The [odd-representative identity](DIAGONAL.md) gives `S(p) = 4N − 2m²`. With `e(x) = exp(2πix/p)`, put `F(t) = Σ_{a∈A} e(at)` and `L = Σ_{t≠0} |F(t)|`.
