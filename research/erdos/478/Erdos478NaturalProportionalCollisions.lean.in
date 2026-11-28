@@ -1,0 +1,143 @@
+import Erdos478ProportionalEndpointLaw
+import Erdos478NaturalDensity
+import TauCeti.NumberTheory.LSeries.WienerIkehara.SharpCutoff
+import Mathlib.NumberTheory.LSeries.PrimesInAP
+
+/-!
+# Ordinary prime frequencies in proportional gap intervals
+
+The two residue classes are counted by the Wiener–Ikehara theorem
+applied to mathlib's residue-class von Mangoldt series. The prime ideal
+theorem supplies the ordinary-prime endpoint variance.
+-/
+
+namespace Erdos478.Proportional
+open Finset Filter BandWeights BinaryGap GapDensity GapSieve GapBands ArithmeticFunction
+open scoped Topology Classical
+noncomputable section
+
+/-- The inclusive cutoff in the Tauberian theorem agrees with the
+punctured natural interval used for the selected prime weights. -/
+theorem residue_mass {q r : ℕ} [NeZero q] (hr : r<q) (hcop : Nat.Coprime r q) :
+    countingInput (fun n => n%q=r) (1/q.totient) := by
+  let a := (r : ZMod q)
+  let f := vonMangoldt.residueClass a
+  let F := LSeries (fun n => (f n : ℂ))
+  have ha : IsUnit a := (ZMod.isUnit_iff_coprime r q).mpr hcop
+  have nonneg : 0≤f := vonMangoldt.residueClass_nonneg a
+  have ser (s : ℂ) (hs : 1<s.re) : LSeriesHasSum (fun n => (f n : ℂ)) s (F s) := by
+    apply LSeriesSummable.LSeriesHasSum
+    apply LSeriesSummable_of_abscissaOfAbsConv_lt_re
+    exact (vonMangoldt.abscissaOfAbsConv_residueClass_le_one a).trans_lt (by exact_mod_cast hs)
+  have boundary (s : ℂ) (hs : 1<s.re) :
+      vonMangoldt.LFunctionResidueClassAux a s=F s-((1/(q.totient:ℝ):ℝ):ℂ)/(s-1) := by
+    simpa [F,f,one_div] using vonMangoldt.eqOn_LFunctionResidueClassAux ha (show s∈{s : ℂ | 1<s.re} from hs)
+  have WI := TauCeti.LSeries.wienerIkehara nonneg ser (vonMangoldt.continuousOn_LFunctionResidueClassAux a) boundary
+  apply (WI.comp (tendsto_natCast_atTop_atTop (R:=ℝ))).congr'
+  apply Eventually.of_forall
+  intro n
+  change (n:ℝ)⁻¹*(∑ i∈Icc 1 ⌊(n:ℝ)⌋₊, f i)=mass _ n/n
+  rw [Nat.floor_natCast,show Icc 1 n=Ioc 0 n from Icc_succ_left_eq_Ioc 0 n,div_eq_inv_mul]
+  congr 1
+  apply sum_congr rfl
+  intro i _
+  have eqr : (i:ZMod q)=a ↔ i%q=r := (ZMod.natCast_eq_natCast_iff i r q).trans (by simp [Nat.ModEq,Nat.mod_eq_of_lt hr])
+  by_cases h : i%q=r
+  · simp [f,vonMangoldt.residueClass,eqr.mpr h,h]
+  · simp [f,vonMangoldt.residueClass,mt eqr.mp h,h]
+
+theorem selected_mass : countingInput selected (1/6) := by
+  have h11 := residue_mass (q:=21) (r:=11) (by decide) (by decide)
+  have h17 := residue_mass (q:=21) (r:=17) (by decide) (by decide)
+  have e : (1/(Nat.totient 21:ℝ))+(1/(Nat.totient 21:ℝ))=1/6 := by
+    rw [show Nat.totient 21=12 by decide]
+    norm_num
+  rw [← e]
+  apply (h11.add h17).congr'
+  apply Eventually.of_forall
+  intro N
+  change mass _ N/N+mass _ N/N=mass _ N/N
+  rw [← add_div]
+  congr 1
+  rw [mass,mass,mass,← sum_add_distrib]
+  apply sum_congr rfl
+  intro n _
+  by_cases h : n%21=11
+  · simp [selected,h]
+  · simp [selected,h]
+
+/-- At every proportional gap window, the normalized count of distinct
+upper endpoints concentrates about (L-1)/6 along the observation primes. -/
+theorem ordinary_endpoint_law {H : ℕ → ℕ} {L η ε : ℝ} (hL : 1<L)
+    (h : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hη : 0<η) (hε : 0<ε) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-ε<fraction X (good K (H K) ((L-1)/6) η) :=
+  endpoint_law degree_one_prime_ideal_theorem selected_mass hL h hη hε
+
+theorem fixed_ratio_law {L η ε : ℝ} (hL : 1<L) (hη : 0<η) (hε : 0<ε) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-ε<fraction X (good K ⌊L*(K:ℝ)⌋₊ ((L-1)/6) η) :=
+  ordinary_endpoint_law hL ((tendsto_nat_floor_mul_div_atTop (by linarith : 0≤L)).comp
+    (tendsto_natCast_atTop_atTop (R:=ℝ))) hη hε
+
+theorem ordinary_endpoint_rate {H : ℕ → ℕ} {L η A : ℝ} (hL : 1<L)
+    (h : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hη : 0<η) (hA : (L-1)/6/η^2<A) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-A*scale K<fraction X (good K (H K) ((L-1)/6) η) :=
+  endpoint_rate degree_one_prime_ideal_theorem selected_mass hL h hη hA
+
+private theorem enough_fraction {K H X : ℕ} {c b : ℝ} (hK : 1<K) :
+    fraction X (good K H c (c-b))≤fraction X (fun p =>
+      let D := ⌈b*K/Real.log K⌉₊
+      D≤(joined (gaps K H) p).card ∧
+      ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  have pos : 0<(K:ℝ) := by positivity
+  have lg : 0<Real.log K := Real.log_pos (by exact_mod_cast hK)
+  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
+  apply Nat.cast_le.mpr
+  apply card_le_card
+  intro p hp
+  obtain ⟨hm,hg⟩ := mem_filter.mp hp
+  obtain ⟨hc,hd⟩ := hg
+  let U := joined (gaps K H) p
+  have hlow := (abs_lt.mp hc).1
+  have hbound : b< (U.card:ℝ)*scale K := by linarith only [hlow]
+  have enough : ⌈b*K/Real.log K⌉₊≤U.card := by
+    apply Nat.ceil_le.mpr
+    apply (div_le_iff₀ lg).mpr
+    change b<(U.card:ℝ)*(Real.log K/K) at hbound
+    rw [← mul_div_assoc] at hbound
+    exact ((lt_div_iff₀ pos).mp hbound).le
+  simp only [mem_filter]
+  exact ⟨hm,enough,(Nat.add_le_add_left enough _).trans hd⟩
+
+
+/-- Every coefficient strictly below the band density yields both that
+many distinct colliding upper endpoints and the same factorial-image deficit. -/
+theorem deficit_frequency {L b ε : ℝ} (hL : 1<L) (hb : b<(L-1)/6) (hε : 0<ε) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-ε<fraction X (fun p =>
+      let D := ⌈b*K/Real.log K⌉₊
+      D≤(joined (gaps K ⌊L*(K:ℝ)⌋₊) p).card ∧
+      ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  filter_upwards [fixed_ratio_law hL (sub_pos.mpr hb) hε,eventually_gt_atTop 1] with K hk hK
+  exact hk.mono (fun _ hx => hx.trans_le (enough_fraction hK))
+
+theorem deficit_rate {L b A : ℝ} (hL : 1<L) (hb : b<(L-1)/6)
+    (hA : (L-1)/6/((L-1)/6-b)^2<A) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-A*scale K<fraction X (fun p =>
+      let D := ⌈b*K/Real.log K⌉₊
+      D≤(joined (gaps K ⌊L*(K:ℝ)⌋₊) p).card ∧
+      ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  have asymp := (tendsto_nat_floor_mul_div_atTop (by linarith : 0≤L)).comp
+    (tendsto_natCast_atTop_atTop (R:=ℝ))
+  filter_upwards [ordinary_endpoint_rate hL asymp (sub_pos.mpr hb) hA,eventually_gt_atTop 1] with K hk hK
+  exact hk.mono (fun _ hx => hx.trans_le (enough_fraction hK))
+
+#print axioms residue_mass
+#print axioms selected_mass
+#print axioms ordinary_endpoint_law
+#print axioms fixed_ratio_law
+#print axioms ordinary_endpoint_rate
+#print axioms deficit_frequency
+#print axioms deficit_rate
+end
+end Erdos478.Proportional
