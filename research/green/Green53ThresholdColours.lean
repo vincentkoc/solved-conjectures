@@ -7,7 +7,8 @@ import Green52Complements
 open Finset
 open scoped Classical Pointwise
 namespace Green53Threshold
-private theorem largest {J : Type*} (a : J → ℝ) (s : Finset J) (k : ℕ) :
+/-- Select the largest absolute weights before applying the small-ball estimate. -/
+theorem largest {J : Type*} (a : J → ℝ) (s : Finset J) (k : ℕ) :
     ∃ t ⊆ s, t.card = min k s.card ∧ ∀ i∈t, ∀ j∈s, j∉t → a j ≤ a i := by
   classical
   induction k generalizing s with
