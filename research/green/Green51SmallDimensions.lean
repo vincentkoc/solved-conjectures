@@ -1,5 +1,7 @@
 import Green51SparseDimensions
 
+/-! # Binary Plotkin bounds for the first three-space in a double -/
+
 open Finset Green50Downsets Green50Sharp
 open scoped Classical Pointwise
 namespace Green51SmallDimensions
@@ -72,7 +74,7 @@ theorem plotkin_obstruction {n : ℕ} (A : Finset (Cube n)) (large : 5≤A.card)
   rw [Nat.mul_sub_left_distrib,Nat.mul_one] at plot
   omega
 
-/-- Candidate maximal sizes in dimensions three through nine. -/
+/-- Maximal avoiding sizes in dimensions three through nine. -/
 def sparseCutoff : ℕ → ℕ
   | 3 => 4 | 4 => 5 | 5 => 6 | 6 => 8 | 7 => 9 | 8 => 10 | 9 => 12
   | _ => 0
