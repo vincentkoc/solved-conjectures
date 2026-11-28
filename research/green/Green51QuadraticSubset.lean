@@ -7,7 +7,8 @@ open scoped Classical Pointwise
 namespace Green51QuadraticFlats
 local notation "F" => ZMod 2
 
-private theorem map_rank {E H:Type*} [AddCommGroup E] [Module F E] [Module.Finite F E]
+/-- Rank-nullity on a subspace that contains the kernel of the linear map. -/
+theorem map_rank {E H:Type*} [AddCommGroup E] [Module F E] [Module.Finite F E]
     [AddCommGroup H] [Module F H] (f:E →ₗ[F] H) (U:Submodule F E) (contained:f.ker≤U) :
     Module.finrank F (U.map f)+Module.finrank F f.ker=Module.finrank F U := by
   have r := (f.domRestrict U).finrank_range_add_finrank_ker
@@ -132,3 +133,4 @@ end Green51QuadraticFlats
 #print axioms Green51QuadraticFlats.subset_inverse
 
 #print axioms Green51QuadraticFlats.two_exception
+#print axioms Green51QuadraticFlats.map_rank

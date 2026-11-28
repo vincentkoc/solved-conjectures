@@ -68,13 +68,15 @@ theorem local_labels (A : Finset G) (W : Submodule F G) (p : G)
     rw [pow] at upper
     omega
 
-private theorem flat_iff {n d : ℕ} (pos : 0<d) (A : Finset (Cube n)) :
-    d ≤ maxCosetDim F (Cube n) ↑(A+A) ↔ ∃ (W : Submodule F (Cube n)) (p : Cube n),
-      Module.finrank F W=d ∧ p +ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) := by
+/-- A positive lower bound on the largest affine dimension is witnessed by a coset of that dimension. -/
+theorem le_iff_coset {G : Type*} [AddCommGroup G] [Module F G] [Module.Finite F G]
+    {d : ℕ} (pos : 0<d) (A : Set G) :
+    d ≤ maxCosetDim F G A ↔ ∃ (W : Submodule F G) (p : G),
+      Module.finrank F W=d ∧ p +ᵥ (W:Set G) ⊆ A := by
   classical
-  let D : Set ℕ := {Module.finrank F S.direction | (S : AffineSubspace F (Cube n)) (_h : (S:Set (Cube n)) ⊆ ↑(A+A))}
-  have top : BddAbove D := ⟨n,by
-    rintro _ ⟨S,_,rfl⟩;simpa [Cube] using Submodule.finrank_le S.direction⟩
+  let D : Set ℕ := {Module.finrank F S.direction | (S : AffineSubspace F G) (_h : (S:Set G) ⊆ A)}
+  have top : BddAbove D := ⟨Module.finrank F G,by
+    rintro _ ⟨S,_,rfl⟩;exact Submodule.finrank_le S.direction⟩
   change d ≤ sSup D ↔ _
   constructor
   · intro bound
@@ -100,6 +102,11 @@ private theorem flat_iff {n d : ℕ} (pos : 0<d) (A : Finset (Cube n)) :
     intro y hy
     apply sub
     exact ⟨y-p,AffineSubspace.mem_mk'.mp hy,by change p+(y-p)=y;abel⟩
+
+private theorem flat_iff {n d : ℕ} (pos : 0<d) (A : Finset (Cube n)) :
+    d ≤ maxCosetDim F (Cube n) ↑(A+A) ↔ ∃ (W : Submodule F (Cube n)) (p : Cube n),
+      Module.finrank F W=d ∧ p +ᵥ (W:Set (Cube n)) ⊆ ↑(A+A) :=
+  le_iff_coset pos _
 
 /-- At any fixed target dimension, the original Green guarantee can be tested
 using a bounded number of labels in bounded affine dimension. -/
@@ -309,3 +316,4 @@ end Green51LocalFlats
 #print axioms Green51LocalFlats.label_free
 #print axioms Green51LocalFlats.model_flat
 #print axioms Green51LocalFlats.model_image
+#print axioms Green51LocalFlats.le_iff_coset
