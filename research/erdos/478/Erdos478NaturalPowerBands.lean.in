@@ -1,0 +1,73 @@
+import Erdos478RealBandQuantiles
+import Erdos478NaturalDensity
+import PrimeNumberTheoremAnd.Erdos970.MertensClassical
+
+/-!
+# Ordinary prime proportions for localized factorial deficits
+
+The degree-one prime ideal theorem supplies the root moments. Mertens'
+prime product theorem from the pinned PNT+ source evaluates the gap band.
+-/
+
+namespace Erdos478.GapBands
+open Finset Filter Topology GapSieve GapVariance GapDensity Asymptotics
+noncomputable section
+
+private theorem euler_natural (n : ℕ) :
+    euler (through n)=∏ p ∈ (Ioc 0 n).filter Nat.Prime, (1-(1:ℝ)/p) := by
+  classical
+  apply prod_bij (fun i _ => i.val)
+  · intro i hi
+    exact mem_filter.mpr ⟨mem_Ioc.mpr ⟨i.property.pos,mem_through.mp hi⟩,i.property⟩
+  · intro i _ j _ he
+    exact Subtype.ext he
+  · intro p hp
+    obtain ⟨hu,hp⟩ := mem_filter.mp hp
+    exact ⟨⟨p,hp⟩,mem_through.mpr (mem_Ioc.mp hu).2,rfl⟩
+  · intros; rfl
+
+theorem mertens_product : MertensProduct := by
+  let A := Real.exp (-Real.eulerMascheroniConstant)
+  have hA : 0<A := Real.exp_pos _
+  have nonzero : ∀ᶠ x : ℝ in atTop, A/Real.log x≠0 := by
+    filter_upwards [eventually_gt_atTop (1:ℝ)] with x hx
+    exact div_ne_zero hA.ne' (Real.log_pos hx).ne'
+  have h := (isEquivalent_iff_tendsto_one nonzero).mp Erdos970.Mertens.E₃.bound''
+  have hm := (h.comp tendsto_natCast_atTop_atTop).mul (tendsto_const_nhds (x:=A))
+  rw [one_mul] at hm
+  refine ⟨A,hA,hm.congr' ?_⟩
+  filter_upwards [eventually_ge_atTop 2] with n hn
+  change ((∏ p ∈ (Ioc 0 ⌊(n:ℝ)⌋₊).filter Nat.Prime, (1-(1:ℝ)/p))/(A/Real.log n))*A=_
+  rw [Nat.floor_natCast,euler_natural]
+  field_simp [hA.ne', (Real.log_pos (by exact_mod_cast (show 1<n by omega) : (1:ℝ) < (n:ℝ))).ne']
+
+theorem real_band_frequency {α ε : ℝ} (ha : 0<α) (h1 : α<1) (hε : 0<ε) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-α-ε < fraction X (witnessed (demand α K) K (demand α K)) :=
+  real_band_of_inputs degree_one_prime_ideal_theorem mertens_product ha h1 hε
+
+theorem finite_band_frequency {M K D : ℕ} (hM : 0<M) {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ X in atTop, fraction X (fun p => (joined (band M K) p).card<D) <
+      euler (band M K)+(D:ℝ)/M+ε :=
+  finite_band_bound degree_one_prime_ideal_theorem hM hε
+
+theorem power_band_frequency {a b : ℕ} (ha : 0<a) (hab : a<b) {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ t : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-(a:ℝ)/b-ε < fraction X (witnessed (t^a) (t^b) (t^a)) :=
+  power_band_of_inputs degree_one_prime_ideal_theorem mertens_product ha hab hε
+
+/-- At least half the primes, up to an arbitrary error, exhibit t
+distinct endpoints with prime gaps between t and t² for every large t. -/
+theorem square_band_frequency {ε : ℝ} (hε : 0<ε) :
+    ∀ᶠ t : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1/2-ε < fraction X (witnessed t (t^2) t) := by
+  convert power_band_frequency (by decide : 0<1) (by decide : 1<2) hε using 1
+  norm_num
+
+#print axioms real_band_frequency
+#print axioms finite_band_frequency
+#print axioms mertens_product
+#print axioms power_band_frequency
+#print axioms square_band_frequency
+end
+end Erdos478.GapBands
