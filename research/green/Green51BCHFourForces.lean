@@ -1,7 +1,7 @@
 import Green51BCHThreshold
 import Green51TwoAlternating
 
-/-! # Retaining at most two tests of the seventh coordinate in dimension six -/
+/-! # Retaining at most two tests of the seventh coordinate in even dimension -/
 
 open Green50Downsets Green51BCH Green51BCHCompression Green51TwoAlternating
 open scoped Pointwise
@@ -19,13 +19,11 @@ private def minorForm (l : K →ₗ[F] F) : LinearMap.BilinForm F K :=
     (fun r x y => by
       rcases (show ∀ i:F,i=0 ∨ i=1 from by decide) r with rfl|rfl <;> simp [moore_prod])
 
-/-- Any projection discarding at least four of six seventh-coordinate dimensions
-produces an affine three-space in the double. The direction can be fixed to one. -/
-theorem four_forces_flat [Finite K] (dim : Module.finrank F K=6) (L : K →ₗ[F] H)
-    (large : 4≤Module.finrank F L.ker) :
-    ∃ (p : Space K × H) (W : Submodule F (Space K × H)), Module.finrank F W=3 ∧
+/-- Two retained linear tests on the seventh power always leave a half-dimensional flat in even field dimension. -/
+theorem two_tests_in_even [Finite K] (k : ℕ) (dim : Module.finrank F K=2*(k+1)) (L : K →ₗ[F] H)
+    (rank : Module.finrank F L.range≤2) :
+    ∃ (p : Space K × H) (W : Submodule F (Space K × H)), Module.finrank F W=k+1 ∧
       p+ᵥ (W:Set _) ⊆ Set.range (lifted L)+Set.range (lifted L) := by
-  have rank := L.finrank_range_add_finrank_ker
   obtain ⟨e,inj⟩ := finrank_le_iff_exists_linearMap.mp
     (show Module.finrank F L.range≤Module.finrank F (Cube 2) by simp [Cube];omega)
   let f := e.comp L.rangeRestrict
@@ -37,17 +35,17 @@ theorem four_forces_flat [Finite K] (dim : Module.finrank F K=6) (L : K →ₗ[F
   obtain ⟨X,comp⟩ := D.exists_isCompl
   have rankX := Submodule.finrank_add_eq_of_isCompl comp
   have dD : Module.finrank F D=1 := finrank_span_singleton one_ne_zero
-  obtain ⟨Y,sz,iso₀,iso₁⟩ := simultaneous F 2 ((A 0).restrict X) ((A 1).restrict X)
+  obtain ⟨Y,sz,iso₀,iso₁⟩ := simultaneous F k ((A 0).restrict X) ((A 1).restrict X)
     (fun x => alt 0 x.val) (fun x => alt 1 x.val) (by omega)
   let S := Y.map X.subtype
-  have sr : Module.finrank F S=3 := (X.finrank_map_subtype_eq Y).trans sz
+  have sr : Module.finrank F S=k+1 := (X.finrank_map_subtype_eq Y).trans sz
   have outside : (1:K)∉S := by
     rintro ⟨x,_,hx⟩
     have x1 : (1:K)∈X := hx ▸ x.property
     have d1 : (1:K)∈D := Submodule.subset_span (Set.mem_singleton _)
     exact one_ne_zero ((Submodule.disjoint_def.mp comp.disjoint) 1 d1 x1)
   let U := S ⊔ D
-  have ur : Module.finrank F U=4 := by rw [show U=S ⊔ Submodule.span F {1} from rfl,extend_dim S 1 outside,sr]
+  have ur : Module.finrank F U=(k+1)+1 := by rw [show U=S ⊔ Submodule.span F {1} from rfl,extend_dim S 1 outside,sr]
   have vertical (i : Fin 2) (x : K) : A i 1 x=0 := by
     change f (moore 1 1 x) i=0
     simp [moore_prod,CharTwo.add_self_eq_zero]
@@ -66,5 +64,14 @@ theorem four_forces_flat [Finite K] (dim : Module.finrank F K=6) (L : K →ₗ[F
   obtain ⟨p,W,h,flat⟩ := produces_flat L U 1 mem one_ne_zero kill
   exact ⟨p,W,by omega,flat⟩
 
+/-- The dimension-six specialization expressed by the number of discarded coordinates. -/
+theorem four_forces_flat [Finite K] (dim : Module.finrank F K=6) (L : K →ₗ[F] H)
+    (large : 4≤Module.finrank F L.ker) :
+    ∃ (p : Space K × H) (W : Submodule F (Space K × H)), Module.finrank F W=3 ∧
+      p+ᵥ (W:Set _) ⊆ Set.range (lifted L)+Set.range (lifted L) := by
+  have rank := L.finrank_range_add_finrank_ker
+  exact two_tests_in_even 2 dim L (by omega)
+
 end Green51BCHExceptional
+#print axioms Green51BCHExceptional.two_tests_in_even
 #print axioms Green51BCHExceptional.four_forces_flat
