@@ -1,0 +1,48 @@
+import Erdos478QuinticSplittingDegrees
+import Erdos478ModularGapIndependence
+import Erdos478NaturalQuarticLaw
+
+/-! # Ordinary-prime laws for the fifth factorial gap and the growing-deficit family -/
+
+namespace Erdos478.QuinticLaw
+open Finset Filter Topology FirstCollision GapDensity GapSieve MeanDeficit LowGapAction FrobeniusCounts SplittingDensity
+open scoped Classical
+noncomputable section
+
+theorem ordinary_quintic (a b c f : ℕ → Bool) :
+    Tendsto (fun X => fraction X (endpointFourBox a b c f)) atTop (𝓝 (fourLaw a b c f)) ∧
+    Tendsto (fun X => fraction X (fun p => endpointFourBox a b c f p ∧ growingPrime p))
+      atTop (𝓝 (fourLaw a b c f)) := by
+  have h := endpoint_four_limit degree_one_prime_ideal_theorem a b c f
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+theorem ordinary_fifth_atom :
+    Tendsto (fun X => fraction X (fun p => First p 5)) atTop (𝓝 (19/288:ℝ)) ∧
+    Tendsto (fun X => fraction X (fun p => First p 5 ∧ growingPrime p)) atTop (𝓝 (19/288:ℝ)) := by
+  have h := first_limit degree_one_prime_ideal_theorem (by decide : 2≤5)
+  rw [first_five_density] at h
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+theorem ordinary_avoid_five :
+    Tendsto (fun X => fraction X (fun p => NoShort p 5)) atTop (𝓝 (11/288:ℝ)) ∧
+    Tendsto (fun X => fraction X (fun p => NoShort p 5 ∧ growingPrime p)) atTop (𝓝 (11/288:ℝ)) := by
+  have h := survival_limit degree_one_prime_ideal_theorem 5
+  rw [no_five_density] at h
+  exact ⟨h,growing_preserves_density degree_one_prime_ideal_theorem h⟩
+
+/-- The modular independence criterion with its analytic input discharged. -/
+theorem ordinary_modular_independence (s : Finset ℕ) {l : ℕ} (hl : l.Prime) (small : ∀ k∈s, 2≤k ∧ k<l)
+    (p : ℕ) [Fact p.Prime]
+    (reg : ∀ k∈insert l s, ((SplittingDensity.gapPoly k).map (Int.castRingHom (ZMod p))).Separable)
+    (low : ∀ k∈s, primeRoots (SplittingDensity.gapPoly k) p=k) (two : primeRoots (SplittingDensity.gapPoly l) p+2=l)
+    (E : (s → ℕ) → Prop) (F : ℕ → Bool) :
+    Tendsto (fun X => fraction X (fun q => E (fun i => (endpoints i.val q).card) ∧ F (endpoints l q).card))
+      atTop (𝓝 (density s E*uniform (Equiv.Perm (Fin l)) (fun z => if F (pointCount z) then 1 else 0))) :=
+  RelativeGap.modular_independent_density degree_one_prime_ideal_theorem s hl small p reg low two E F
+
+#print axioms ordinary_quintic
+#print axioms ordinary_fifth_atom
+#print axioms ordinary_avoid_five
+#print axioms ordinary_modular_independence
+end
+end Erdos478.QuinticLaw
