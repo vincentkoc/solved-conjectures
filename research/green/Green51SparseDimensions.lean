@@ -192,9 +192,10 @@ theorem sparse_linear_flat {G : Type*} [AddCommGroup G] [Module F G] [DecidableE
 /-- With all four- and six-point relations excluded, the augmented label
 columns give a binary check map of distance at least seven. Every nonzero
 pair sum has a two-coordinate representative. -/
-theorem pair_check (A : Finset G)
+theorem even_pair_check (A : Finset G)
     (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0) :
     ∃ P : Cube A.card →ₗ[F] F×G,
+      (∀ z, P z=0 → 2∣(supp z).card) ∧
       (∀ z, (supp z).card≤6 → P z=0 → z=0) ∧
       ∀ w∈A+A, ∃ z, P z=(0,w) ∧ (supp z).card≤2 ∧ (w≠0 → (supp z).card=2) := by
   classical
@@ -207,11 +208,13 @@ theorem pair_check (A : Finset G)
     apply sum_congr rfl
     intro i _
     rcases (show ∀ u:F,u=0 ∨ u=1 from by decide) (z i) with h|h <;> simp [h]
+  have parity (z : Cube A.card) (hz : P z=0) : 2∣(supp z).card := by
+    rw [eval] at hz
+    simpa only [Prod.fst_sum,Prod.fst_zero,col,sum_const,nsmul_eq_mul,mul_one,ZMod.natCast_eq_zero_iff]
+      using congrArg Prod.fst hz
   have kernel (z : Cube A.card) (small : (supp z).card≤3*2) (zero : P z=0) : z=0 := by
+    have even := parity z zero
     rw [eval] at zero
-    have first := congrArg Prod.fst zero
-    have even : 2∣(supp z).card := by
-      simpa only [Prod.fst_sum,Prod.fst_zero,col,sum_const,nsmul_eq_mul,mul_one,ZMod.natCast_eq_zero_iff] using first
     let T := (supp z).map index
     have size : T.card=(supp z).card := card_map _
     have ta : T⊆A := by
@@ -240,7 +243,7 @@ theorem pair_check (A : Finset G)
       · simp [h,supp]
       · simp [h,supp]
     rw [eq,sum_singleton]
-  refine ⟨P,kernel,?_⟩
+  refine ⟨P,parity,kernel,?_⟩
   rintro w hw
   obtain ⟨a,ha,b,hb,rfl⟩ := mem_add.mp hw
   let i := A.equivFin ⟨a,ha⟩
@@ -257,6 +260,15 @@ theorem pair_check (A : Finset G)
         ext l
         by_cases li : l=i <;> by_cases lj : l=j <;> simp [supp,Pi.single_apply,li,lj,eq,Ne.symm eq]
       simp [support,eq]
+
+/-- The even check map also gives two-coordinate lifts of every nonzero pair sum. -/
+theorem pair_check (A : Finset G)
+    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0) :
+    ∃ P : Cube A.card →ₗ[F] F×G,
+      (∀ z, (supp z).card≤6 → P z=0 → z=0) ∧
+      ∀ w∈A+A, ∃ z, P z=(0,w) ∧ (supp z).card≤2 ∧ (w≠0 → (supp z).card=2) := by
+  obtain ⟨P,_,kernel,lifts⟩ := even_pair_check A free
+  exact ⟨P,kernel,lifts⟩
 
 /-- Every linear flat in this double has rank at most two. -/
 theorem rank_without_relation (A : Finset G)
@@ -290,6 +302,7 @@ end Green51SparseDimensions
 #print axioms Green51SparseDimensions.quadruple_space
 #print axioms Green51SparseDimensions.triple_packing
 #print axioms Green51SparseDimensions.sparse_linear_flat
+#print axioms Green51SparseDimensions.even_pair_check
 #print axioms Green51SparseDimensions.pair_check
 #print axioms Green51SparseDimensions.rank_without_relation
 #print axioms Green51SparseDimensions.linear_three_iff
