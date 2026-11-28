@@ -68,13 +68,15 @@ private theorem cyclo_degree {m : ℕ} (hm : 0<m) : Module.finrank ℚ (SplitFie
   exact (IsSplittingField.algEquiv (CyclotomicField m ℚ) (cyclotomic m ℚ)).toLinearEquiv.finrank_eq.symm.trans
     (IsCyclotomicExtension.finrank _ (cyclotomic.irreducible_rat hm))
 
-theorem field_degree_bound {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S, 0<k) :
-    Module.finrank ℚ (SplitField (test m S)) ≤ m.totient * ∏ k∈S, k.factorial := by
+/-- Assemble individual bounds without assuming disjoint splitting fields. -/
+theorem field_degree_bound_of {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S, 0<k)
+    (w : ℕ → ℕ) (hw : ∀ k∈S, Module.finrank ℚ (SplitField (gapPoly k)) ≤ w k) :
+    Module.finrank ℚ (SplitField (test m S)) ≤ m.totient * ∏ k∈S, w k := by
   classical
   let D (f : ℤ[X]) := Module.finrank ℚ (SplitField f)
-  have hg : (∏ f∈S.image gapPoly, D f)≤∏ k∈S, k.factorial := by
+  have hg : (∏ f∈S.image gapPoly, D f)≤∏ k∈S, w k := by
     rw [prod_image]
-    · exact prod_le_prod' fun k hk => gap_field_le (hS k hk)
+    · exact prod_le_prod' hw
     · intro i hi j hj h
       exact (gap_degree (hS i hi)).natDegree_eq.symm.trans
         ((congrArg natDegree h).trans (gap_degree (hS j hj)).natDegree_eq)
@@ -88,9 +90,13 @@ theorem field_degree_bound {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S
   change (∏ f∈insert (cyclotomic m ℤ) (S.image gapPoly), D f)≤_
   by_cases hx : cyclotomic m ℤ∈S.image gapPoly
   · rw [insert_eq_of_mem hx]
-    exact hg.trans (by simpa using Nat.mul_le_mul_right (∏ k∈S, k.factorial) (Nat.totient_pos.mpr hm))
+    exact hg.trans (by simpa using Nat.mul_le_mul_right (∏ k∈S, w k) (Nat.totient_pos.mpr hm))
   · rw [prod_insert hx]
     exact Nat.mul_le_mul (cyclo_degree hm).le hg
+
+theorem field_degree_bound {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈S, 0<k) :
+    Module.finrank ℚ (SplitField (test m S)) ≤ m.totient * ∏ k∈S, k.factorial :=
+  field_degree_bound_of hm S hS _ (fun k hk => gap_field_le (hS k hk))
 
 /-- Each gap contributes at most one factorial factor to the denominator,
 regardless of intersections among the splitting fields. -/
@@ -99,6 +105,7 @@ theorem density_lower_bound {m : ℕ} (hm : 0<m) (S : Finset ℕ) (hS : ∀ k∈
   apply inv_anti₀ (by exact_mod_cast (Module.finrank_pos (R:=ℚ) (M:=SplitField (test m S))))
   exact_mod_cast field_degree_bound hm S hS
 
+#print axioms field_degree_bound_of
 #print axioms field_degree_bound
 #print axioms density_lower_bound
 end Erdos478.SplittingDensity

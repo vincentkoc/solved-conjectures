@@ -27,6 +27,7 @@ ADAPTERS = {
     "gap-sieve": "Erdos478NaturalGapSieve",
     "patterns": "Erdos478NaturalPatternLaw",
     "counts": "Erdos478NaturalExactCounts",
+    "paired": "Erdos478NaturalPairedDensity",
 }
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
