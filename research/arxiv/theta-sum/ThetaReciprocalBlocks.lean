@@ -56,11 +56,13 @@ theorem numeratorWindow_bound (q m n : ℕ) [NeZero q] :
 noncomputable def numeratorRow (q m : ℕ) [NeZero q] : EuclideanSpace ℂ (ZMod q) :=
   numeratorWindow q m (q*m-1)
 
-private lemma harmonic_mono_real {n m : ℕ} (h : n ≤ m) : (harmonic n:ℝ)≤harmonic m := by
+/-- Harmonic numbers are increasing after casting to the reals. -/
+theorem harmonic_mono_real {n m : ℕ} (h : n ≤ m) : (harmonic n:ℝ)≤harmonic m := by
   simp only [harmonic,Rat.cast_sum,Rat.cast_inv,Rat.cast_natCast]
   apply sum_le_sum_of_subset_of_nonneg (range_mono h) (by intros; positivity)
 
-private lemma harmonic_product (K d : ℕ) : (harmonic (K*d):ℝ) ≤ K*(harmonic d:ℝ) := by
+/-- Grouping the harmonic sum into K blocks bounds it by K copies of its first block. -/
+theorem harmonic_product (K d : ℕ) : (harmonic (K*d):ℝ) ≤ K*(harmonic d:ℝ) := by
   induction K with
   | zero => simp [harmonic]
   | succ K ih =>
@@ -308,3 +310,5 @@ end Arxiv.«2501.03234».ThetaReciprocalBlocks
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.primitive_mass_le
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.energy_tail_of_bound
 #print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.windowEnergy_tail
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.harmonic_mono_real
+#print axioms Arxiv.«2501.03234».ThetaReciprocalBlocks.harmonic_product

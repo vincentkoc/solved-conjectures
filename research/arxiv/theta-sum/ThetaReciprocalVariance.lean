@@ -58,14 +58,11 @@ private lemma power_floor {N k l : ℕ} (hN : 1≤N) (hkl : (k:ℝ) ≤ l*(15/16
   rw [Nat.cast_pow,← Real.rpow_natCast_mul (Nat.cast_nonneg _),← Real.rpow_natCast]
   exact Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast hN) hkl
 
-/-- Uniform second moment for every fixed-width numerator window. The bound
-may depend on the width and is independent of the common denominator cutoff. -/
-theorem window_variance {row : ℕ → ℕ} {width : ℕ} (hrow : ∀ d, row d≤width*d) :
-    ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N →
-    ∑ n ∈ range (N^64+1), ‖windowExtension row (2*N^52) n‖^2 ≤ K*(N:ℝ)^64 := by
-  obtain ⟨C,hC,ht⟩ := windowEnergy_tail hrow
-  refine ⟨15876*C,by positivity,?_⟩
-  intro N hN
+/-- A primitive energy tail with constant C gives an explicit interval variance bound. -/
+theorem window_variance_from_energy {row : ℕ → ℕ} {C : ℝ} (hC : 0≤C)
+    (ht : ∀ Y Q : ℕ, 0<Q → ∀ s : Finset ℕ, (∀ q ∈ s, Q≤q) →
+      ∑ q ∈ s, windowMass row Y q ≤ C/(Q:ℝ)^(15/16:ℝ)) (N : ℕ) (hN : 1≤N) :
+    ∑ n ∈ range (N^64+1), ‖windowExtension row (2*N^52) n‖^2 ≤ (15876*C)*(N:ℝ)^64 := by
   let Y := 2*N^52
   let A := Icc 1 (N^28)
   let B := Ioc (N^28) (N^44)
@@ -100,6 +97,14 @@ theorem window_variance {row : ℕ → ℕ} {width : ℕ} (hrow : ∀ d, row d�
   rw [← mul_sum,sum_add_distrib,sum_add_distrib]
   linarith
 
+/-- Uniform second moment for every fixed-width numerator window. The bound
+may depend on the width and is independent of the common denominator cutoff. -/
+theorem window_variance {row : ℕ → ℕ} {width : ℕ} (hrow : ∀ d, row d≤width*d) :
+    ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N →
+    ∑ n ∈ range (N^64+1), ‖windowExtension row (2*N^52) n‖^2 ≤ K*(N:ℝ)^64 := by
+  obtain ⟨C,hC,ht⟩ := windowEnergy_tail hrow
+  exact ⟨15876*C,by positivity,window_variance_from_energy hC ht⟩
+
 /-- Uniform finite second moment for a common power-sized cutoff. The ambient average covers
 all integers, and the normalized bound is independent of the scale. -/
 theorem interval_variance : ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N →
@@ -109,3 +114,4 @@ theorem interval_variance : ∃ K : ℝ, 0≤K ∧ ∀ N : ℕ, 1≤N →
 end Arxiv.«2501.03234».ThetaReciprocalVariance
 #print axioms Arxiv.«2501.03234».ThetaReciprocalVariance.interval_variance
 #print axioms Arxiv.«2501.03234».ThetaReciprocalVariance.window_variance
+#print axioms Arxiv.«2501.03234».ThetaReciprocalVariance.window_variance_from_energy
