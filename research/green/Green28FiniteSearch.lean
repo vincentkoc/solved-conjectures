@@ -169,6 +169,13 @@ theorem Relabelling.preserves {P Q : PMF ℤ} {s : Finset ℤ} {B : ℕ}
   rw [mapped_sum r.add]
   exact map_mass (hs ▸ r.output_inj) (by rw [hs]; exact hz)
 
+/-- The compressed sum of independent laws is uniform on the image of the original outcomes. -/
+theorem Relabelling.uniform_sum {P Q : PMF ℤ} {s : Finset ℤ} {B : ℕ}
+    (r : Relabelling P Q s B) (hs : s.Nonempty) (eq : indepSum P Q = PMF.uniformOfFinset s hs) :
+    indepSum (P.map r.left) (Q.map r.right) = PMF.uniformOfFinset (s.image r.output) (hs.image _) := by
+  have support : (indepSum P Q).support = (s : Set ℤ) := by rw [eq,PMF.support_uniformOfFinset]
+  exact (mapped_sum r.add).trans (uniform_image hs eq (support ▸ r.output_inj))
+
 /-- The unrestricted Green question for uniform sums with at most `k` outcomes. -/
 def AtMost (k : ℕ) : Prop :=
   ∀ (P Q : PMF ℤ) (s : Finset ℤ) (hs : s.Nonempty), s.card ≤ k →
@@ -197,12 +204,12 @@ theorem atMost_iff_onInterval (k : ℕ) : AtMost k ↔ OnInterval k (5^(k+1)) :=
     rw [PMF.support_map]; rintro _ ⟨x,hx,rfl⟩; exact inc (r.right_bound _ hx)
   have ue : (u : Set ℤ) ⊆ Set.Icc 0 (↑(5^(k+1) : ℕ)) := by
     intro z hz; obtain ⟨x,hx,rfl⟩ := mem_image.mp hz; exact inc (r.output_bound _ hx)
-  have push := uniform_image hs eq (support ▸ r.output_inj)
   have he := h (P.map r.left) (Q.map r.right) u (hs.image _) (uc ▸ hk) pe qe ue
-    ((mapped_sum r.add).trans push)
+    (r.uniform_sum hs eq)
   exact ⟨(uniform_map_iff r.left_inj).mp he.1,(uniform_map_iff r.right_inj).mp he.2⟩
 
 #print axioms compress
+#print axioms Relabelling.uniform_sum
 #print axioms Relabelling.preserves
 #print axioms uniform_map_iff
 #print axioms atMost_iff_onInterval

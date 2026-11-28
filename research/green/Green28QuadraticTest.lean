@@ -119,19 +119,31 @@ private theorem sum_bounded {B : ℕ} {P Q : PMF ℤ} (hp : P.support ⊆ Set.Ic
   obtain ⟨_,_⟩ := hq hy
   exact ⟨by omega,by omega⟩
 
+/-- Every feasible pair of vectors is realized by bounded integer laws with that uniform sum. -/
+theorem realize_pair {B : ℕ} {s : Finset ℤ} (hs : s.Nonempty) (sub' : s ⊆ sites B)
+    {u v : Site B → ℝ} (hu : Simplex u) (hv : Simplex v)
+    (vals : ∀ z ∈ sites (2*B), sumWeight u v z = table s z) :
+    ∃ P Q : PMF ℤ, P.support ⊆ Set.Icc 0 (B : ℤ) ∧ Q.support ⊆ Set.Icc 0 (B : ℤ) ∧
+      (fun i : Site B => (P i).toReal) = u ∧ (fun i : Site B => (Q i).toReal) = v ∧
+      indepSum P Q = PMF.uniformOfFinset s hs := by
+  obtain ⟨P,hp,eu⟩ := realize hu
+  obtain ⟨Q,hq,ev⟩ := realize hv
+  have wide : s ⊆ sites (2*B) := by
+    intro z hz
+    obtain ⟨lo,hi⟩ := mem_Icc.mp (sub' hz)
+    exact mem_Icc.mpr ⟨lo,by omega⟩
+  have eq := eq_uniform (sum_bounded hp hq) hs wide (fun z hz => by
+    rw [sum_real hp hq,eu,ev]; exact vals z hz)
+  exact ⟨P,Q,hp,hq,eu,ev,eq⟩
+
 /-- Exact correspondence between bounded integer laws and the finite real system. -/
 theorem onInterval_iff_quadraticTest (k B : ℕ) : OnInterval k B ↔ QuadraticTest k B := by
   constructor
   · intro h s sub hs hk u v hu hv vals
-    obtain ⟨P,hp,eu⟩ := realize hu
-    obtain ⟨Q,hq,ev⟩ := realize hv
     have sub' := mem_powerset.mp sub
-    have wide : s ⊆ sites (2*B) := by
-      intro z hz
-      obtain ⟨lo,hi⟩ := mem_Icc.mp (sub' hz)
-      exact mem_Icc.mpr ⟨lo,by omega⟩
-    have eq := eq_uniform (sum_bounded hp hq) hs wide (fun z hz => by
-      rw [sum_real hp hq,eu,ev]; exact vals z hz)
+    obtain ⟨P,Q,hp,hq,eu,ev,eq⟩ := realize_pair hs sub' hu hv vals
+    change vector B P = u at eu
+    change vector B Q = v at ev
     have both := h P Q s hs hk hp hq (fun _ hz => mem_Icc.mp (sub' hz)) eq
     exact ⟨eu ▸ (flat_iff hp).mpr both.1,ev ▸ (flat_iff hq).mpr both.2⟩
   · intro h P Q s hs hk hp hq sub eq
@@ -159,6 +171,7 @@ theorem green_28_iff_quadraticTests :
   · intro h P Q ⟨_,_,s,hs,eq⟩
     exact (atMost_iff_quadraticTest s.card).mpr (h _) P Q s hs le_rfl eq
 
+#print axioms realize_pair
 #print axioms onInterval_iff_quadraticTest
 #print axioms atMost_iff_quadraticTest
 #print axioms green_28_iff_quadraticTests
