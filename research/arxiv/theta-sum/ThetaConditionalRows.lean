@@ -101,12 +101,14 @@ theorem twisted_three_lower {P K : ℕ} [NeZero P] (hP : 3∣P) (hK : 0<K) :
   change 4/5≤(∑ u : (ZMod 3)ˣ,(chi (u:ZMod 3).val:ℝ)*row 3 K (u:ZMod 3).val)/2
   linarith [row_three_lower hK]
 
-private lemma even_row {d : ℕ} (hd : ¬Odd d) (K n : ℕ) : row d K n=0 := by
+/-- Even denominators contribute zero to every reciprocal row. -/
+theorem even_row {d : ℕ} (hd : ¬Odd d) (K n : ℕ) : row d K n=0 := by
   have hn : d%2≠1 := fun h => hd (Nat.odd_iff.mpr h)
   have hw (w : ℕ) : wave n d w=0 := if_neg (fun H => hn H.2.1)
   simp [row,hw]
 
-private lemma mean_low (P T : ℕ) [NeZero P] (K : ℕ → ℕ) (a h : ℕ → ℝ) :
+/-- The unit mean of a weighted finite model splits into its denominator rows. -/
+theorem mean_low (P T : ℕ) [NeZero P] (K : ℕ → ℕ) (a h : ℕ → ℝ) :
     unitMean P (fun n => h n*low T K a n)=
       ∑ d∈Icc 2 T,(a d/d)*unitMean P (fun n => h n*row d (K d) n) := by
   unfold low unitMean
@@ -376,6 +378,9 @@ theorem rationalCone_prime_signs {J K : ℕ} (hJ : 2≤J) (hK : K%2=1) (B : ℕ)
     push_cast; linarith
   · apply (Rat.cast_le (K:=ℝ)).mp
     push_cast; linarith
+
+#print axioms even_row
+#print axioms mean_low
 
 end Arxiv.«2501.03234».ThetaConditionalRows
 #print axioms Arxiv.«2501.03234».ThetaConditionalRows.commonWeight_three

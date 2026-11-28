@@ -192,7 +192,7 @@ private lemma progression_integral {q r X : ℕ} (h : (primeSet (fun n => n%q=r)
     ← mul_sum,hs,Fintype.card_coe,progressionMean,div_eq_inv_mul]
   rw [show classSample q r X = primeSet (fun n => n%q=r) X from if_pos h]
 
-private lemma class_nonempty (hAP : ProgressionMangoldt) {q r : ℕ} (hq : 0<q)
+theorem class_nonempty (hAP : ProgressionMangoldt) {q r : ℕ} (hq : 0<q)
     (hr : r.Coprime q) (hlt : r<q) : ∀ᶠ X in atTop,(primeSet (fun n => n%q=r) X).Nonempty := by
   have h := (class_prime_density hAP hq hr hlt).eventually_const_lt
     (show (0:ℝ)<1/(q.totient:ℝ) by have := Nat.totient_pos.mpr hq; positivity)
@@ -306,10 +306,12 @@ theorem dyadic_mod_three_means (hAP : ProgressionMangoldt) {k r : ℕ}
 #print axioms mixed_restriction
 #print axioms dyadic_mod_three_means
 
-private def predicateMean (P : ℕ → Prop) (f : ℕ → ℝ) (X : ℕ) : ℝ :=
+/-- Ordinary mean over the primes satisfying the given predicate. -/
+def predicateMean (P : ℕ → Prop) (f : ℕ → ℝ) (X : ℕ) : ℝ :=
   (∑ p∈primeSet P X,f p)/(primeSet P X).card
 
-private lemma above_mean_density (P : ℕ → Prop) (hP : PositiveLowerPrimeDensity P)
+/-- A class mean strictly above a threshold gives a positive lower fraction of excursions. -/
+theorem above_mean_density (P : ℕ → Prop) (hP : PositiveLowerPrimeDensity P)
     {s L a : ℝ} (hs : |s|=1) (ha : a<L)
     (hL : Tendsto (predicateMean P (fun p => s*residual p)) atTop (𝓝 L)) :
     PositiveLowerPrimeDensity (fun p => P p ∧ a < s*residual p) := by
@@ -412,7 +414,7 @@ theorem dyadic_mod_three_excursions (hAP : ProgressionMangoldt) {k r : ℕ}
 
 #print axioms dyadic_mod_three_excursions
 
-private lemma primeDensity_mono {P Q : ℕ → Prop} (h : ∀ p, p.Prime → P p → Q p)
+theorem primeDensity_mono {P Q : ℕ → Prop} (h : ∀ p, p.Prime → P p → Q p)
     (H : PositiveLowerPrimeDensity P) : PositiveLowerPrimeDensity Q := by
   classical
   obtain ⟨δ,hδ,hX⟩ := H
@@ -472,4 +474,8 @@ theorem S_one_mod_eight_excursions (hAP : ProgressionMangoldt) {t : ℝ} (ht : t
 #print axioms S_one_mod_eight_excursions
 
 end
+#print axioms class_nonempty
+#print axioms above_mean_density
+#print axioms primeDensity_mono
+
 end Arxiv.«2501.03234».ThetaDyadicLaw
