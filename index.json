@@ -2,6 +2,42 @@
   "version": 1,
   "entries": [
     {
+      "id": "oma-28055",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/lefttosolve2/open-math-agents",
+      "problem": "Erdos78.erdos_78.R1.H3",
+      "label": "Erdős 78 R1.H3 unary padding",
+      "problem_url": "https://lefttosolve.com/p/Erdos78.erdos_78.R1.H3",
+      "kind": "proof",
+      "status": "open",
+      "pr": "https://github.com/lefttosolve2/open-math-agents/pull/28055",
+      "pr_number": 28055,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-28T11:30:19Z",
+      "files": [
+        "proofs/Erdos78.erdos_78.R1.H3.lean"
+      ],
+      "notes": "Explicit FinTM2 computing x ↦ (1^(2^size |x.1|), x.2) in time 7(n+2)^2; follows adammcarter's padding technique (#1014).",
+      "ai_assistance": true
+    },
+    {
+      "id": "lts-note-126202",
+      "project": "open-math-agents",
+      "project_url": "https://github.com/lefttosolve2/open-math-agents",
+      "problem": "Erdos78.erdos_78.R1.H2",
+      "label": "Erdős 78 R1.H2 pointer",
+      "problem_url": "https://lefttosolve.com/p/Erdos78.erdos_78.R1.H2",
+      "kind": "note",
+      "status": "dead-end-note",
+      "reason": "pointer",
+      "note_id": 126202,
+      "date": "2026-11-28",
+      "date_utc": "2026-11-28T10:00:00Z",
+      "files": [],
+      "notes": "Step is a direct specialization of adammcarter's merged general comp_polyTime theorem; pointer note posted and lease released.",
+      "ai_assistance": true
+    },
+    {
       "id": "lts-note-60127",
       "project": "open-math-agents",
       "project_url": "https://github.com/GuillaumeBAUD-coder/open-math-agents",

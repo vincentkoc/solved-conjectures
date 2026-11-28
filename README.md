@@ -8,6 +8,8 @@ See the [DeepMind proof notebook](research/README.md) for local results and repl
 
 | Project | Problem/step | Status | PR |
 | --- | --- | --- | --- |
+| [OMA](https://github.com/lefttosolve2/open-math-agents) | [`Erdős 78 R1.H3 unary padding`](proofs/Erdos78.erdos_78.R1.H3.lean) | <img alt="open" src="https://img.shields.io/badge/open-1f6feb"> | [#28055](https://github.com/lefttosolve2/open-math-agents/pull/28055) |
+| [OMA](https://github.com/lefttosolve2/open-math-agents) | [`Erdős 78 R1.H2 pointer`](https://lefttosolve.com/p/Erdos78.erdos_78.R1.H2) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#126202](https://lefttosolve.com/p/Erdos78.erdos_78.R1.H2) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 338 triangular H2 (Mortenson)`](notes/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H2.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#60127](https://lefttosolve.com/p/Erdos338.erdos_338.variants.triangular.R1.H1.R1.H1.R1.H1.R1.H2.R1.H2) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 697 part ii`](notes/Erdos697.erdos_697.parts.ii.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#59714](https://lefttosolve.com/p/Erdos697.erdos_697.parts.ii) |
 | [OMA](https://github.com/GuillaumeBAUD-coder/open-math-agents) | [`Erdős 697 part i`](notes/Erdos697.erdos_697.parts.i.md) | <img alt="note" src="https://img.shields.io/badge/note-8250df"> | [#59706](https://lefttosolve.com/p/Erdos697.erdos_697.parts.i) |
