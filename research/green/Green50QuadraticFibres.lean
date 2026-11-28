@@ -97,7 +97,8 @@ theorem odd_sumset (f : U → V) (B : U →ₗ[K] U →ₗ[K] V)
       _ = ((2 : ℕ) • graph f + graph f) + k • vertical B := by rw [add_comm (graph f + k • vertical B), ← add_assoc]
       _ = _ := by rw [h, add_assoc, add_comm (vertical B) (k • vertical B)]
 
-private theorem vertical_fst (B : U →ₗ[K] U →ₗ[K] V) (k : ℕ) (p : U × V)
+/-- Every sum of vertical polar values has zero first coordinate. -/
+theorem vertical_fst (B : U →ₗ[K] U →ₗ[K] V) (k : ℕ) (p : U × V)
     (hp : p ∈ k • vertical B) : p.1 = 0 := by
   induction k generalizing p with
   | zero => exact congrArg Prod.fst (show p = 0 by simpa using hp)
@@ -137,5 +138,5 @@ end Green50QuadraticFibres
 #print axioms Green50QuadraticFibres.threefold
 #print axioms Green50QuadraticFibres.odd_sumset
 #print axioms Green50QuadraticFibres.even_zero_fibre
-
 #print axioms Green50QuadraticFibres.mem_vertical_sum
+#print axioms Green50QuadraticFibres.vertical_fst

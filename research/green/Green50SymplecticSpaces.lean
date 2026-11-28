@@ -130,6 +130,7 @@ private theorem spanning_section [Fintype K] [Fintype V] (J : Form) (ha : J.IsAl
   intro v hv
   have hv' := mem_filter.mp (show v ∈ S from hv)
   exact ⟨y v, hv'.2.2, (hy v (mem_erase.mp hv'.1).1).2⟩
+
 omit [FiniteDimensional K V] in
 private theorem complement_decomp (J : Form) (ha : J.IsAlt) {x z : V} (hz : J x z = 1) (w : V) :
     ∃ u : (planeMap J x z).ker, w = u.val - (J z w) • x + (J x w) • z := by
@@ -233,6 +234,7 @@ private theorem restriction_injective {J : Form} (ha : J.IsAlt) {T : Submodule K
   apply sub_eq_zero.mp
   apply zero
   rw [map_sub, he, sub_self]
+
 private theorem evaluation_cost (J : Form) (ha : J.IsAlt) {T : Submodule K Form}
     (hT : ∀ A ∈ T, A.IsAlt) {x z : V} (hz : J x z = 1) (hzT : ∀ A ∈ T, A x z = 0) :
     Module.finrank K (evaluate T x).range + 2 ≤ Module.finrank K V := by
@@ -250,6 +252,7 @@ private theorem evaluation_cost (J : Form) (ha : J.IsAlt) {T : Submodule K Form}
   rw [LinearMap.range_eq_top.mpr hd, finrank_top, Module.finrank_prod, Module.finrank_self,
     Subspace.dual_finrank_eq] at hr
   omega
+
 universe u
 
 /-- Over a finite field of any size, an affine space of symplectic forms in dimension
@@ -299,6 +302,75 @@ theorem dimension_bound (K : Type*) [Field K] [Fintype K] (k : ℕ) :
       | succ k => simp; ring
     omega
 
+private def planeProjection (F : Form) (ha : F.IsAlt) {x z : V} (hz : F x z = 1) :
+    V →ₗ[K] (planeMap F x z).ker where
+  toFun w := ⟨w + (F z w) • x - (F x w) • z, by
+    change (F x _, F z _) = (0, 0)
+    simp [ha.self_eq_zero, hz, ← ha.neg_eq x z]⟩
+  map_add' a b := by apply Subtype.ext; dsimp; simp only [map_add, add_smul]; abel
+  map_smul' c a := by
+    apply Subtype.ext
+    dsimp
+    simp [smul_sub, smul_add, smul_smul]
+
+omit [FiniteDimensional K V] in
+private theorem projection_identity (F : Form) (ha : F.IsAlt) {x z : V} (hz : F x z = 1)
+    (a b : V) :
+    F a b = F (planeProjection F ha hz a).val (planeProjection F ha hz b).val +
+      (F x a * F z b - F z a * F x b) := by
+  simp [planeProjection, ha.self_eq_zero, hz, ← ha.neg_eq x z,
+    ← ha.neg_eq x a, ← ha.neg_eq z a]
+  ring
+
+/-- Every alternating form is a sum of two-by-two determinants. If all input dimensions
+are needed in this expression, the form is nondegenerate. -/
+theorem alternating_decomposition (K : Type*) [Field K] (n : ℕ) :
+    ∀ {V : Type u} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+      (F : LinearMap.BilinForm K V), F.IsAlt → Module.finrank K V = n →
+      ∃ m : ℕ, 2 * m ≤ n ∧ (2 * m = n → Function.Injective F) ∧
+        ∃ a b : Fin m → Module.Dual K V, ∀ x y,
+          F x y = ∑ i, (a i x * b i y - b i x * a i y) := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+    intro V _ _ _ F ha hdim
+    by_cases hzero : F = 0
+    · refine ⟨0, by omega, ?_, Fin.elim0, Fin.elim0, ?_⟩
+      · intro hn
+        have : Subsingleton V := (Module.finrank_zero_iff (R := K)).mp (by omega)
+        exact Function.injective_of_subsingleton _
+      · simp [hzero]
+    · have hp : ∃ x z, F x z ≠ 0 := by
+        by_contra! hn
+        exact hzero (by ext x z; exact hn x z)
+      obtain ⟨x,z₀,h₀⟩ := hp
+      let z := (F x z₀)⁻¹ • z₀
+      have hz : F x z = 1 := by simp [z,h₀]
+      let W := (planeMap F x z).ker
+      let p := planeProjection F ha hz
+      have hd : Module.finrank K W + 2 = n := (complement_dim F ha hz).trans hdim
+      obtain ⟨m,hm,hnd,a,b,hrep⟩ := ih (Module.finrank K W) (by omega)
+        (F.restrict W) (fun w => ha w.val) rfl
+      refine ⟨m+1, by omega, ?_, Fin.cons (F x) (fun i => (a i).comp p),
+        Fin.cons (F z) (fun i => (b i).comp p), ?_⟩
+      · intro he
+        have hnd' := hnd (by omega)
+        apply LinearMap.ker_eq_bot.mp
+        apply LinearMap.ker_eq_bot'.mpr
+        intro v hv
+        have h₁ (w) : F w v = 0 := by rw [← ha.neg_eq, hv]; simp
+        have hw : v ∈ W := Prod.ext (h₁ x) (h₁ z)
+        have heq : F.restrict W ⟨v,hw⟩ = F.restrict W 0 := by
+          ext b
+          change F v b.val = F 0 b.val
+          simp [hv]
+        exact congrArg Subtype.val (hnd' heq)
+      · intro v w
+        rw [Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_zero]
+        simp only [Fin.cons_succ, LinearMap.comp_apply]
+        rw [← hrep (p v) (p w), add_comm]
+        exact projection_identity F ha hz _ _
+
 end Green50SymplecticSpaces
 
 #print axioms Green50SymplecticSpaces.dimension_bound
+#print axioms Green50SymplecticSpaces.alternating_decomposition
