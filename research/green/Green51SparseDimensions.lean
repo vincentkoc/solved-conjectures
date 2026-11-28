@@ -192,9 +192,10 @@ theorem sparse_linear_flat {G : Type*} [AddCommGroup G] [Module F G] [DecidableE
 /-- With all four- and six-point relations excluded, the augmented label
 columns give a binary check map of distance at least seven. Every nonzero
 pair sum has a two-coordinate representative. -/
-theorem even_pair_check (A : Finset G)
+theorem even_pair_columns (A : Finset G)
     (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0) :
     ∃ P : Cube A.card →ₗ[F] F×G,
+      (∀ z, P z=∑ i∈supp z, ((1:F),(A.equivFin.symm i).val)) ∧
       (∀ z, P z=0 → 2∣(supp z).card) ∧
       (∀ z, (supp z).card≤6 → P z=0 → z=0) ∧
       ∀ w∈A+A, ∃ z, P z=(0,w) ∧ (supp z).card≤2 ∧ (w≠0 → (supp z).card=2) := by
@@ -243,7 +244,7 @@ theorem even_pair_check (A : Finset G)
       · simp [h,supp]
       · simp [h,supp]
     rw [eq,sum_singleton]
-  refine ⟨P,parity,kernel,?_⟩
+  refine ⟨P,eval,parity,kernel,?_⟩
   rintro w hw
   obtain ⟨a,ha,b,hb,rfl⟩ := mem_add.mp hw
   let i := A.equivFin ⟨a,ha⟩
@@ -260,6 +261,16 @@ theorem even_pair_check (A : Finset G)
         ext l
         by_cases li : l=i <;> by_cases lj : l=j <;> simp [supp,Pi.single_apply,li,lj,eq,Ne.symm eq]
       simp [support,eq]
+
+/-- Forget the column labels while retaining the even distance and pair lifts. -/
+theorem even_pair_check (A : Finset G)
+    (free : ∀ T⊆A, T.card=4 ∨ T.card=6 → (∑ t∈T,t)≠0) :
+    ∃ P : Cube A.card →ₗ[F] F×G,
+      (∀ z, P z=0 → 2∣(supp z).card) ∧
+      (∀ z, (supp z).card≤6 → P z=0 → z=0) ∧
+      ∀ w∈A+A, ∃ z, P z=(0,w) ∧ (supp z).card≤2 ∧ (w≠0 → (supp z).card=2) := by
+  obtain ⟨P,_,parity,kernel,lifts⟩ := even_pair_columns A free
+  exact ⟨P,parity,kernel,lifts⟩
 
 /-- The even check map also gives two-coordinate lifts of every nonzero pair sum. -/
 theorem pair_check (A : Finset G)
@@ -302,6 +313,7 @@ end Green51SparseDimensions
 #print axioms Green51SparseDimensions.quadruple_space
 #print axioms Green51SparseDimensions.triple_packing
 #print axioms Green51SparseDimensions.sparse_linear_flat
+#print axioms Green51SparseDimensions.even_pair_columns
 #print axioms Green51SparseDimensions.even_pair_check
 #print axioms Green51SparseDimensions.pair_check
 #print axioms Green51SparseDimensions.rank_without_relation

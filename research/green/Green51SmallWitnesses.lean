@@ -130,6 +130,28 @@ private theorem extra_properties {n : ℕ} (lo : 3≤n) (hi : n≤9) :
     have bad := sub hx
     simp [eq] at bad
 
+/-- When the double avoids linear three-spaces, the cardinality cost of
+an affine flat bounds the actual maximum coset dimension. -/
+theorem max_dim_of_avoiding {n d : ℕ} (A : Finset (Cube n)) (two : 2≤d)
+    (avoid : ¬∃ W : Submodule F (Cube n), Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A)
+    (small : A.card<2^(d+2)) : maxCosetDim F (Cube n) ↑(A+A)≤d := by
+  apply csSup_le
+  · exact ⟨0,⊥,by simp,by simp⟩
+  · rintro _ ⟨S,sub,rfl⟩
+    by_contra! high
+    have non : ∃ p,p∈S := by
+      by_contra! empty
+      have bot : S=⊥ := by
+        ext x; simp only [AffineSubspace.notMem_bot,iff_false];exact empty x
+      rw [bot,AffineSubspace.direction_bot] at high;simp at high
+    obtain ⟨p,hp⟩ := non
+    have cost := Green51AffineMatchings.affine_flat_cost A avoid S.direction p (by
+      rintro _ ⟨w,hw,rfl⟩
+      apply sub
+      simpa [vadd_eq_add,add_comm] using AffineSubspace.vadd_mem_of_mem_direction hw hp) (by omega)
+    have le := Nat.pow_le_pow_right (by decide : 0<2) (show d+2≤Module.finrank F S.direction+1 by omega)
+    omega
+
 /-- The Plotkin cutoffs are attained by coordinate units and at most two
 additional words. The resulting double has no affine flat of rank three. -/
 theorem cutoff_witness {n : ℕ} (lo : 3≤n) (hi : n≤9) :
@@ -152,24 +174,8 @@ theorem cutoff_witness {n : ℕ} (lo : 3≤n) (hi : n≤9) :
   have avoid : ¬∃ W : Submodule F (Cube n), Module.finrank F W=3 ∧ ∀ w∈W,w∈A+A := by
     rintro ⟨W,dim,inside⟩; have := rank_without_relation A free W inside;omega
   refine ⟨A,count,?_⟩
-  apply csSup_le
-  · exact ⟨0,⊥,by simp,by simp⟩
-  · rintro _ ⟨S,sub,rfl⟩
-    by_contra! high
-    have non : ∃ p,p∈S := by
-      by_contra! empty
-      have bot : S=⊥ := by
-        ext x; simp only [AffineSubspace.notMem_bot,iff_false];exact empty x
-      rw [bot,AffineSubspace.direction_bot] at high;simp at high
-    obtain ⟨p,hp⟩ := non
-    have cost := Green51AffineMatchings.affine_flat_cost A avoid S.direction p (by
-      rintro _ ⟨w,hw,rfl⟩
-      apply sub
-      simpa [vadd_eq_add,add_comm] using AffineSubspace.vadd_mem_of_mem_direction hw hp) high
-    have low : A.card<16 := by rw [count]; interval_cases n <;> decide
-    have sixteen : 16≤2^(Module.finrank F S.direction+1) :=
-      Nat.pow_le_pow_right (by decide : 0 < 2) (show 4≤_ by omega)
-    omega
+  apply max_dim_of_avoiding A le_rfl avoid
+  rw [count]; interval_cases n <;> decide
 
 private theorem density {n : ℕ} (A : Finset (Cube n)) :
     (A.dens : ℝ)=(A.card : ℝ)/2^n := by rw [nnratCast_dens];simp [Cube]
@@ -208,6 +214,7 @@ theorem first_plateau {n : ℕ} (lo : 3≤n) (hi : n≤9) {α : ℝ}
 end Green51SmallWitnesses
 
 #print axioms Green51SmallWitnesses.add_heavy_labels
+#print axioms Green51SmallWitnesses.max_dim_of_avoiding
 #print axioms Green51SmallWitnesses.cutoff_witness
 #print axioms Green51SmallWitnesses.three_iff
 #print axioms Green51SmallWitnesses.first_plateau
