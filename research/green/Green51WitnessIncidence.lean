@@ -82,9 +82,12 @@ theorem hyperplane_cost {d:ℕ} (large:3≤d) (A:Finset G)
 open Green51LocalFlats Green51PairedTypes
 variable {E:Type*} [AddCommGroup E] [Module F E] [DecidableEq E] [Fintype E]
 
-/-- Distinct affine three-spaces in the double, counted by their point sets. -/
-def family (A:Finset G) : Set (Set G) := {D | ∃ (p:G) (W:Submodule F G),
-  Module.finrank F W=3 ∧ D=p +ᵥ (W:Set G) ∧ D⊆↑(A+A)}
+/-- Affine flats of a fixed dimension in the double, counted by their point sets. -/
+def familyAt (d : ℕ) (A:Finset G) : Set (Set G) := {D | ∃ (p:G) (W:Submodule F G),
+  Module.finrank F W=d ∧ D=p +ᵥ (W:Set G) ∧ D⊆↑(A+A)}
+
+/-- Distinct affine three-spaces in the double. -/
+abbrev family (A:Finset G) := familyAt 3 A
 
 omit [DecidableEq G] [Fintype G] [DecidableEq E] [Fintype E] in
 private theorem image_coset (f:E →ₗ[F] G) (p:E) (W:Submodule F E) :
@@ -96,8 +99,9 @@ private theorem image_coset (f:E →ₗ[F] G) (p:E) (W:Submodule F E) :
   · rintro ⟨_,⟨w,hw,rfl⟩,rfl⟩
     exact ⟨p+w,⟨w,hw,rfl⟩,f.map_add _ _⟩
 
-private theorem family_image (f:E →ₗ[F] G) (inj:Function.Injective f) (A:Finset E) :
-    family (A.image f)=((Set.image f) '' family A) := by
+omit [Fintype G] [Fintype E] in
+theorem familyAt_image (d:ℕ) (f:E →ₗ[F] G) (inj:Function.Injective f) (A:Finset E) :
+    familyAt d (A.image f)=((Set.image f) '' familyAt d A) := by
   have dbl : A.image f+A.image f=(A+A).image f := by rw [image_add]
   ext D
   constructor
@@ -123,15 +127,20 @@ private theorem family_image (f:E →ₗ[F] G) (inj:Function.Injective f) (A:Fin
     rintro _ ⟨x,hx,rfl⟩
     exact dbl ▸ mem_image_of_mem f (sub hx)
 
-theorem count_copy {A:Finset E} {B:Finset G} (copy:AffineCopy A B) :
-    (family B).ncard=(family A).ncard := by
+omit [Fintype G] [Fintype E] in
+theorem count_copy_at (d:ℕ) {A:Finset E} {B:Finset G} (copy:AffineCopy A B) :
+    (familyAt d B).ncard=(familyAt d A).ncard := by
   obtain ⟨f,t,inj,rfl⟩ := copy
   have eq : A.image (fun x=>t+f x)=(A.image f).image (fun x=>t+x) := by
     simp only [image_image,Function.comp_def]
-  have same : family ((A.image f).image (fun x=>t+x))=family (A.image f) := by
-    unfold family
+  have same : familyAt d ((A.image f).image (fun x=>t+x))=familyAt d (A.image f) := by
+    unfold familyAt
     rw [Green51PairedTypes.translated_double]
-  rw [eq,same,family_image f inj,Set.ncard_image_of_injective _ inj.image_injective]
+  rw [eq,same,familyAt_image d f inj,Set.ncard_image_of_injective _ inj.image_injective]
+
+omit [Fintype G] [Fintype E] in
+theorem count_copy {A:Finset E} {B:Finset G} (copy:AffineCopy A B) :
+    (family B).ncard=(family A).ncard := count_copy_at 3 copy
 
 private def coordinate {m:ℕ} (i:Cube m) : Ambient m →ₗ[F] F :=
   (LinearMap.proj i).comp (LinearMap.fst F (Cube m→F) (F×Cube m))
@@ -238,7 +247,7 @@ private theorem graph_family {D:Set (Target 4)} :
   simpa only [show ∀ n:ℕ,n+1=4 ↔ n=3 from fun n => by omega] using largest_flats (by decide : 4≤4) D
 
 private theorem count_graph : (family (graph 4)).ncard=15 := by
-  simpa only [family,show ∀ n:ℕ,n+1=4 ↔ n=3 from fun n => by omega,show 2^4-1=15 from rfl] using
+  simpa only [family,familyAt,show ∀ n:ℕ,n+1=4 ↔ n=3 from fun n => by omega,show 2^4-1=15 from rfl] using
     number_of_largest_flats (by decide : 4≤4)
 
 theorem small_to_graph : AffineCopy smallModel (graph 4) := by
@@ -269,10 +278,12 @@ theorem exact_count (A:Finset G) (h:Witness A) :
 def Partitions (A:Finset G) : Prop :=
   ∀ x∈A+A,x≠0 → ∃! D, D∈family A ∧ x∈D
 
+omit [Fintype G] [Fintype E] in
 private theorem through_image (f:E →ₗ[F] G) (inj:Function.Injective f) (A:Finset E) (x:E) :
     (∃! D,D∈family (A.image f) ∧ f x∈D) ↔ (∃! S,S∈family A ∧ x∈S) := by
   have mem {S:Set E} : f x∈f '' S ↔ x∈S := inj.mem_set_image
-  rw [family_image f inj]
+  unfold family
+  rw [familyAt_image 3 f inj]
   constructor
   · rintro ⟨D,⟨⟨S,hS,rfl⟩,hx⟩,only⟩
     refine ⟨S,⟨hS,mem.mp hx⟩,?_⟩
@@ -283,13 +294,14 @@ private theorem through_image (f:E →ₗ[F] G) (inj:Function.Injective f) (A:Fi
     rintro _ ⟨⟨U,hU,rfl⟩,hh⟩
     exact congrArg (Set.image f) (only U ⟨hU,mem.mp hh⟩)
 
+omit [Fintype G] [Fintype E] in
 private theorem partitions_copy {A:Finset E} {B:Finset G} (copy:AffineCopy A B) :
     Partitions B ↔ Partitions A := by
   obtain ⟨f,t,inj,rfl⟩ := copy
   have eq : A.image (fun x=>t+f x)=(A.image f).image (fun x=>t+x) := by
     simp only [image_image,Function.comp_def]
   have same : family ((A.image f).image (fun x=>t+x))=family (A.image f) := by
-    unfold family;rw [translated_double]
+    unfold family familyAt;rw [translated_double]
   simp only [Partitions,eq,translated_double,same,←image_add]
   constructor
   · intro original x hx nz
@@ -330,3 +342,5 @@ end Green51WitnessIncidence
 #print axioms Green51WitnessIncidence.count_small
 #print axioms Green51WitnessIncidence.exact_count
 #print axioms Green51WitnessIncidence.unique_through_nonzero
+
+#print axioms Green51WitnessIncidence.count_copy_at
