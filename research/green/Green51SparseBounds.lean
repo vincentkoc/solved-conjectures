@@ -161,7 +161,8 @@ private theorem density {n : ℕ} (A : Finset (𝔽₂ n)) :
   rw [nnratCast_dens]
   simp [𝔽₂,𝔽]
 
-private theorem guarantee_of_linear {n d : ℕ} {α : ℝ} (one : α≤1)
+/-- A linear flat in every admissible double gives the same lower bound for Green's affine guarantee. -/
+theorem guarantee_of_linear {n d : ℕ} {α : ℝ} (one : α≤1)
     (each : ∀ A : Finset (𝔽₂ n), α≤(A.dens : ℝ) →
       ∃ W : Submodule F (𝔽₂ n), Module.finrank F W=d ∧ ∀ w∈W,w∈A+A) :
     d≤Green51.guaranteedMaxCosetDim n α := by
@@ -175,6 +176,15 @@ private theorem guarantee_of_linear {n d : ℕ} {α : ℝ} (one : α≤1)
     · refine ⟨Module.finrank F (𝔽₂ n),?_⟩
       rintro _ ⟨S,_,rfl⟩; exact Submodule.finrank_le _
     · exact ⟨W.toAffineSubspace,fun _ h => inside _ h,by rwa [Submodule.toAffineSubspace_direction]⟩
+
+/-- Three labels always guarantee a plane in the double. -/
+theorem two_above_two_points {n : ℕ} {α : ℝ} (one : α≤1) (lo : 2/(2:ℝ)^n<α) :
+    2≤Green51.guaranteedMaxCosetDim n α := by
+  apply guarantee_of_linear one
+  intro B hb
+  have l := lo.trans_le hb
+  rw [density,div_lt_div_iff_of_pos_right (by positivity)] at l
+  exact plane B (by exact_mod_cast l)
 
 /-- Green's affine guarantee is exactly two on this sparse density interval,
 including its upper endpoint. -/
@@ -200,11 +210,7 @@ theorem sparse_plateau {n : ℕ} (hn : 4≤n) {α : ℝ}
       · have bot : S=⊥ := by
           ext x; simp only [AffineSubspace.notMem_bot,iff_false]; exact fun hx => non ⟨x,hx⟩
         rw [bot,AffineSubspace.direction_bot]; simp
-  · apply guarantee_of_linear (admitted.trans (by exact_mod_cast A.dens_le_one))
-    intro B hb
-    have l := lo.trans_le hb
-    rw [density,div_lt_div_iff_of_pos_right (by positivity)] at l
-    exact plane B (by exact_mod_cast l)
+  · exact two_above_two_points (admitted.trans (by exact_mod_cast A.dens_le_one)) lo
 
 /-- The packing obstruction forces an affine three-space as soon as k
 labels and their triples exceed the ambient cardinality. -/
@@ -227,5 +233,7 @@ end Green51SparseBounds
 #print axioms Green51SparseBounds.affine_examples
 #print axioms Green51SparseBounds.linear_size_bounds
 #print axioms Green51SparseBounds.linear_growth_rate
+#print axioms Green51SparseBounds.guarantee_of_linear
+#print axioms Green51SparseBounds.two_above_two_points
 #print axioms Green51SparseBounds.sparse_plateau
 #print axioms Green51SparseBounds.three_above_packing
