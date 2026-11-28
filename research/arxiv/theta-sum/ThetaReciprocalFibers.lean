@@ -115,7 +115,8 @@ private lemma reduce_val (q m : ℕ) [NeZero (q*m)] (x : unitsMod (q*m)) :
   change ZMod.castHom _ _ (x : ZMod (q*m)) = _
   rw [← ZMod.natCast_zmod_val (x : ZMod (q*m)),map_natCast,ZMod.natCast_zmod_val]
 
-private lemma unit_sum_nat {n : ℕ} [NeZero n] (f : ℕ → ℤ) :
+/-- Sum over the least nonnegative representatives of all units. -/
+theorem unit_sum_nat {A : Type*} [AddCommMonoid A] {n : ℕ} [NeZero n] (f : ℕ → A) :
     ∑ x : unitsMod n, f (x : ZMod n).val = ∑ j ∈ (range n).filter (·.Coprime n), f j := by
   apply sum_bij (fun (x : unitsMod n) _ => (x : ZMod n).val)
   · intro x _
@@ -343,6 +344,7 @@ theorem reciprocalSign_cancel {p g d w : ℕ} (hg : g%2=1) (hd : 0<d)
 
 end Arxiv.«2501.03234».ThetaReciprocalFibers
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.coprime_fiber_bound
+#print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.unit_sum_nat
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.reciprocal_unit_fiber
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.rationalPrefix_neg
 #print axioms Arxiv.«2501.03234».ThetaReciprocalFibers.rationalPrefix_unit_mean
