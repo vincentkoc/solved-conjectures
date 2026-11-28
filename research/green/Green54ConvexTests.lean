@@ -185,15 +185,14 @@ def ConvexSublevelMass (γ : Measure E) (β : ℝ≥0∞) : Prop :=
   ∀ f : C(E, ℝ), ConvexOn ℝ univ f → Integrable f γ →
     β ≤ γ {x | f x ≤ ∫ y, f y ∂γ}
 
-/-- Compact-input convexification from triple decomposition and the convex sublevel bound.
-The argument needs neither symmetry of the starting set nor an independent coupling. -/
-theorem convex_core_of_triple_and_sublevel {ι : Type*} [Fintype ι]
+/-- A compact set contains a convex witness if every compact set outside it
+can be avoided by a closed convex set of the required mass. -/
+theorem compact_core_of_avoidance {ι : Type*} [Fintype ι]
     (γ : Measure (ι → ℝ)) [IsProbabilityMeasure γ] {β : ℝ≥0∞} (hβ : 0 < β)
-    (htriple : CompactTripleDecomposition γ) (hmedian : ConvexSublevelMass γ β)
-    {A : Set (ι → ℝ)} (hA : IsCompact A) (hm : 2 / 3 < γ.real A) :
-    ∃ C : Set (ι → ℝ), IsCompact C ∧ Convex ℝ C ∧ C ⊆ A + A + A ∧ β ≤ γ C := by
-  let D := A + A + A
-  have hD : IsCompact D := (hA.add hA).add hA
+    {D : Set (ι → ℝ)} (hD : IsCompact D)
+    (ha : ∀ F : Set (ι → ℝ), IsCompact F → Disjoint F D →
+      ∃ S : Set (ι → ℝ), IsClosed S ∧ Convex ℝ S ∧ Disjoint F S ∧ β ≤ γ S) :
+    ∃ C : Set (ι → ℝ), IsCompact C ∧ Convex ℝ C ∧ C ⊆ D ∧ β ≤ γ C := by
   apply Green54Projections.compact_convex_of_thickenings γ hD hβ
   intro r hr b hb
   obtain ⟨L, _, hL, hLmass⟩ := MeasurableSet.univ.exists_isCompact_sdiff_lt
@@ -208,20 +207,31 @@ theorem convex_core_of_triple_and_sublevel {ι : Type*} [Fintype ι]
   have hd : Disjoint F D := Set.disjoint_left.mpr (by
     intro x hx hxD
     exact hx.2 (Metric.self_subset_thickening hr D hxD))
-  obtain ⟨f, hcv, hi, hsep⟩ := triple_sum_barrier γ htriple hA.isClosed.measurableSet hm hF hd
-  let S := {x | f x ≤ ∫ y, f y ∂γ}
-  have hS : IsClosed S := isClosed_le f.continuous continuous_const
-  have hSv : Convex ℝ S := by simpa [S] using hcv.convex_le (∫ y, f y ∂γ)
+  obtain ⟨S, hS, hSv, hsep, hmass⟩ := ha F hF hd
   refine ⟨S ∩ B, hB.inter_left hS, hSv.inter (convex_closedBall _ _), ?_, ?_⟩
   · intro x hx
     apply Metric.thickening_subset_cthickening r D
     by_contra hnot
-    exact (hsep x ⟨hx.2, hnot⟩).not_ge hx.1
+    exact Set.disjoint_left.mp hsep ⟨hx.2, hnot⟩ hx.1
   · by_contra! hlt
     have he := ENNReal.add_lt_add hlt ((measure_mono (show S \ B ⊆ Bᶜ from fun _ hx => hx.2)).trans_lt hsmall)
     rw [measure_inter_add_sdiff S hB.isClosed.measurableSet, add_tsub_cancel_of_le hb.le] at he
-    exact he.not_ge (hmedian f hcv hi)
+    exact he.not_ge hmass
 
+/-- Compact-input convexification from triple decomposition and the convex sublevel bound. -/
+theorem convex_core_of_triple_and_sublevel {ι : Type*} [Fintype ι]
+    (γ : Measure (ι → ℝ)) [IsProbabilityMeasure γ] {β : ℝ≥0∞} (hβ : 0 < β)
+    (htriple : CompactTripleDecomposition γ) (hmedian : ConvexSublevelMass γ β)
+    {A : Set (ι → ℝ)} (hA : IsCompact A) (hm : 2 / 3 < γ.real A) :
+    ∃ C : Set (ι → ℝ), IsCompact C ∧ Convex ℝ C ∧ C ⊆ A + A + A ∧ β ≤ γ C := by
+  apply compact_core_of_avoidance γ hβ ((hA.add hA).add hA)
+  intro F hF hd
+  obtain ⟨f, hcv, hi, hsep⟩ := triple_sum_barrier γ htriple hA.isClosed.measurableSet hm hF hd
+  refine ⟨{x | f x ≤ ∫ y, f y ∂γ}, isClosed_le f.continuous continuous_const,
+    ?_, Set.disjoint_left.mpr (by intro x hx hs; exact (hsep x hx).not_ge hs), hmedian f hcv hi⟩
+  simpa using hcv.convex_le (∫ y, f y ∂γ)
+
+#print axioms compact_core_of_avoidance
 #print axioms convex_core_of_triple_and_sublevel
 
 open ProbabilityTheory Green54Projections
