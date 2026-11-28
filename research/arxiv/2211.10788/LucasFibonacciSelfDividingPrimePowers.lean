@@ -57,7 +57,8 @@ private lemma rank_three : fibonacciStepRank 3 1=4 := by
   generalize fibonacciStepRank 3 1 = r at *
   interval_cases r <;> revert hf <;> decide
 
-private lemma small_coefficients : rankCoefficient 2=38 ∧ rankCoefficient 3=189 := by
+/-- The return-rank coefficients at the two smallest primes. -/
+lemma rankCoefficient_two_three : rankCoefficient 2=38 ∧ rankCoefficient 3=189 := by
   simp only [rankCoefficient_eq,rank_two,rank_three]
   decide
 
@@ -83,7 +84,7 @@ theorem prime_power_self_divides {p e : ℕ} (hp : p.Prime) (he : 0<e) :
         exact Or.inr ((Nat.prime_dvd_prime_iff_eq hp (by decide)).mp div)
     rcases small with rfl|rfl
     · have cap := test.2.2
-      rw [small_coefficients.1] at cap
+      rw [rankCoefficient_two_three.1] at cap
       have low : j+1 < 2 := by
         by_contra! hn
         exact (by decide : ¬2^2 ∣ 38) ((pow_dvd_pow 2 hn).trans cap)
@@ -91,7 +92,7 @@ theorem prime_power_self_divides {p e : ℕ} (hp : p.Prime) (he : 0<e) :
       subst j
       exact False.elim ((by decide : ¬2 ∣ lucasFibonacciSum 2) h)
     · have cap := test.2.2
-      rw [small_coefficients.2] at cap
+      rw [rankCoefficient_two_three.2] at cap
       have low : j+1 < 4 := by
         by_contra! hn
         exact (by decide : ¬3^4 ∣ 189) ((pow_dvd_pow 3 hn).trans cap)
