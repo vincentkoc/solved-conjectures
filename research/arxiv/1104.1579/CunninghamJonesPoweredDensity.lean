@@ -11,7 +11,8 @@ open scoped Topology
 def jonesExceptionalDegrees (m : ℕ) : Set ℕ :=
   {j | ∃ h : ℕ, 0 < h ∧ ¬Irreducible ((jonesSumPolynomial (m^h) j).map (Int.castRingHom ℚ))}
 
-private theorem count_in_interval {E : Set ℕ} {D q : ℕ}
+/-- Beyond an initial segment, a single divisibility condition bounds every interval count. -/
+theorem count_in_interval_of_divisibility {E : Set ℕ} {D q : ℕ}
     (hE : ∀ j ∈ E, D ≤ j → q ∣ j) (a N : ℕ) :
     (E ∩ Ico a (a+N)).ncard ≤ D+N/q+2 := by
   let T := Icc (a/q) ((a+N)/q)
@@ -57,7 +58,7 @@ theorem jones_powered_exceptional_windows {m : ℕ} (hm : 2 ≤ m) {ε : ℝ} (h
   have hE (j : ℕ) (hj : j ∈ jonesExceptionalDegrees m) (hDj : D ≤ j) : q ∣ j := by
     obtain ⟨h,hh,hred⟩ := hj
     exact hD j hDj h hh hred
-  have hc := count_in_interval hE a N
+  have hc := count_in_interval_of_divisibility hE a N
   have hc' : ((jonesExceptionalDegrees m ∩ Ico a (a+N)).ncard : ℝ) ≤
       (D:ℝ) + (N/q : ℕ) + 2 := by exact_mod_cast hc
   have hfloor : ((N/q : ℕ):ℝ)*q ≤ N := by exact_mod_cast Nat.div_mul_le_self N q
@@ -68,21 +69,20 @@ theorem jones_powered_exceptional_windows {m : ℕ} (hm : 2 ≤ m) {ε : ℝ} (h
   apply (div_lt_iff₀ hN).mpr
   linarith
 
-/-- A single set of natural density one works for every positive exponent of
-the chosen base. -/
-theorem jones_all_powers_density_one {m : ℕ} (hm : 2 ≤ m) :
-    {j : ℕ | ∀ h : ℕ, 0<h →
-      Irreducible ((jonesSumPolynomial (m^h) j).map (Int.castRingHom ℚ))}.HasDensity 1 := by
-  let E := jonesExceptionalDegrees m
+
+/-- A uniform zero bound on counts in long intervals gives density one for the complement. -/
+theorem density_one_of_exceptional_windows (E : Set ℕ)
+    (windows : ∀ ε : ℝ, 0 < ε → ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ a : ℕ,
+      (((E ∩ Ico a (a+N)).ncard : ℝ) / N) < ε) : Eᶜ.HasDensity 1 := by
   have hE : E.HasDensity 0 := by
     apply Metric.tendsto_nhds.mpr
     intro ε hε
-    obtain ⟨N₀,h⟩ := jones_powered_exceptional_windows hm hε
+    obtain ⟨N₀,h⟩ := windows ε hε
     refine eventually_atTop.mpr ⟨N₀,fun N hn => ?_⟩
     rw [Real.dist_eq,sub_zero,abs_of_nonneg (show 0 ≤ E.partialDensity Set.univ N by positivity)]
     have hz : Ico 0 N = Iio N := by ext x; simp
     simpa only [Set.partialDensity,Set.inter_univ,Set.univ_inter,Nat.ncard_Iio,
-      Nat.zero_add,hz,E] using h N hn 0
+      Nat.zero_add,hz] using h N hn 0
   have hsum : ∀ᶠ N : ℕ in atTop,
       Eᶜ.partialDensity Set.univ N = 1-E.partialDensity Set.univ N := by
     refine eventually_atTop.mpr ⟨1,fun N hN => ?_⟩
@@ -93,17 +93,27 @@ theorem jones_all_powers_density_one {m : ℕ} (hm : 2 ≤ m) :
     field_simp
     have hc : ((E ∩ Iio N).ncard : ℝ) + (Eᶜ ∩ Iio N).ncard = N := by exact_mod_cast he
     linarith
-  have good : {j : ℕ | ∀ h : ℕ, 0<h →
-      Irreducible ((jonesSumPolynomial (m^h) j).map (Int.castRingHom ℚ))} = Eᶜ := by
-    ext j
-    simp [E,jonesExceptionalDegrees]
-  rw [good]
   have ht : Tendsto (fun N => 1-E.partialDensity univ N) atTop (𝓝 (1-(0:ℝ))) :=
     tendsto_const_nhds.sub hE
   change Tendsto (fun N => Eᶜ.partialDensity univ N) atTop (𝓝 1)
   rw [sub_zero] at ht
   exact ht.congr' (hsum.mono fun _ he => he.symm)
 
+/-- A single set of natural density one works for every positive exponent of
+the chosen base. -/
+theorem jones_all_powers_density_one {m : ℕ} (hm : 2 ≤ m) :
+    {j : ℕ | ∀ h : ℕ, 0<h →
+      Irreducible ((jonesSumPolynomial (m^h) j).map (Int.castRingHom ℚ))}.HasDensity 1 := by
+  let E := jonesExceptionalDegrees m
+  have good : {j : ℕ | ∀ h : ℕ, 0<h →
+      Irreducible ((jonesSumPolynomial (m^h) j).map (Int.castRingHom ℚ))} = Eᶜ := by
+    ext j
+    simp [E,jonesExceptionalDegrees]
+  rw [good]
+  exact density_one_of_exceptional_windows E (fun _ hε => jones_powered_exceptional_windows hm hε)
+
+#print axioms count_in_interval_of_divisibility
+#print axioms density_one_of_exceptional_windows
 #print axioms jones_powered_exceptional_windows
 #print axioms jones_all_powers_density_one
 
