@@ -13,23 +13,23 @@ open Finset
 
 namespace Seeds
 
-variable {G : Type*} [AddCommGroup G] {b : ℕ}
+variable {G : Type*} [AddCommGroup G] {b k : ℕ}
 
-private def translate (f : Fin b → Fin 4 → G) (hf : ∀ k, Function.Injective (f k))
-    (p : Fin b × G) : Fin 4 ↪ G :=
+private def translate (f : Fin b → Fin k → G) (hf : ∀ k, Function.Injective (f k))
+    (p : Fin b × G) : Fin k ↪ G :=
   ⟨fun i => f p.1 i+p.2,fun _ _ h => hf _ (add_right_cancel h)⟩
 
-/-- Develop all translates of base quadruples whose oriented differences
+/-- Develop all translates of uniform base blocks whose oriented differences
 partition the nonzero group elements. -/
-theorem development [Fintype G] (f : Fin b → Fin 4 → G) (hf : ∀ k, Function.Injective (f k))
-    (hd : ∀ d : G, d ≠ 0 → ∃! v : Fin b × Fin 4 × Fin 4, f v.1 v.2.1 - f v.1 v.2.2 = d) :
-    Has (· = 4) (Fintype.card G) := by
+theorem development [Fintype G] (f : Fin b → Fin k → G) (hf : ∀ k, Function.Injective (f k))
+    (hd : ∀ d : G, d ≠ 0 → ∃! v : Fin b × Fin k × Fin k, f v.1 v.2.1 - f v.1 v.2.2 = d) :
+    Has (· = k) (Fintype.card G) := by
   classical
   let L := fun p => univ.map (translate f hf p)
   have mem (p : Fin b × G) (x : G) : x ∈ L p ↔ ∃ i, f p.1 i + p.2 = x := by
     simp only [L,mem_map,mem_univ,true_and]
     rfl
-  apply (Cover.ofLines (R := AllPairs G) (s := (· = 4)) L (by simp [L])
+  apply (Cover.ofLines (R := AllPairs G) (s := (· = k)) L (by simp [L])
     (fun _ _ _ _ _ _ => trivial) _).has rfl
   intro x y hxy _
   obtain ⟨⟨k,i,j⟩,hv,hu⟩ := hd (x-y) (sub_ne_zero.mpr hxy)
