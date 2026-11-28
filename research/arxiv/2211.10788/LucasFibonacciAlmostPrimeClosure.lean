@@ -57,19 +57,21 @@ theorem cofinal_hits_iff {k r d E : ℕ} (hd : 0<d) (he : 0<E) (y : ℤ) :
     rw [val,show (r:ℤ)+d*t=((r+d*t:ℕ):ℤ) by push_cast; rfl,signed_nat] at hit
     exact (ZMod.intCast_eq_intCast_iff ..).mp (by simpa only [Int.cast_natCast] using hit)
 
-/-- A modular hit at every allowed modulus is either an exact hit or a
-cofinal one. This also covers the zero-factor parameter 1. -/
-theorem modular_hits_iff {k r d E : ℕ} (he : 0<E) (y : ℤ) :
-    ModularHits k r d E y ↔
-      (∃ t : ℕ, Nat.IsAlmostPrime k t ∧ (lucasFibonacciSum (r+d*t):ℤ)=y) ∨ CofinalHits k r d E y := by
+/-- For any monotone index map and any parameter restriction, a value passing all tests
+is either attained or reached arbitrarily late modulo each allowed modulus. -/
+theorem restricted_modular_hits_iff (f : ℕ → ℕ) (mono : Monotone f) (P : ℕ → Prop)
+    {r d E : ℕ} (he : 0 < E) (y : ℤ) :
+    (∀ M : ℕ, 0 < M → M.Coprime E → ∃ t : ℕ, P t ∧ Hit d r M y (f t)) ↔
+      (∃ t : ℕ, P t ∧ (lucasFibonacciSum (r+d*f t):ℤ)=y) ∨
+      ∀ M : ℕ, 0 < M → M.Coprime E → ∀ B : ℕ, ∃ t : ℕ, B<t ∧ P t ∧ Hit d r M y (f t) := by
   classical
   constructor
   · intro all
-    by_cases exactHit : ∃ t : ℕ, Nat.IsAlmostPrime k t ∧ (lucasFibonacciSum (r+d*t):ℤ)=y
+    by_cases exactHit : ∃ t : ℕ, P t ∧ (lucasFibonacciSum (r+d*f t):ℤ)=y
     · exact Or.inl exactHit
     right
     intro M mp cop B
-    let V := lucasFibonacciSum (r+d*B)
+    let V := lucasFibonacciSum (r+d*f B)
     let K := E*(V+y.natAbs+1)+1
     have kp : 0<K := by dsimp [K]; omega
     have limit : V+y.natAbs<K := by
@@ -77,17 +79,17 @@ theorem modular_hits_iff {k r d E : ℕ} (he : 0<E) (y : ℤ) :
       dsimp [K]; omega
     have co : K.Coprime E := by simp [K]
     obtain ⟨t,weight,hit⟩ := all (M*K) (Nat.mul_pos mp kp) (Nat.coprime_mul_iff_left.mpr ⟨cop,co⟩)
-    have split (D : ℕ) (dv : D∣M*K) : Hit d r D y t :=
-      (show (lucasFibonacciSum (r+d*t):ℤ) ≡ y [ZMOD (M*K:ℕ)] from hit).of_dvd (by exact_mod_cast dv)
+    have split (D : ℕ) (dv : D∣M*K) : Hit d r D y (f t) :=
+      (show (lucasFibonacciSum (r+d*f t):ℤ) ≡ y [ZMOD (M*K:ℕ)] from hit).of_dvd (by exact_mod_cast dv)
     refine ⟨t,?_,weight,split M (dvd_mul_right ..)⟩
     by_contra! small
-    have ix := Nat.add_le_add_left (Nat.mul_le_mul_left d small) r
-    have ub : lucasFibonacciSum (r+d*t)≤V :=
+    have ix := Nat.add_le_add_left (Nat.mul_le_mul_left d (mono small)) r
+    have ub : lucasFibonacciSum (r+d*f t)≤V :=
       Nat.add_le_add (Nat.mul_le_mul_left 2 (Nat.fib_mono ix)) (Nat.fib_mono (Nat.add_le_add_right ix 2))
     have zk := (split K (dvd_mul_left ..)).dvd
-    have diff : (y-(lucasFibonacciSum (r+d*t):ℤ)).natAbs<K :=
+    have diff : (y-(lucasFibonacciSum (r+d*f t):ℤ)).natAbs<K :=
       (Int.natAbs_sub_le ..).trans_lt (by simp only [Int.natAbs_natCast]; omega)
-    have z : y-(lucasFibonacciSum (r+d*t):ℤ)=0 :=
+    have z : y-(lucasFibonacciSum (r+d*f t):ℤ)=0 :=
       Int.eq_zero_of_dvd_of_natAbs_lt_natAbs zk (by simpa using diff)
     exact exactHit ⟨t,weight,by omega⟩
   · rintro (⟨t,weight,val⟩|cofinal) M mp unit
@@ -95,6 +97,14 @@ theorem modular_hits_iff {k r d E : ℕ} (he : 0<E) (y : ℤ) :
     · obtain ⟨t,_,weight,hit⟩ := cofinal M mp unit 0
       exact ⟨t,weight,hit⟩
 
+/-- A modular hit at every allowed modulus is either an exact hit or a
+cofinal one. This also covers the zero-factor parameter 1. -/
+theorem modular_hits_iff {k r d E : ℕ} (he : 0<E) (y : ℤ) :
+    ModularHits k r d E y ↔
+      (∃ t : ℕ, Nat.IsAlmostPrime k t ∧ (lucasFibonacciSum (r+d*t):ℤ)=y) ∨ CofinalHits k r d E y := by
+  exact restricted_modular_hits_iff id monotone_id (Nat.IsAlmostPrime k) he y
+
+#print axioms restricted_modular_hits_iff
 #print axioms confining_modulus
 #print axioms cofinal_hits_iff
 #print axioms modular_hits_iff
