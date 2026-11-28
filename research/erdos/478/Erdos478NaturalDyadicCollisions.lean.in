@@ -1,0 +1,27 @@
+import Erdos478DyadicFactorialCollisions
+import Erdos478NaturalDensity
+
+/-! # Ordinary prime proportions for near-linear dyadic factorial collisions -/
+
+namespace Erdos478.BinaryGap
+open Filter Topology GapDensity GapSieve GapVariance GapBands
+noncomputable section
+
+theorem ordinary_square_mean (l : Nat.Primes) (h : selected l.val) :
+    Tendsto (fun X => ordinary X (observation l*observation l)) atTop (𝓝 2) :=
+  square_mean (countingAverage degree_one_prime_ideal_theorem) l h
+
+theorem ordinary_endpoint_variance (s : Finset Nat.Primes) (hs : ∀ i∈s, selected i.val) :
+    Tendsto (fun X => ordinary X (fun p => ((joined s p).card-(s.card:ℝ))^2)) atTop (𝓝 (s.card:ℝ)) :=
+  endpoint_variance (countingAverage degree_one_prime_ideal_theorem) s hs
+
+theorem dyadic_frequency {C ε : ℝ} (hC : 0<C) (hε : 0<ε) :
+    ∃ᶠ j : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-ε<fraction X (BinaryGap.witnessed j ⌈C*scale j⌉₊) :=
+  dyadic_of_pit degree_one_prime_ideal_theorem hC hε
+
+#print axioms ordinary_square_mean
+#print axioms ordinary_endpoint_variance
+#print axioms dyadic_frequency
+end
+end Erdos478.BinaryGap
