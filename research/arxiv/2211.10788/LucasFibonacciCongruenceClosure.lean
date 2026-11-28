@@ -194,6 +194,13 @@ theorem upper_modular_closure (y : ℕ) :
     · let : NeZero M := ⟨hM.ne'⟩
       exact odd_lower_hit hl M
 
+/-- A hit modulo eleven distinguishes the admissible orientation inside the two diagonals. -/
+theorem closure_of_eleven_and_diagonal {y : ℕ} (h11 : ∃ n, lucasFibonacciSum n ≡ y [MOD 11])
+    (h : (∃ j, y = lucasFibonacciSum j) ∨ IsLowerNeighborValue y) :
+    ∀ M > 0, ∃ n, lucasFibonacciSum n ≡ y [MOD M] := by
+  obtain ⟨n,hn⟩ := h11
+  exact (upper_modular_closure y).mpr (orientation hn h)
+
 /-- A single bounded orbit test decides membership in the all-moduli closure. -/
 theorem upper_modular_closure_finite_test (y : ℕ) :
     (∀ M > 0, ∃ n, lucasFibonacciSum n ≡ y [MOD M]) ↔
@@ -234,6 +241,7 @@ theorem false_positive_primes : ∀ p ∈ ({3,31} : Finset ℕ), p.Prime ∧
 
 #print axioms square_of_mod_self_sq
 #print axioms upper_modular_closure
+#print axioms closure_of_eleven_and_diagonal
 #print axioms upper_modular_closure_finite_test
 #print axioms upper_false_positives
 #print axioms false_positive_primes
