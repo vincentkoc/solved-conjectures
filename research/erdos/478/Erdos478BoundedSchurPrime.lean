@@ -35,10 +35,16 @@ private theorem eval_bound {I : Type*} [Fintype I] (g : ℤ[X]) (a : I → ℂ)
   rw [← abs_eval g a h x] at hh
   simpa only [prod_const,card_univ,← Nat.cast_add,← Nat.cast_pow,Nat.cast_le] using hh
 
-theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a : I → ℂ)
-    (h : g.map (Int.castRingHom ℂ) = ∏ i, (X-C (a i))) (U B : ℕ) (hB : 0<B)
-    (ha : ∀ i, ‖a i‖ ≤ U) :
-    ∃ p ≤ schurBound (Fintype.card I) U B, p.Prime ∧ ¬p ∣ B ∧
+/-- A positive shift can exclude a prime either by divisibility of the normalized
+step or by avoiding the polynomial roots at that prime. -/
+theorem bounded_prime_from_shift {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a : I → ℂ)
+    (h : g.map (Int.castRingHom ℂ) = ∏ i, (X-C (a i))) (U B H : ℕ)
+    (ha : ∀ i, ‖a i‖ ≤ U)
+    (select : ∀ t : ℕ, let c := (g.eval (t:ℤ)).natAbs
+      0 < c → ∃ y ≤ H, 0 < y ∧ ∀ p : ℕ, p.Prime → p ∣ B →
+        p ∣ (2*U+1)*y*c ∨ ¬ (g.map (Int.castRingHom (ZMod p))).IsRoot
+          ((t+(2*U+1)*y*c^2 : ℕ) : ZMod p)) :
+    ∃ p ≤ schurBound (Fintype.card I) U H, p.Prime ∧ ¬p ∣ B ∧
       ∃ x : ZMod p, (g.map (Int.castRingHom (ZMod p))).IsRoot x := by
   classical
   let t := U+2
@@ -52,10 +58,11 @@ theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a 
   have hc : 0<c.natAbs := by
     have hh : 0 < (c.natAbs:ℝ) := (abs_eval g a h t) ▸ prod_pos (fun i _ => hpos i)
     exact_mod_cast hh
-  let j := (2*U+1)*B*c.natAbs^2
+  obtain ⟨y,hyH,hy,hsel⟩ := select t hc
+  let j := (2*U+1)*y*c.natAbs^2
   let w := t+j
   have hj : 2*U < j := by
-    have h1 : 1 ≤ B*c.natAbs^2 := Nat.one_le_of_lt (Nat.mul_pos hB (pow_pos hc _))
+    have h1 : 1 ≤ y*c.natAbs^2 := Nat.one_le_of_lt (Nat.mul_pos hy (pow_pos hc _))
     have := Nat.mul_le_mul_left (2*U+1) h1
     dsimp [j]
     simp only [Nat.mul_one,← mul_assoc] at this
@@ -74,8 +81,8 @@ theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a 
     rw [← abs_eval g a h t,← abs_eval g a h w] at hh
     exact_mod_cast hh
   obtain ⟨k,hk⟩ := g.sub_dvd_eval_sub (w:ℤ) (t:ℤ)
-  let q : ℤ := 1 + ((2*U+1 : ℕ):ℤ) * B * c * k
-  have hjz : (j:ℤ) = ((2*U+1 : ℕ):ℤ)*B*c^2 := by simp [j]
+  let q : ℤ := 1 + ((2*U+1 : ℕ):ℤ) * y * c * k
+  have hjz : (j:ℤ) = ((2*U+1 : ℕ):ℤ)*y*c^2 := by simp [j]
   have hv : g.eval (w:ℤ) = c*q := by
     change g.eval (w:ℤ)-c = ((w:ℤ)-(t:ℤ))*k at hk
     have hw : (w:ℤ)-(t:ℤ) = j := by simp [w]
@@ -87,19 +94,20 @@ theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a 
   have hq : 1 < q.natAbs := by by_contra! hh; have := Nat.mul_le_mul_left c.natAbs hh; omega
   obtain ⟨p,hp,hpq⟩ := Nat.exists_prime_and_dvd (ne_of_gt hq)
   have hpz : (p:ℤ) ∣ q := Int.natAbs_dvd_natAbs.mp (by simpa using hpq)
-  have havoid : ¬p ∣ B := by
-    intro hdiv
-    have hb : (p:ℤ) ∣ B := by exact_mod_cast hdiv
-    have hx : (p:ℤ) ∣ ((2*U+1 : ℕ):ℤ) * B * c * k := by
-      exact dvd_mul_of_dvd_left (dvd_mul_of_dvd_left (dvd_mul_of_dvd_right hb _) _) _
-    have h1 : (p:ℤ) ∣ 1 := by simpa [q] using dvd_sub hpz hx
-    have h2 := Int.natAbs_dvd_natAbs.mpr h1
-    simp [hp.not_dvd_one] at h2
   have hroot : (g.map (Int.castRingHom (ZMod p))).IsRoot (w:ZMod p) := by
     unfold IsRoot
     rw [show (w:ZMod p) = Int.castRingHom (ZMod p) (w:ℤ) by simp]
     rw [eval_map_apply,hv]
     exact (CharP.intCast_eq_zero_iff (ZMod p) p _).mpr (dvd_mul_of_dvd_right hpz _)
+  have havoid : ¬p ∣ B := by
+    intro hdiv
+    rcases hsel p hp hdiv with hd | hd
+    · have hz : (p:ℤ) ∣ ((2*U+1 : ℕ):ℤ) * y * c :=
+        Int.natAbs_dvd_natAbs.mp (by simpa only [Int.natAbs_mul,Int.natAbs_natCast] using hd)
+      have h1 : (p:ℤ) ∣ 1 := by simpa [q] using dvd_sub hpz (dvd_mul_of_dvd_left hz k)
+      have h2 := Int.natAbs_dvd_natAbs.mpr h1
+      simp [hp.not_dvd_one] at h2
+    · exact hd (by simpa [w,j] using hroot)
   have hpval : p ≤ (g.eval (w:ℤ)).natAbs := by
     rw [hv,Int.natAbs_mul]
     exact (Nat.le_of_dvd (by omega) hpq).trans (Nat.le_mul_of_pos_left _ hc)
@@ -107,9 +115,34 @@ theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a 
     simpa only [t,show U+2+U = 2*U+2 by omega] using eval_bound g a h U ha t
   refine ⟨p,hpval.trans ((eval_bound g a h U ha w).trans ?_),hp,havoid,_,hroot⟩
   apply Nat.pow_le_pow_left
-  change U+2+((2*U+1)*B*c.natAbs^2)+U ≤ _
-  have hh := Nat.mul_le_mul_left ((2*U+1)*B) (Nat.pow_le_pow_left hct 2)
+  change U+2+((2*U+1)*y*c.natAbs^2)+U ≤ _
+  have hh := Nat.mul_le_mul (Nat.mul_le_mul_left (2*U+1) hyH) (Nat.pow_le_pow_left hct 2)
   omega
 
+theorem bounded_prime_root {I : Type*} [Fintype I] [Nonempty I] (g : ℤ[X]) (a : I → ℂ)
+    (h : g.map (Int.castRingHom ℂ) = ∏ i, (X-C (a i))) (U B : ℕ) (hB : 0<B)
+    (ha : ∀ i, ‖a i‖ ≤ U) :
+    ∃ p ≤ schurBound (Fintype.card I) U B, p.Prime ∧ ¬p ∣ B ∧
+      ∃ x : ZMod p, (g.map (Int.castRingHom (ZMod p))).IsRoot x := by
+  apply bounded_prime_from_shift g a h U B B ha
+  intro t c hc
+  exact ⟨B,le_rfl,hB,fun p _ hdiv => Or.inl (dvd_mul_of_dvd_left (dvd_mul_of_dvd_right hdiv _) _)⟩
+
+/-- A bound for a prime root that is monotone in the excluded integer. -/
+structure RootPrimeBound where
+  bound : ℕ → ℕ → ℕ → ℕ
+  mono : ∀ d u, Monotone (bound d u)
+  prime_root {I : Type} [Fintype I] [Nonempty I] (g : ℤ[X]) (a : I → ℂ)
+    (h : g.map (Int.castRingHom ℂ) = ∏ i, (X-C (a i))) (U B : ℕ) (hB : 0<B)
+    (ha : ∀ i, ‖a i‖ ≤ U) :
+    ∃ p ≤ bound (Fintype.card I) U B, p.Prime ∧ ¬p ∣ B ∧
+      ∃ x : ZMod p, (g.map (Int.castRingHom (ZMod p))).IsRoot x
+
+def elementarySchur : RootPrimeBound where
+  bound := schurBound
+  mono := by intro d u B B' h; dsimp [schurBound]; gcongr
+  prime_root := bounded_prime_root
+
+#print axioms bounded_prime_from_shift
 #print axioms bounded_prime_root
 end Erdos478.EffectiveResolvent
