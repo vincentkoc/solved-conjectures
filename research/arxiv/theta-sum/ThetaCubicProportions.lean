@@ -27,12 +27,12 @@ theorem value_bound (χ : DirichletCharacter ℂ p) : |value χ| ≤ (size χ)^3
     calc _ ≤ ‖halfSum χ‖^2*‖halfSum χ‖ := mul_le_mul_of_nonneg_left (Complex.abs_re_le_norm _) (sq_nonneg _)
          _ = _ := by ring) (by positivity)
 
-private lemma card_le (D : Finset (DirichletCharacter ℂ p)) : (D.card:ℝ) ≤ p := by
+lemma card_le (D : Finset (DirichletCharacter ℂ p)) : (D.card:ℝ) ≤ p := by
   have hφ := DirichletCharacter.card_eq_totient_of_hasEnoughRootsOfUnity ℂ p
   rw [Nat.card_eq_fintype_card] at hφ
   exact_mod_cast (card_le_univ D).trans (hφ ▸ Nat.totient_le p)
 
-private lemma many {ι : Type*} (D : Finset ι) (x y : ι → ℝ) (P C : ℝ)
+lemma many {ι : Type*} (D : Finset ι) (x y : ι → ℝ) (P C : ℝ)
     (hC : 0<C) (hP : 0≤P) (hc : (D.card:ℝ) ≤ P) (hx : ∀ i,0≤x i)
     (hy : ∀ i,|y i| ≤ (x i)^3) (h4 : ∑ i∈D,(x i)^4 ≤ C*P)
     (h1 : P/2048 ≤ ∑ i∈D,max (y i) 0) :
