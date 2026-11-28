@@ -22,15 +22,17 @@ theorem common_splits {s : Finset Nat.Primes} {i : Nat.Primes} (hi : i∈s) :
   exact (SplittingField.splits F).of_dvd (mon.map _).ne_zero
     (Polynomial.map_dvd _ (dvd_prod_of_mem (fun j : Nat.Primes => rationalGap j.val) hi))
 
-private theorem gap_agrees (i : Nat.Primes) {p : ℕ} (hp : p.Prime) (hc : cutoff i.val<p) :
-    (endpoints i.val p).card=primeRoots (gap i.val) p := by
+/-- The polynomial root count agrees with actual factorial endpoints for every integer length at least two. -/
+theorem endpoint_roots {k : ℕ} (hk : 2≤k) {p : ℕ} (hp : p.Prime) (hc : cutoff k<p) :
+    (endpoints k p).card=primeRoots (gap k) p := by
+  have hkpos : 0<k := by omega
   let : Fact p.Prime := ⟨hp⟩
-  have deg := SplittingDensity.gap_degree i.prop.pos
-  have sep := GapFamilies.separable_mod_above_resultant (gapPoly i.val) (deg.natDegree_eq.trans_ne i.prop.ne_zero)
-    (by simpa [gapPoly] using (GapFamilies.irreducible_gap_rat i.prop.pos).separable) ((le_max_right ..).trans_lt hc)
+  have deg := SplittingDensity.gap_degree hkpos
+  have sep := GapFamilies.separable_mod_above_resultant (gapPoly k) (deg.natDegree_eq.trans_ne hkpos.ne')
+    (by simpa [gapPoly] using (GapFamilies.irreducible_gap_rat hkpos).separable) ((le_max_right ..).trans_lt hc)
   apply (Nat.cast_inj (R:=ℝ)).mp
-  change ((endpoints i.val p).card : ℝ)=RootMoments.roots (gapPoly i.val) p
-  rw [endpoint_count i.prop.two_le hc,count_roots _ deg.monic p sep]
+  change ((endpoints k p).card : ℝ)=RootMoments.roots (gapPoly k) p
+  rw [endpoint_count hk hc,count_roots _ deg.monic p sep]
 
 /-- For a fixed finite family, every statistic of the actual numbers of
 factorial endpoint collisions has its ordinary Galois fixed-point model. -/
@@ -49,7 +51,7 @@ theorem endpoint_mean (A : PrimeAverage) (s : Finset Nat.Primes) (w : (s → ℕ
   intro p hp hpr
   apply congrArg w
   funext i
-  exact gap_agrees i.val hpr ((le_sup i.prop).trans_lt hp)
+  exact endpoint_roots i.val.prop.two_le hpr ((le_sup i.prop).trans_lt hp)
 
 theorem hasGap_iff {p k : ℕ} : GapSieve.HasGap p k ↔ 0<(endpoints k p).card := by
   rw [card_pos]
@@ -80,6 +82,7 @@ theorem hit_score_mean (A : PrimeAverage) (s : Finset Nat.Primes) (f : Finset Na
 #print axioms familyPoly
 #print axioms CommonField
 #print axioms common_splits
+#print axioms endpoint_roots
 #print axioms endpoint_mean
 #print axioms hasGap_iff
 #print axioms hit_score_mean

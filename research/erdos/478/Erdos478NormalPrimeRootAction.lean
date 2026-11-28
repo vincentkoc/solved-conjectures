@@ -74,6 +74,25 @@ theorem normal_pair_transitive {Y : Type*} [Fintype Y] [Finite G]
   obtain ⟨h,hhc,hhd⟩ := base c d hcd
   exact ⟨h*g⁻¹,by simpa [← hga] using hhc,by simpa [← hgb] using hhd⟩
 
+/-- The image of a kernel with prime-to-p quotient retains the p-divisor of a finite quotient. -/
+theorem prime_dvd_kernel_image {H B : Type*} [Group H] [Finite H] [Group B] [Finite B]
+    (π : G →* H) (surj : Surjective π) (φ : G →* B)
+    (hd : p ∣ Nat.card H) (hB : ¬p ∣ Nat.card B) : p ∣ Nat.card (φ.ker.map π) := by
+  let N := φ.ker.map π
+  obtain ⟨s,hs⟩ := exists_prime_orderOf_dvd_card' p hd
+  obtain ⟨v,hv⟩ := surj s
+  let m := Nat.card B
+  have member : s^m ∈ N := by
+    refine Subgroup.mem_map.mpr ⟨v^m,?_,by rw [map_pow,hv]⟩
+    change φ (v^m)=1
+    rw [map_pow]
+    exact pow_card_eq_one'
+  have horder : orderOf (⟨s^m,member⟩ : N) = p := by
+    rw [← Subgroup.orderOf_coe]
+    change orderOf (s^m)=p
+    rw [orderOf_pow,hs,((Fact.out : p.Prime).coprime_iff_not_dvd.mpr hB).gcd_eq_one,Nat.div_one]
+  exact horder ▸ orderOf_dvd_natCard (⟨s^m,member⟩ : N)
+
 /-- In a common group, the kernel of any representation with p-free
 image order can still move the two chosen roots arbitrarily. Raising a
 lift of a prime cycle to the size of the auxiliary group proves that
@@ -87,23 +106,12 @@ theorem kernel_pair_transitive {H B Y : Type*} [Group H] [Finite H]
     ∃ g : G, φ g=1 ∧ ρ (π g) a=c ∧ ρ (π g) b=d := by
   let N := φ.ker.map π
   let : N.Normal := φ.normal_ker.map π surj
-  obtain ⟨s,hs⟩ := exists_prime_orderOf_dvd_card' p hd
-  obtain ⟨v,hv⟩ := surj s
-  let m := Nat.card B
-  have member : s^m ∈ N := by
-    refine Subgroup.mem_map.mpr ⟨v^m,?_,by rw [map_pow,hv]⟩
-    change φ (v^m)=1
-    rw [map_pow]
-    exact pow_card_eq_one'
-  have horder : orderOf (⟨s^m,member⟩ : N) = p := by
-    rw [← Subgroup.orderOf_coe]
-    change orderOf (s^m)=p
-    rw [orderOf_pow,hs,((Fact.out : p.Prime).coprime_iff_not_dvd.mpr hB).gcd_eq_one,Nat.div_one]
-  have hdN : p ∣ Nat.card N := horder ▸ orderOf_dvd_natCard (⟨s^m,member⟩ : N)
+  have hdN := prime_dvd_kernel_image π surj φ hd hB
   obtain ⟨u,hu,hu'⟩ := normal_pair_transitive ρ hi hc N hdN hna hab hcd
   obtain ⟨g,hg,he⟩ := Subgroup.mem_map.mp u.property
   exact ⟨g,hg,he ▸ hu,he ▸ hu'⟩
 
+#print axioms prime_dvd_kernel_image
 #print axioms kernel_pair_transitive
 #print axioms normal_pair_transitive
 end

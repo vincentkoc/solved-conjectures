@@ -30,7 +30,8 @@ private theorem gap_value_map {A B : Type*} [CommRing A] [CommRing B] (j : A →
     j ((descPochhammer A l-1).eval x)=(descPochhammer B l-1).eval (j x) := by
   rw [← eval_map_apply,Polynomial.map_sub,descPochhammer_map,Polynomial.map_one]
 
-private theorem fixes_no_gap_root {K : Type*} [Field K] [NumberField K] {l : ℕ} (hl : 2≤l)
+/-- A common binary Frobenius lift fixes no root of any factorial gap of length at least two. -/
+theorem fixes_no_gap_root {K : Type*} [Field K] [NumberField K] {l : ℕ} (hl : 2≤l)
     (J : Ideal (𝓞 K)) [J.IsPrime] (σ : K ≃ₐ[ℚ] K)
     (fixed : ∀ z : 𝓞 K, σ (z:K)=(z:K) → Ideal.Quotient.mk J z=0 ∨ Ideal.Quotient.mk J z=1)
     (x : (rationalGap l).rootSet K) : σ (x:K)≠(x:K) := by
@@ -125,6 +126,7 @@ theorem broad_root_pair_conjugate {l : ℕ} (hl : l.Prime) (h : broad l) (hl3 : 
   exact ⟨τ,(Gal.galActionHom_restrict F K τ a).symm.trans (congrArg Subtype.val ha),
     (Gal.galActionHom_restrict F K τ b).symm.trans (congrArg Subtype.val hb)⟩
 
+#print axioms fixes_no_gap_root
 #print axioms broad
 #print axioms broad_derangement
 #print axioms broad_root_pair_conjugate

@@ -9,21 +9,27 @@ noncomputable section
 variable (K : Type*) [Field K] [Algebra ℚ K] [Normal ℚ K]
 
 omit [Normal ℚ K] in
-theorem gap_card {l : ℕ} (hl : l.Prime)
+theorem gap_card_of_pos {l : ℕ} (hl : 0<l)
     (hs : ((rationalGap l).map (algebraMap ℚ K)).Splits) :
     Fintype.card ((rationalGap l).rootSet K) = l := by
-  have irr : Irreducible (rationalGap l) := GapFamilies.irreducible_gap_rat hl.pos
+  have irr : Irreducible (rationalGap l) := GapFamilies.irreducible_gap_rat hl
   rw [card_rootSet_eq_natDegree irr.separable hs]
   change (descPochhammer ℚ l-1).natDegree=l
-  rw [natDegree_sub_eq_left_of_natDegree_lt (by simpa [descPochhammer_natDegree] using hl.pos),
+  rw [natDegree_sub_eq_left_of_natDegree_lt (by simpa [descPochhammer_natDegree] using hl),
     descPochhammer_natDegree]
+
+omit [Normal ℚ K] in
+theorem gap_card {l : ℕ} (hl : l.Prime)
+    (hs : ((rationalGap l).map (algebraMap ℚ K)).Splits) :
+    Fintype.card ((rationalGap l).rootSet K) = l :=
+  gap_card_of_pos K hl.pos hs
 
 /-- Fixing every root at the smaller lengths leaves full freedom at the
 new pair. Equal entries must be matched with equal entries. -/
-theorem pair_fixing_smaller {l : ℕ} (hl : l.Prime) (h : broad l) (h₃ : 3<l)
+theorem pair_fixing_lower_degrees {l : ℕ} (hl : l.Prime) (h : broad l) (h₃ : 3<l)
     [Fact (((rationalGap l).map (algebraMap ℚ K)).Splits)] (s : Finset ℕ)
     (small : ∀ t∈s, t<l)
-    (split : ∀ t∈s, t.Prime ∧ ((rationalGap t).map (algebraMap ℚ K)).Splits)
+    (split : ∀ t∈s, 0<t ∧ ((rationalGap t).map (algebraMap ℚ K)).Splits)
     {a b c d : (rationalGap l).rootSet K} (pattern : a=b ↔ c=d) :
     ∃ σ : K ≃ₐ[ℚ] K, σ (a:K)=c ∧ σ (b:K)=d ∧
       ∀ t∈s, ∀ x : (rationalGap t).rootSet K, σ (x:K)=x := by
@@ -37,7 +43,7 @@ theorem pair_fixing_smaller {l : ℕ} (hl : l.Prime) (h : broad l) (h₃ : 3<l)
     rw [Nat.card_pi]
     apply hl.prime.not_dvd_finsetProd
     intro j _
-    rw [Nat.card_perm,Nat.card_eq_fintype_card,gap_card K (split j j.prop).1 (split j j.prop).2,
+    rw [Nat.card_perm,Nat.card_eq_fintype_card,gap_card_of_pos K (split j j.prop).1 (split j j.prop).2,
       hl.dvd_factorial]
     exact (small j j.prop).not_ge
   have lift : ∃ σ : K ≃ₐ[ℚ] K, φ σ=1 ∧ σ (a:K)=c ∧ σ (b:K)=d := by
@@ -57,6 +63,15 @@ theorem pair_fixing_smaller {l : ℕ} (hl : l.Prime) (h : broad l) (h₃ : 3<l)
   let j : s := ⟨t,ht⟩
   have he := congrArg (fun z : B => ((z j) x : K)) hσ
   exact (Gal.galActionHom_restrict (rationalGap j.val) K σ x).symm.trans he
+
+theorem pair_fixing_smaller {l : ℕ} (hl : l.Prime) (h : broad l) (h₃ : 3<l)
+    [Fact (((rationalGap l).map (algebraMap ℚ K)).Splits)] (s : Finset ℕ)
+    (small : ∀ t∈s, t<l)
+    (split : ∀ t∈s, t.Prime ∧ ((rationalGap t).map (algebraMap ℚ K)).Splits)
+    {a b c d : (rationalGap l).rootSet K} (pattern : a=b ↔ c=d) :
+    ∃ σ : K ≃ₐ[ℚ] K, σ (a:K)=c ∧ σ (b:K)=d ∧
+      ∀ t∈s, ∀ x : (rationalGap t).rootSet K, σ (x:K)=x :=
+  pair_fixing_lower_degrees K hl h h₃ s small (fun t ht => ⟨(split t ht).1.pos,(split t ht).2⟩) pattern
 
 /-- The equality pattern for each length is the sole invariant of a tuple
 containing two roots per length. There is no restriction on how many
@@ -92,6 +107,8 @@ theorem joint_gap_pairs (s : Finset ℕ) (a b c d : ℕ → K)
       exact ⟨fixes t ht ⟨_,(roots t (old t ht)).2.2.1⟩,
         fixes t ht ⟨_,(roots t (old t ht)).2.2.2.1⟩⟩
 
+#print axioms gap_card_of_pos
+#print axioms pair_fixing_lower_degrees
 #print axioms gap_card
 #print axioms pair_fixing_smaller
 #print axioms joint_gap_pairs
