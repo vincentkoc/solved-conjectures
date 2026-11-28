@@ -187,6 +187,19 @@ private theorem high_ends {A B : Set ℤ} {u v : ℤ → Prop} (rect : Rectangle
   have := R.greatest.2 hy
   exact ⟨by omega,by omega⟩
 
+/-- The endpoint masses at both ends are equal. For the two original PMFs,
+a sum has a unique representation exactly when both contributing sites
+have their endpoint masses. -/
+theorem maximal_rectangle {P Q : PMF ℤ} (sum : IsUniformOnSupport (indepSum P Q))
+    (A : Extremes P.support) (B : Extremes Q.support) :
+    (P A.hi).toReal = (P A.lo).toReal ∧ (Q B.hi).toReal = (Q B.lo).toReal ∧
+    ∀ x ∈ P.support, ∀ y ∈ Q.support,
+      (∀ u ∈ P.support, ∀ v ∈ Q.support, x+y = u+v → x = u ∧ y = v) ↔
+        (P x).toReal = (P A.lo).toReal ∧ (Q y).toReal = (Q B.lo).toReal := by
+  have rect := (prob_rectangle sum A.least B.least).1
+  have top := high_ends rect A B
+  exact ⟨top.1,top.2,rect⟩
+
 private theorem ratios_of_empty {P : PMF ℤ} {a : ℤ} (empty : ¬ (lowerSites P a).Nonempty) : RationalRatios P := by
   have eq (x : ℤ) (hx : x∈P.support) : (P x).toReal=(P a).toReal := by
     by_contra h
@@ -328,6 +341,7 @@ theorem one_unpaired_alternative {P Q : PMF ℤ} (sum : IsUniformOnSupport (inde
   have last := M.upper_eq
   exact Or.inr ⟨M,same,by omega,by omega,hpos,hlt,degree,bound,levels⟩
 
+#print axioms maximal_rectangle
 #print axioms one_unpaired_alternative
 #print axioms alignment_alternative
 #print axioms one_deficit_of_one_unpaired
