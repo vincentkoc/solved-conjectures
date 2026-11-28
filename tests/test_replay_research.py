@@ -9,7 +9,20 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-compile_proof = runpy.run_path(str(ROOT / "scripts/replay-research"))["compile_proof"]
+runner = runpy.run_path(str(ROOT / "scripts/replay-research"))
+compile_proof = runner["compile_proof"]
+
+
+class ReplayKernelTests(unittest.TestCase):
+    def test_each_module_runs_in_its_own_checked_process(self):
+        sources = [Path("Base.lean"), Path("Derived.lean")]
+        env = {"LEAN_PATH": "compiled"}
+        with patch.object(subprocess, "run") as run:
+            runner["replay_kernel"](sources, env)
+        self.assertEqual(
+            [(call.args[0], call.kwargs) for call in run.call_args_list],
+            [(["leanchecker", "-v", source.stem], {"env": env, "check": True}) for source in sources],
+        )
 
 
 class ReplayAxiomTests(unittest.TestCase):
