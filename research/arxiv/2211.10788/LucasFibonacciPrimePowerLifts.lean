@@ -285,7 +285,8 @@ private lemma tower_of_hit {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p 
       rw [hi] at h
       simpa only [pow_succ', Nat.mul_assoc] using h
 
-private lemma shift_preserves_divisibility {m s j : ℕ} (hf : m ∣ Nat.fib j) :
+/-- A Fibonacci return step preserves divisibility of upper-diagonal terms in both directions. -/
+theorem lucasFibonacciSum_dvd_shift_iff {m s j : ℕ} (hf : m ∣ Nat.fib j) :
     m ∣ lucasFibonacciSum (s + j) ↔ m ∣ lucasFibonacciSum s := by
   rw [sequence_shift lucasFibonacciSum lucas_fibonacci_sum_recurrence,
     Nat.dvd_add_left (dvd_mul_of_dvd_left hf _)]
@@ -321,7 +322,7 @@ theorem unbounded_prime_powers_iff_finite_test {p : ℕ} [Fact p.Prime]
     refine ⟨t % e, Nat.mod_lt _ he, ?_⟩
     have hshift : m ∣ Nat.fib (j * (t / e)) :=
       hF.trans (Nat.fib_dvd _ _ (dvd_mul_right ..))
-    apply (shift_preserves_divisibility (s := r + d * (t % e)) hshift).mp
+    apply (lucasFibonacciSum_dvd_shift_iff (s := r + d * (t % e)) hshift).mp
     convert ht using 1
     congr 1
     dsimp [j]
@@ -341,7 +342,7 @@ theorem eight_excluded_three_unbounded :
   · intro n hn
     have hf : 8 ∣ Nat.fib (6 * (n / 6)) :=
       (by decide : 8 ∣ Nat.fib 6).trans (Nat.fib_dvd _ _ (dvd_mul_right ..))
-    have hs := (shift_preserves_divisibility (s := n % 6) hf).mp
+    have hs := (lucasFibonacciSum_dvd_shift_iff (s := n % 6) hf).mp
     rw [Nat.mod_add_div] at hs
     have hh := hs hn
     have hsmall (a : ℕ) (ha : a < 6) : ¬8 ∣ lucasFibonacciSum a := by
@@ -352,6 +353,53 @@ theorem eight_excluded_three_unbounded :
     simpa only [pow_add, show 3 ^ 2 = 9 by decide] using
       tower_of_hit (p := 3) (m := 9) (s := 3) (j := 12) (by decide) (by decide)
         (by decide) (by decide) (by decide) b
+
+/-- At a sharp Fibonacci step, each additional exponent cuts out exactly
+one residue class in the progression parameter. -/
+theorem sharp_prime_power_lift_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
+    (hp2 : p*p ∣ m) (hs : m ∣ lucasFibonacciSum s) (hf : m ∣ Nat.fib j)
+    (hsharp : ¬p*m ∣ Nat.fib j) (b : ℕ) :
+    ∃ c < p^b, ∀ t : ℕ, p^b*m ∣ lucasFibonacciSum (s+j*t) ↔ t ≡ c [MOD p^b] := by
+  have hp := (Fact.out : p.Prime).pos
+  let : NeZero m := ⟨hm.ne'⟩
+  have rank (k : ℕ) : fibonacciStepRank (p^k*m) j = p^k := by
+    induction k with
+    | zero =>
+      have hle : fibonacciStepRank m j≤1 := rank_le (by decide) (by simpa using hf)
+      have hge := (rank_spec m j).1
+      simpa using (show fibonacciStepRank m j=1 by omega)
+    | succ k ih =>
+      let N := p^k*m
+      let : NeZero N := ⟨(Nat.mul_pos (pow_pos hp _) hm).ne'⟩
+      have hN : p ∣ N := ((dvd_mul_right p p).trans hp2).trans (dvd_mul_left _ _)
+      have hh := fibonacciStepRank_prime_mul (p:=p) hN j
+      change fibonacciStepRank N j=p^k at ih
+      rw [ih,if_neg (sharp_step_tower hm hp2 hf hsharp k).2] at hh
+      simpa only [N,pow_succ',Nat.mul_assoc] using hh
+  let Q := p^b
+  let N := Q*m
+  let : NeZero N := ⟨(Nat.mul_pos (pow_pos hp _) hm).ne'⟩
+  obtain ⟨c,hc,hit⟩ := tower_of_hit hm hp2 hs hf hsharp b
+  change c<Q at hc
+  change N ∣ lucasFibonacciSum (s+j*c) at hit
+  refine ⟨c,hc,?_⟩
+  intro t
+  have hle : c≤t+Q := by omega
+  have hper := lucasFibonacciSum_dvd_shift_iff (s:=s+j*t) (sharp_step_tower hm hp2 hf hsharp b).1
+  change N ∣ lucasFibonacciSum (s+j*t+j*Q) ↔ _ at hper
+  have he : s+j*t+j*Q = s+j*c+j*(t+Q-c) := by
+    have ht : t+Q=c+(t+Q-c) := by omega
+    calc
+      _ = s+j*(t+Q) := by ring
+      _ = s+j*(c+(t+Q-c)) := congrArg (fun v => s+j*v) ht
+      _ = _ := by ring
+  rw [←hper,he,lucasFibonacciSum_dvd_after_hit_iff hit,rank b,←Nat.modEq_iff_dvd' hle]
+  exact ⟨fun h => (h.trans Nat.add_modEq_right).symm,
+    fun h => h.symm.trans Nat.add_modEq_right.symm⟩
+
+#print axioms lucasFibonacciSum_dvd_shift_iff
+#print axioms sharp_prime_power_lift_class
+
 
 #print axioms eight_excluded_three_unbounded
 
