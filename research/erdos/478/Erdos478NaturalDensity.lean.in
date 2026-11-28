@@ -1,0 +1,131 @@
+import Erdos478PrimeProportions
+import TauCeti.NumberTheory.ArithmeticDirichletSeries.Prime.PrimeIdealTheorem
+import TauCeti.NumberTheory.ArithmeticDirichletSeries.ResidueDegree.NaturalDensity
+
+/-!
+# Ordinary prime density of growing factorial deficits
+The prime ideal theorem and the density of degree-one prime ideals come from
+the pinned Tau Ceti port. The counting identity below uses the same inclusive
+norm cutoff on both sides.
+-/
+
+namespace Erdos478.GapDensity
+noncomputable section
+open NumberField IsDedekindDomain Finset Filter Topology TauCeti MeanDeficit
+
+private theorem count_degree_one (K : Type) [Field K] [NumberField K] (X : ℕ) :
+    primeCount K (higherDegreePrimes K)ᶜ X = ∑ p ∈ Nat.primesLE X, (linearCount K p : ℝ) := by
+  classical
+  let T := fun p => (abovePrime K p).filter (fun J => J.inertiaDeg ℤ = 1)
+  have hd : (↑(Nat.primesLE X) : Set ℕ).PairwiseDisjoint T := by
+    intro p hp q hq hne
+    exact (over_disjoint X hp hq hne).mono (filter_subset _ _) (filter_subset _ _)
+  rw [primeCount_eq_card,← Nat.cast_sum]
+  apply congrArg Nat.cast
+  change _ = ∑ p ∈ Nat.primesLE X, (T p).card
+  rw [← card_biUnion hd]
+  refine card_bij (fun P _ => P.asIdeal) ?_ (fun a _ b _ h => by ext; rw [h]) ?_
+  · intro P hP
+    obtain ⟨hX,hdg⟩ := mem_filter.mp hP
+    let p := rationalPrimeBelow P
+    have hp := prime_rationalPrimeBelow P
+    have hm : P.asIdeal ∈ abovePrime K p :=
+      (mem_over hp _).mpr ⟨P.isPrime,⟨(under_eq_span_rationalPrimeBelow P).symm⟩⟩
+    have hdeg : P.asIdeal.inertiaDeg ℤ = 1 := by
+      have ht := (norm_over hp hm).2
+      change ¬ 1 < P.asIdeal.inertiaDeg ℤ at hdg
+      omega
+    have hn : P.asIdeal.absNorm = p := by simpa [hdeg] using (norm_over hp hm).1
+    have hle := (mem_normLE _).mp hX
+    change (P.asIdeal.absNorm : ℝ) ≤ X at hle
+    rw [hn] at hle
+    exact mem_biUnion.mpr ⟨p,Nat.mem_primesLE.mpr ⟨by exact_mod_cast hle,hp⟩,
+      mem_filter.mpr ⟨hm,hdeg⟩⟩
+  · intro J hJ
+    obtain ⟨p,hp,hJ⟩ := mem_biUnion.mp hJ
+    obtain ⟨hle,hpr⟩ := Nat.mem_primesLE.mp hp
+    obtain ⟨hm,hdeg⟩ := mem_filter.mp hJ
+    have hn : J.absNorm = p := by simpa [hdeg] using (norm_over hpr hm).1
+    have hne : J ≠ ⊥ := by
+      intro h
+      exact hpr.ne_zero (by simpa [h] using hn.symm)
+    let P : HeightOneSpectrum (𝓞 K) := ⟨J,((mem_over hpr J).mp hm).1,hne⟩
+    refine ⟨P,mem_filter.mpr ⟨?_,?_⟩,rfl⟩
+    · apply (mem_normLE _).mpr
+      change (J.absNorm : ℝ) ≤ X
+      exact_mod_cast hn.trans_le hle
+    · change ¬ 1 < J.inertiaDeg ℤ
+      simp [hdeg]
+
+private theorem degree_one_prime_ideal_theorem : DegreeOnePrimeIdealTheorem := by
+  let s := fun x : ℝ => x / Real.log x
+  have hs : ∀ᶠ x in atTop, s x ≠ 0 := by
+    filter_upwards [eventually_gt_atTop (1:ℝ)] with x hx
+    exact div_ne_zero (by positivity) (Real.log_pos hx).ne'
+  apply prime_ideal_input_of_common_scale (fun X => s X) (tendsto_natCast_atTop_atTop.eventually hs)
+  intro K _ _
+  have h₁ := NumberField.Set.hasNaturalDensity_def.mp
+    (hasNaturalDensity_compl_higherDegreePrimes (K := K))
+  have h₂ := (Asymptotics.isEquivalent_iff_tendsto_one hs).mp
+    (primeCount_univ_isEquivalent_div_log K)
+  have h := (h₁.mul h₂).comp (tendsto_natCast_atTop_atTop (R := ℝ))
+  rw [one_mul] at h
+  apply h.congr'
+  filter_upwards [tendsto_natCast_atTop_atTop.eventually
+    (h₂.eventually_ne one_ne_zero)] with X hX
+  have hn : primeCount K Set.univ (X : ℝ) ≠ 0 := by
+    intro hz
+    apply hX
+    change primeCount K Set.univ (X:ℝ) / s X = 0
+    simp [hz]
+  change (_ / primeCount K Set.univ (X:ℝ)) * (primeCount K Set.univ (X:ℝ) / s X) = _
+  rw [div_mul_div_cancel₀ hn,count_degree_one]
+
+/-- For each fixed deficit D, a proportion tending to one of all rational
+primes miss at least D residues among 1!, …, (p−1)! modulo p. -/
+theorem natural_density_one (D : ℕ) :
+    Tendsto (fun X : ℕ => (((Nat.primesLE X).filter (fun p => D ≤ deficit p)).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 1) :=
+  natural_density_of_prime_ideal_theorem degree_one_prime_ideal_theorem D
+
+
+/-- The primes for which 2!, …, (p−1)! are all distinct have relative
+natural density zero. This includes the socialist-prime obstruction. -/
+theorem collision_free_density_zero :
+    Tendsto (fun X : ℕ => (((Nat.primesLE X).filter (fun p =>
+      ((Ico 2 p).image (fun k => k.factorial % p)).card = (Ico 2 p).card)).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 0) := by
+  let good := fun X => (Nat.primesLE X).filter (fun p => 3 ≤ deficit p)
+  let free := fun X => (Nat.primesLE X).filter (fun p =>
+    ((Ico 2 p).image (fun k => k.factorial % p)).card = (Ico 2 p).card)
+  have hdis (X : ℕ) : Disjoint (free X) (good X) := by
+    apply disjoint_left.mpr
+    intro p hf hg
+    have he := (mem_filter.mp hf).2
+    have hd := (mem_filter.mp hg).2
+    have hi : ((Ico 2 p).image (fun k => k.factorial % p)).card ≤
+        ((Ico 1 p).image (fun k => k.factorial % p)).card :=
+      card_le_card (image_subset_image (Ico_subset_Ico_left (by decide)))
+    change 3 ≤ p - ((Ico 1 p).image (fun k => k.factorial % p)).card at hd
+    rw [he,Nat.card_Ico] at hi
+    omega
+  have hsum (X : ℕ) : (free X).card + (good X).card ≤ (Nat.primesLE X).card := by
+    rw [← card_union_of_disjoint (hdis X)]
+    exact card_le_card (union_subset (filter_subset _ _) (filter_subset _ _))
+  have ht := tendsto_const_nhds (x := (1:ℝ)) |>.sub (natural_density_one 3)
+  rw [sub_self] at ht
+  apply squeeze_zero' (Eventually.of_forall fun _ => by positivity) _ ht
+  filter_upwards [Nat.tendsto_primeCounting.eventually_gt_atTop 0] with X hx
+  have hn : (0:ℝ) < (Nat.primesLE X).card := by
+    exact_mod_cast (Nat.primesLE_card_eq_primeCounting X).symm ▸ hx
+  change ((free X).card : ℝ) / _ ≤ 1 - ((good X).card : ℝ) / _
+  rw [le_sub_iff_add_le,← add_div,div_le_one hn]
+  exact_mod_cast hsum X
+
+#print axioms collision_free_density_zero
+
+#print axioms degree_one_prime_ideal_theorem
+#print axioms natural_density_one
+
+end
+end Erdos478.GapDensity

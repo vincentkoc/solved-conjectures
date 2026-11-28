@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""Replay Erdős 478 with the compatible Tau Ceti prime ideal theorem."""
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+from graphlib import TopologicalSorter
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import runpy
+import shutil
+import subprocess
+import tarfile
+from tempfile import TemporaryDirectory
+from urllib.request import urlopen
+
+
+TOPIC = Path(__file__).resolve().parent
+PORT = "bb3b4fff6bb0210a0f94fc535bf9adbf46ecc55a"
+MATHLIB = "0df444a360eaa60ab8c11dca51a86af692955474"
+DIGEST = "0fe69072de0e3e61a7eea4f6b1227303ad902bf5d6931b55c67f7c663fc99fbd"
+URL = f"https://codeload.github.com/KitaKen1/simultaneous-primitive-roots/tar.gz/{PORT}"
+FINAL = "Erdos478NaturalDensity"
+IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
+
+
+def external(name):
+    return name.startswith(("TauCeti.", "Compat4331."))
+
+
+def collect(archive, src):
+    prefix = f"simultaneous-primitive-roots-{PORT}/lean/"
+    paths, graph = {}, {}
+
+    def visit(name):
+        if name in paths:
+            return
+        if external(name):
+            rel = name.replace(".", "/") + ".lean"
+            path = src / rel
+            vendor = "vendor/" if name.startswith("TauCeti.") else ""
+            member = archive.getmember(prefix + vendor + rel)
+            if not member.isfile():
+                raise ValueError(member.name)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(archive.extractfile(member).read())
+        elif name == FINAL:
+            path = src / (name + ".lean")
+            shutil.copyfile(TOPIC / (name + ".lean.in"), path)
+        else:
+            path = TOPIC / (name + ".lean")
+        paths[name] = path
+        deps = IMPORT.findall(path.read_text(encoding="utf-8"))
+        graph[name] = [n for n in deps if external(n) or n.startswith("Erdos478")]
+        for dep in graph[name]:
+            visit(dep)
+
+    visit(FINAL)
+    digest = hashlib.sha256()
+    for name in sorted(n for n in paths if external(n)):
+        digest.update(name.encode() + b"\0" + hashlib.sha256(paths[name].read_bytes()).digest())
+    if digest.hexdigest() != DIGEST:
+        raise ValueError("the external source closure differs from the audited pin")
+    return paths, graph
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--archive", type=Path, help="reuse the GitHub source tarball for the pinned port")
+    args = parser.parse_args()
+    manifest = json.loads(Path("lake-manifest.json").read_text())
+    if not any(p["name"] == "mathlib" and p.get("rev") == MATHLIB for p in manifest["packages"]):
+        raise SystemExit("run in the pinned Formal Conjectures Lake environment")
+    version = subprocess.check_output(["lean", "--version"], text=True)
+    if "version 4.33.1," not in version or not os.environ.get("LEAN_PATH"):
+        raise SystemExit("expected lake env with Lean 4.33.1")
+    compile_proof = runpy.run_path(str(TOPIC.parents[2] / "scripts/replay-research"))["compile_proof"]
+    with TemporaryDirectory(prefix="erdos478-natural-density-") as directory:
+        work = Path(directory)
+        src, out = work / "src", work / "obj"
+        src.mkdir()
+        out.mkdir()
+        archive = args.archive
+        if archive is None:
+            archive = work / "port.tar.gz"
+            with urlopen(URL, timeout=120) as response, archive.open("wb") as dst:
+                shutil.copyfileobj(response, dst)
+        with tarfile.open(archive, "r:gz") as port:
+            paths, graph = collect(port, src)
+        env = dict(os.environ, LEAN_PATH=os.pathsep.join([str(out), os.environ["LEAN_PATH"]]))
+
+        def build(name):
+            if external(name):
+                target = out / (name.replace(".", "/") + ".olean")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(["lean", "-j1", "-R", src, "-o", target, paths[name]], env=env, check=True)
+            else:
+                compile_proof(paths[name], out, env)
+
+        deps = TopologicalSorter(graph)
+        deps.prepare()
+        checked = []
+        with ThreadPoolExecutor(max_workers=min(6, os.cpu_count() or 1)) as pool:
+            while deps.is_active():
+                ready = deps.get_ready()
+                list(pool.map(build, ready))
+                checked.extend(ready)
+                deps.done(*ready)
+        print(f"Replaying {len(checked)} compiled modules with leanchecker.", flush=True)
+        # leanchecker recursively selects every compiled module below a namespace.
+        # Grouping the external modules avoids rescanning the Lake search path for each one.
+        targets = ["TauCeti", "Compat4331", *(name for name in checked if not external(name))]
+        subprocess.run(["leanchecker", "-v", *targets], env=env, check=True)
+
+
+if __name__ == "__main__":
+    main()
