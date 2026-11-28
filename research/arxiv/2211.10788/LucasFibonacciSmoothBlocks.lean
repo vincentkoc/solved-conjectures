@@ -7,7 +7,7 @@ namespace Arxiv.«2211.10788»
 
 open Finset
 
-private lemma term_growth (n : ℕ) : 2^n ≤ (lucasFibonacciSum n)^2 := by
+lemma two_pow_le_lucasFibonacciSum_sq (n : ℕ) : 2^n ≤ (lucasFibonacciSum n)^2 := by
   have hmono : Monotone lucasFibonacciSum := fun i j hij => by
     unfold lucasFibonacciSum
     exact Nat.add_le_add (Nat.mul_le_mul_left _ (Nat.fib_mono hij))
@@ -20,7 +20,7 @@ private lemma term_growth (n : ℕ) : 2^n ≤ (lucasFibonacciSum n)^2 := by
     have hh := hmono (Nat.le_succ n)
     nlinarith [Nat.mul_le_mul hh hh, Nat.mul_le_mul_right (lucasFibonacciSum n) hh]
 
-private lemma fib_upper (n : ℕ) : Nat.fib n ≤ 2^n := by
+lemma fib_le_two_pow (n : ℕ) : Nat.fib n ≤ 2^n := by
   induction n using Nat.twoStepInduction with
   | zero => decide
   | one => decide
@@ -29,7 +29,7 @@ private lemma fib_upper (n : ℕ) : Nat.fib n ≤ 2^n := by
     rw [pow_succ] at h1
     omega
 
-private lemma common_factor_dvd_fib {m i j : ℕ} [NeZero m]
+lemma common_divisor_lucasFibonacciSum_dvd_fib {m i j : ℕ} [NeZero m]
     (h₁ : m ∣ lucasFibonacciSum i) (h₂ : m ∣ lucasFibonacciSum (i+j)) :
     m ∣ Nat.fib j := by
   have hr : fibonacciStepRank m 1 ∣ j :=
@@ -67,19 +67,19 @@ private lemma dominant_gap (r d N R p a b : ℕ) (hd : 0 < d) (ha : N ≤ a) (ha
   have hdu : m ∣ u := (pow_dvd_pow p (min_le_left ..)).trans (Nat.ordProj_dvd u p)
   have hdv : m ∣ v := (pow_dvd_pow p (min_le_right ..)).trans (Nat.ordProj_dvd v p)
   have hdiff : r+d*a+d*(b-a) = r+d*b := by rw [Nat.add_assoc, ← Nat.mul_add, show a+(b-a)=b by omega]
-  have hf : m ∣ Nat.fib (d*(b-a)) := common_factor_dvd_fib hdu (by simpa [hdiff] using hdv)
+  have hf : m ∣ Nat.fib (d*(b-a)) := common_divisor_lucasFibonacciSum_dvd_fib hdu (by simpa [hdiff] using hdv)
   have hupper := (Nat.le_of_dvd (Nat.fib_pos.mpr (Nat.mul_pos hd (Nat.sub_pos_of_lt hab))) hf).trans
-    (fib_upper (d*(b-a)))
+    (fib_le_two_pow (d*(b-a)))
   have hlower : 2^(d*N) ≤ (m^R)^2 := by
     rcases le_total (u.factorization p) (v.factorization p) with h | h
     · have he : m = p^u.factorization p := by simp [m, e, min_eq_left h]
       rw [he]
       exact (Nat.pow_le_pow_right (by decide) (by nlinarith [Nat.mul_le_mul_left d ha] : d*N ≤ r+d*a)).trans
-        ((term_growth _).trans (Nat.pow_le_pow_left h₁ 2))
+        ((two_pow_le_lucasFibonacciSum_sq _).trans (Nat.pow_le_pow_left h₁ 2))
     · have he : m = p^v.factorization p := by simp [m, e, min_eq_right h]
       rw [he]
       exact (Nat.pow_le_pow_right (by decide) (by nlinarith [Nat.mul_le_mul_left d (ha.trans hab.le)] : d*N ≤ r+d*b)).trans
-        ((term_growth _).trans (Nat.pow_le_pow_left h₂ 2))
+        ((two_pow_le_lucasFibonacciSum_sq _).trans (Nat.pow_le_pow_left h₂ 2))
   have hh := hlower.trans (Nat.pow_le_pow_left (Nat.pow_le_pow_left hupper R) 2)
   rw [← pow_mul, ← pow_mul] at hh
   have he := (Nat.pow_le_pow_iff_right (by decide : 1 < 2)).mp hh
@@ -99,7 +99,7 @@ theorem smooth_block_card_le (P : Finset ℕ) (r d N : ℕ) (hd : 0 < d) (hN : 0
   have choosePrime (t : A) : ∃ p ∈ P, p.Prime ∧ u t ≤ (p^(u t).factorization p)^R := by
     have ht := index t.2
     have hn : 0 < r+d*(t : ℕ) := by have := Nat.mul_pos hd (hN.trans_le ht.1); omega
-    have hh := term_growth (r+d*(t : ℕ))
+    have hh := two_pow_le_lucasFibonacciSum_sq (r+d*(t : ℕ))
     have hpow : 1 < (2 : ℕ)^(r+d*(t : ℕ)) := one_lt_pow₀ (by decide) hn.ne'
     have hu : 1 < u t := by change 2^_ ≤ (u t)^2 at hh; nlinarith
     exact largest_prime_power P hu (mem_filter.mp t.2).2
@@ -251,6 +251,9 @@ theorem sqrt_smooth_density_zero (r d : ℕ) (hd : 0 < d) :
   rw [← heq]
   linarith
 
+#print axioms two_pow_le_lucasFibonacciSum_sq
+#print axioms fib_le_two_pow
+#print axioms common_divisor_lucasFibonacciSum_dvd_fib
 #print axioms smooth_block_card_le
 #print axioms distinct_factors_in_block
 #print axioms sqrt_smooth_density_zero
