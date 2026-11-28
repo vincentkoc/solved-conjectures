@@ -14,6 +14,8 @@ On the four-dimensional binary cube take `f(x) = (x₀x₃, x₁x₂, x₁x₃, 
 
 ## An affine subspace for every quadratic map
 
+The [mean-rank argument](QUADRATIC-BOGOLYUBOV.md) gives the sharp fivefold codimension $d$ without a rank hypothesis. The following restriction argument gives the earlier quadratic bound.
+
 With no rank assumption, five sums of any quadratic graph contain an affine subspace of codimension at most `⌊(d+2)²/8⌋`. The same bound holds for ten sums of any A whose twofold sumset contains that graph over complementary subspaces. Green 50 asks for a linear bound in the logarithm of the reciprocal density. [Rank-descent proof](Green50QuadraticDescent.lean)
 
 If the high-rank hypothesis fails, choose a nonzero scalar component with polarization of rank r < d/2. A maximal subspace H on which this alternating form vanishes equals its orthogonal complement, so H has codimension r/2. On H the selected component of f is affine. Subtract its constant and linear parts there and project the output to the kernel of the functional. This leaves a quadratic map with one fewer output coordinate. Its graph embeds linearly in the normalized original graph, at ambient codimension r/2 + 1.

@@ -4,6 +4,8 @@ Let Γ be the graph of a map from an $n$-dimensional binary space to $d$ output 
 
 Green asks whether ten sums of any binary set of density $\alpha>0$ contain a coset of codimension $O(\log_2(1/\alpha))$. If $A+A$ contains the image of Γ under a linear isomorphism to the ambient space, its fivefold flat maps into $10A$ with the same dimension. In the [quotient construction](FUNCTION-GRAPH-REDUCTION.md), the output dimension is at most $\log_2(1/\alpha)$. When the selected graph has product coordinates, this gives coefficient $17/16$. The graph of the zero map shows that a uniform coefficient below one cannot hold for the graph bound. The quotient construction for general $A$ leaves the coordinate functions unrestricted. [Pinned Green 50](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/50.lean) · [Green, Problem 50](https://people.maths.ox.ac.uk/greenbj/papers/open-problems.pdf) · [Zero-map bound](Green50QuadraticDescent.lean)
 
+The [general quadratic theorem](QUADRATIC-BOGOLYUBOV.md) improves the fivefold codimension to $d$ for every binary quadratic map. The threefold bounds above use the product structure.
+
 ## How one direction reduces the loss
 
 Write $C_i(x)=(\ell_i(x),m_i(x))$. The polarization in coordinate $i$ is the alternating form on this plane, evaluated at $C_i(x),C_i(y)$. A plane of rank below two has identically zero polarization. For a full-rank plane, exactly a quarter of the inputs have $C_i(a)=0$. Averaging over $a$ gives a direction which leaves at most a quarter of the remaining full-rank planes untouched.
