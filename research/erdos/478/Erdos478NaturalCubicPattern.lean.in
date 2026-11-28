@@ -1,0 +1,97 @@
+import Erdos478CubicPatternFactor
+import Erdos478CubicSexticOverlap
+import Erdos478NaturalPatternLaw
+
+/-!
+# Natural density of cubic saturation with real-gap conditions
+
+The denominator of the conditional frequency counts primes satisfying
+the chosen pattern of longer gaps. A positive limiting density for that
+pattern suffices. Two specializations use all primes as denominator.
+-/
+
+namespace Erdos478.GapReality
+open SplittingDensity Finset Filter Topology
+open scoped Classical
+noncomputable section
+
+private theorem two_le {k : ℕ} (h : realLength k) : 2≤k := by rcases h with rfl|h <;> omega
+
+theorem cubic_joint_density (S T : Finset ℕ) (hS : ∀ k∈S, realLength k)
+    (hT : ∀ k∈T, realLength k) :
+    Tendsto (fun X => (((Nat.primesLE X).filter (observed 1 (insert 3 S) T)).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (patternDensity 1 S T/6)) := by
+  rw [← cubic_pattern_factor S T hS hT]
+  apply factorial_pattern_density (by decide)
+  · intro k hk
+    rcases mem_insert.mp hk with rfl|hj
+    · decide
+    · exact two_le (hS _ hj)
+  · exact fun k hk => two_le (hT k hk)
+
+theorem cubic_conditional_frequency (S T : Finset ℕ) (hS : ∀ k∈S, realLength k)
+    (hT : ∀ k∈T, realLength k) (hpos : 0<patternDensity 1 S T) :
+    Tendsto (fun X => (((Nat.primesLE X).filter (observed 1 (insert 3 S) T)).card : ℝ) /
+      ((Nat.primesLE X).filter (observed 1 S T)).card) atTop (𝓝 (1/6)) := by
+  have den := factorial_pattern_density (by decide : 0<1) S T (fun k hk => two_le (hS k hk))
+    (fun k hk => two_le (hT k hk))
+  have lim := (cubic_joint_density S T hS hT).div den hpos.ne'
+  rw [show patternDensity 1 S T/6/patternDensity 1 S T=1/6 by field_simp] at lim
+  apply lim.congr'
+  filter_upwards [eventually_ge_atTop 2] with X hX
+  have hp : 0<(Nat.primesLE X).card := card_pos.mpr ⟨2,Nat.mem_primesLE.mpr ⟨hX,Nat.prime_two⟩⟩
+  exact div_div_div_cancel_right₀ (by exact_mod_cast hp.ne') _ _
+
+private theorem two_gap_set (k : ℕ) (hk : 2≤k) (hn : 3≠k) :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+      (endpoints 3 p).card=3 ∧ (endpoints k p).card=k ∧
+      ((Ico 1 p).image (fun j => j.factorial%p)).card+(3+k)≤p-1).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (splitDensity 1 {3,k})) := by
+  have H := (saturated_gap_density (by decide : 0<1) {3,k} (by simp [hk])).2
+  apply H.congr
+  intro X
+  apply congrArg (fun U : Finset ℕ => (U.card:ℝ)/(Nat.primesLE X).card)
+  ext p
+  simp [hn,and_assoc]
+
+theorem two_three_collision_density :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+      (endpoints 3 p).card=3 ∧ (endpoints 2 p).card=2 ∧
+      ((Ico 1 p).image (fun j => j.factorial%p)).card+5≤p-1).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (1/12)) := by
+  simpa only [two_three_density] using two_gap_set 2 (by decide) (by decide)
+
+theorem three_six_collision_density :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+      (endpoints 3 p).card=3 ∧ (endpoints 6 p).card=6 ∧
+      ((Ico 1 p).image (fun j => j.factorial%p)).card+9≤p-1).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (1/144)) := by
+  simpa only [three_six_density] using two_gap_set 6 (by decide) (by decide)
+
+/-- Among all primes, exactly a fraction 1/144 have both the third and
+the sixth gap saturated. The all-prime deficit lemma removes the image
+inequality from the event without changing a single prime. -/
+theorem three_six_complete_frequency :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p =>
+      (endpoints 3 p).card=3 ∧ (endpoints 6 p).card=6).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (1/144)) := by
+  apply three_six_collision_density.congr
+  intro X
+  apply congrArg (fun U : Finset ℕ => (U.card:ℝ)/(Nat.primesLE X).card)
+  ext p
+  simp only [mem_filter]
+  constructor
+  · rintro ⟨hp,h₃,h₆,_⟩
+    exact ⟨hp,h₃,h₆⟩
+  · rintro ⟨hp,h₃,h₆⟩
+    have h := three_six_deficit (Nat.mem_primesLE.mp hp).2
+    rw [h₃,h₆] at h
+    exact ⟨hp,h₃,h₆,by omega⟩
+
+#print axioms three_six_complete_frequency
+#print axioms cubic_joint_density
+#print axioms cubic_conditional_frequency
+#print axioms two_three_collision_density
+#print axioms three_six_collision_density
+end
+end Erdos478.GapReality
