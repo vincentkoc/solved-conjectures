@@ -22,6 +22,43 @@ private theorem affine_girth {G : Type*} [AddCommGroup G] [Module F G] [Decidabl
   rw [Nat.odd_iff] at par
   omega
 
+/-- Every level-one missing mask in the specified size range comes from a dense sumset. -/
+theorem separated_realizable {s r : ℕ} (hs : 5 ≤ s) (D : Finset (𝔽₂ (2*(s+1)+r)))
+    (level : separated D) (near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*D.card)
+    (cap : D.card ≤ (2*s+3)*2^r) :
+    ∃ A : Finset (𝔽₂ (2*(s+1)+r)), (A+A)ᶜ=D ∧ threshold (2*s)<(A.dens : ℝ) :=
+  (realizable_iff_in_band hs D near cap).mpr (fun R sub odd zero => (affine_girth D level R sub odd zero).elim)
+
+/-- In the near-extremal range, exactly the nonseparated dense outputs have largest affine
+dimension two below the ambient dimension. -/
+theorem nonseparated_doubles {s r : ℕ} (hs : 5 ≤ s) (k : ℕ)
+    (near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*k) :
+    let n := 2*(s+1)+r
+    (allDenseDoubles n k (threshold (2*s))).filter (fun S => ¬separated Sᶜ) =
+      countedDoubles n k (threshold (2*s)) := by
+  classical
+  let n := 2*(s+1)+r
+  let G := 𝔽₂ n
+  let g := 2*s+3
+  have diff : n+1-g=r := by dsimp [n,g]; omega
+  have nearD (D : Finset G) (size : D.card=k) :
+      min (5*g+12) (4*g+20)*2^(n+1-g) < 8*D.card := by simpa only [g,size,diff] using near
+  ext S
+  simp only [allDenseDoubles,countedDoubles,mem_filter,mem_univ,true_and]
+  constructor
+  · rintro ⟨⟨num,A,rfl,ha⟩,no⟩
+    have girth := girth_of_density A s ha
+    have eq := (near_girth_dimension (n := n) (g := g) (by dsimp [n]; omega) (A+A)ᶜ (by dsimp [g]; omega)
+      ⟨s+1,by dsimp [g]; omega⟩ (by simpa only [g,show 2*(s+1)+1=2*s+3 by omega] using girth)
+      (nearD _ num)).mpr no
+    exact ⟨num,by simpa only [compl_compl] using eq,A,rfl,ha⟩
+  · rintro ⟨num,dim,A,rfl,ha⟩
+    have girth := girth_of_density A s ha
+    have no := (near_girth_dimension (n := n) (g := g) (by dsimp [n]; omega) (A+A)ᶜ (by dsimp [g]; omega)
+      ⟨s+1,by dsimp [g]; omega⟩ (by simpa only [g,show 2*(s+1)+1=2*s+3 by omega] using girth)
+      (nearD _ num)).mp (by simpa only [compl_compl] using dim)
+    exact ⟨⟨num,A,rfl,ha⟩,no⟩
+
 theorem count_all_dense_doubles {s r : ℕ} (hs : 5 ≤ s) (k : ℕ)
     (near : min (5*(2*s+3)+12) (4*(2*s+3)+20)*2^r < 8*k) (cap : k ≤ (2*s+3)*2^r) :
     let n := 2*(s+1)+r
@@ -30,12 +67,8 @@ theorem count_all_dense_doubles {s r : ℕ} (hs : 5 ≤ s) (k : ℕ)
   classical
   let n := 2*(s+1)+r
   let G := 𝔽₂ n
-  let g := 2*s+3
   let T := allDenseDoubles n k (threshold (2*s))
   have position : 0<k := by omega
-  have diff : n+1-g=r := by dsimp [n,g]; omega
-  have nearD (D : Finset G) (size : D.card=k) :
-      min (5*g+12) (4*g+20)*2^(n+1-g) < 8*D.card := by simpa only [g,size,diff] using near
   have affine : (T.filter (fun S => separated Sᶜ)).card = affineCount G k := by
     apply card_bij (fun S _ => Sᶜ)
     · intro S hS
@@ -47,30 +80,16 @@ theorem count_all_dense_doubles {s r : ℕ} (hs : 5 ≤ s) (k : ℕ)
     · intro D hD
       obtain ⟨num,level⟩ := mem_filter.mp hD
       have size := (mem_powersetCard.mp num).2
-      obtain ⟨A,eq,ha⟩ := (realizable_iff_in_band hs D (by simpa only [size] using near)
-        (by simpa only [size] using cap)).mpr (fun R sub odd zero => (affine_girth D level R sub odd zero).elim)
+      obtain ⟨A,eq,ha⟩ := separated_realizable hs D level (by simpa only [size] using near)
+        (by simpa only [size] using cap)
       refine ⟨A+A,mem_filter.mpr ⟨mem_filter.mpr ⟨mem_univ _,by rw [eq,size],A,rfl,ha⟩,?_⟩,eq⟩
       rw [eq]; exact level
-  have other : T.filter (fun S => ¬separated Sᶜ) = countedDoubles n k (threshold (2*s)) := by
-    ext S
-    simp only [T,allDenseDoubles,countedDoubles,mem_filter,mem_univ,true_and]
-    constructor
-    · rintro ⟨⟨num,A,rfl,ha⟩,no⟩
-      have girth := girth_of_density A s ha
-      have eq := (near_girth_dimension (n := n) (g := g) (by dsimp [n]; omega) (A+A)ᶜ (by dsimp [g]; omega)
-        ⟨s+1,by dsimp [g]; omega⟩ (by simpa only [g,show 2*(s+1)+1=2*s+3 by omega] using girth)
-        (nearD _ num)).mpr no
-      exact ⟨num,by simpa only [compl_compl] using eq,A,rfl,ha⟩
-    · rintro ⟨num,dim,A,rfl,ha⟩
-      have girth := girth_of_density A s ha
-      have no := (near_girth_dimension (n := n) (g := g) (by dsimp [n]; omega) (A+A)ᶜ (by dsimp [g]; omega)
-        ⟨s+1,by dsimp [g]; omega⟩ (by simpa only [g,show 2*(s+1)+1=2*s+3 by omega] using girth)
-        (nearD _ num)).mp (by simpa only [compl_compl] using dim)
-      exact ⟨⟨num,A,rfl,ha⟩,no⟩
   have eq := card_filter_add_card_filter_not (s := T) (fun S => separated Sᶜ)
-  rw [affine,other,affineCount_eq_number n k position] at eq
+  rw [affine,nonseparated_doubles hs k near,affineCount_eq_number n k position] at eq
   exact eq.symm
 end Green51AffineEnumeration
+#print axioms Green51AffineEnumeration.separated_realizable
+#print axioms Green51AffineEnumeration.nonseparated_doubles
 #print axioms Green51AffineEnumeration.count_all_dense_doubles
 
 namespace Green51AffineEnumeration
