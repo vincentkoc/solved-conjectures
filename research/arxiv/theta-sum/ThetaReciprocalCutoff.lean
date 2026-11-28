@@ -282,11 +282,18 @@ private lemma sign_completion (s v n : ℕ) (hv : (v:ZMod p)≠0)
 /-- Uniform interval discrepancy for the parity of modular reciprocals. -/
 noncomputable def discrepancy (p : ℕ) : ℝ := 4*(p:ℝ)^(3/4:ℝ)*(1+(harmonic (p/2):ℝ))^2
 
-theorem reciprocal_interval (hp : p%2=1) (s v n : ℕ) (hv : (v:ZMod p)≠0)
+/-- Parity discrepancy from a uniform complete Kloosterman estimate. -/
+noncomputable def kernelDiscrepancy (p : ℕ) (B : ℝ) : ℝ := 2*B*(1+(harmonic (p/2):ℝ))^2
+
+omit [Fact p.Prime] in
+theorem elementary_discrepancy : kernelDiscrepancy p (2*(p:ℝ)^(3/4:ℝ))=discrepancy p := by
+  unfold kernelDiscrepancy discrepancy
+  ring
+
+theorem reciprocal_interval_of_kernel {K : ℝ} (hK : 0≤K)
+    (bound : ∀ a b : ZMod p,b≠0 → ‖kloosterman a b‖≤K) (hp : p%2=1) (s v n : ℕ) (hv : (v:ZMod p)≠0)
     (hn : n≤p) (hs : ∀ i<n, 0<s+2*i ∧ s+2*i<p) :
-    |((∑ i ∈ range n, quotientSign p (s+2*i) v : ℤ) : ℝ)| ≤ discrepancy p := by
-  let K : ℝ := 2*(p:ℝ)^(3/4:ℝ)
-  have hK : 0≤K := by dsimp [K]; positivity
+    |((∑ i ∈ range n, quotientSign p (s+2*i) v : ℤ) : ℝ)| ≤ kernelDiscrepancy p K := by
   have h0 : coeff (0:ZMod p)=0 := by rw [coeff_is_diff hp,neg_zero,sub_self]
   have hb (b : ZMod p) : ‖coeff (-b)*∑ a : ZMod p, amp s n (-a)*kloosterman a (b*v)‖ ≤
       ‖coeff (-b)‖*((∑ a : ZMod p, ‖amp s n (-a)‖)*K) := by
@@ -296,7 +303,7 @@ theorem reciprocal_interval (hp : p%2=1) (s v n : ℕ) (hv : (v:ZMod p)≠0)
     apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
     apply (norm_sum_le ..).trans
     rw [sum_mul]; apply sum_le_sum; intro a _
-    rw [norm_mul]; exact mul_le_mul_of_nonneg_left (kloosterman_bound a _ (mul_ne_zero hz hv)) (norm_nonneg _)
+    rw [norm_mul]; exact mul_le_mul_of_nonneg_left (bound a _ (mul_ne_zero hz hv)) (norm_nonneg _)
   let H : ℝ := harmonic (p/2)
   have hp0 : 0<(p:ℝ) := by exact_mod_cast (Fact.out : p.Prime).pos
   have HH : 0≤H := by dsimp [H]; exact_mod_cast (show 0 ≤ harmonic (p/2) by unfold harmonic; positivity)
@@ -323,7 +330,13 @@ theorem reciprocal_interval (hp : p%2=1) (s v n : ℕ) (hv : (v:ZMod p)≠0)
     _ ≤ _ := (norm_sum_le ..).trans (sum_le_sum (fun b _ => hb b))
     _ = (∑ b : ZMod p, ‖coeff (-b)‖)*((∑ a : ZMod p, ‖amp s n (-a)‖)*K) := (sum_mul ..).symm
     _ ≤ (2*p*(1+H))*((p*(1+H))*K) := by gcongr
-    _ = _ := by dsimp [K,H,discrepancy]; ring
+    _ = _ := by dsimp [H,kernelDiscrepancy]; ring
+
+theorem reciprocal_interval (hp : p%2=1) (s v n : ℕ) (hv : (v:ZMod p)≠0)
+    (hn : n≤p) (hs : ∀ i<n, 0<s+2*i ∧ s+2*i<p) :
+    |((∑ i ∈ range n, quotientSign p (s+2*i) v : ℤ) : ℝ)| ≤ discrepancy p := by
+  simpa only [elementary_discrepancy] using reciprocal_interval_of_kernel (by positivity)
+    (fun a b hb => kloosterman_bound a b hb) hp s v n hv hn hs
 
 open ThetaCotangentTriangle (reciprocalSign lowerTriangle)
 
@@ -701,3 +714,5 @@ end Arxiv.«2501.03234».ThetaReciprocalCutoff
 #print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weight_le
 #print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weight_mass
 #print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.weighted_abs
+
+#print axioms Arxiv.«2501.03234».ThetaReciprocalCutoff.reciprocal_interval_of_kernel

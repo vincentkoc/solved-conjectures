@@ -241,14 +241,14 @@ noncomputable def windowBand (L : ℕ → ℕ) (Y : ℕ) (s : Finset ℕ) (n : �
 noncomputable def windowMass (L : ℕ → ℕ) (Y q : ℕ) : ℝ :=
   ∑ h ∈ (range q).filter (·.Coprime q), ‖windowCoordinate L Y q h‖^2
 
-/-- The finite interval variance is bounded by the mass on this band and the square
+/-- The variance on every translated interval is bounded by the mass on this band and the square
 of its largest denominator (with one harmonic factor from the elementary large sieve). -/
-theorem window_sieve (L : ℕ → ℕ) (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
-    ∑ n ∈ range X, ‖windowBand L Y s n‖^2 ≤
+theorem window_sieve_translate (L : ℕ → ℕ) (Y M X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
+    ∑ n ∈ range X, ‖windowBand L Y s (M+n)‖^2 ≤
       2*((X:ℝ)+2*(Q^2:ℕ)*harmonic (Q^2))*∑ q ∈ s, windowMass L Y q := by
   let S := s.sigma fun q => (range q).filter (·.Coprime q)
   let t (z : Σ _ : ℕ, ℕ) := (z.2:ℝ)/z.1
-  let a (z : Σ _ : ℕ, ℕ) := windowCoordinate L Y z.1 z.2
+  let a (z : Σ _ : ℕ, ℕ) := windowCoordinate L Y z.1 z.2 * phase (t z) M
   have he (z : Σ _ : ℕ, ℕ) (hz : z∈S) : 0<z.1 ∧ z.1≤Q ∧ z.2<z.1 ∧ z.2.Coprime z.1 := by
     obtain ⟨hq,hh⟩ := mem_sigma.mp hz
     exact ⟨(mem_Icc.mp (hs _ hq)).1,(mem_Icc.mp (hs _ hq)).2,mem_range.mp (mem_filter.mp hh).1,(mem_filter.mp hh).2⟩
@@ -265,7 +265,18 @@ theorem window_sieve (L : ℕ → ℕ) (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ 
     by_contra! H
     apply hne; cases z; cases w; simp_all
   have H := separated_sieve S a t X (Q^2) ht hgap
-  simpa only [windowBand,windowMass,sum_sigma',S,a,t] using H
+  have hshift (u : ℝ) (n : ℕ) : phase u (M+n) = phase u M*phase u n := by
+    rw [phase_pow u (M+n),pow_add,← phase_pow,← phase_pow]
+  simpa only [windowBand,windowMass,sum_sigma',S,a,t,norm_mul,phase_norm,mul_one,hshift,mul_assoc] using H
+
+#print axioms window_sieve_translate
+
+/-- The finite interval variance is bounded by the mass on this band and the square
+of its largest denominator (with one harmonic factor from the elementary large sieve). -/
+theorem window_sieve (L : ℕ → ℕ) (Y X Q : ℕ) (s : Finset ℕ) (hs : ∀ q ∈ s, q ∈ Icc 1 Q) :
+    ∑ n ∈ range X, ‖windowBand L Y s n‖^2 ≤
+      2*((X:ℝ)+2*(Q^2:ℕ)*harmonic (Q^2))*∑ q ∈ s, windowMass L Y q := by
+  simpa using window_sieve_translate L Y 0 X Q s hs
 
 /-- Contribution to the rational extension from a band of reduced denominators. -/
 noncomputable def band (Y : ℕ) (s : Finset ℕ) (n : ℕ) : ℂ :=

@@ -6,7 +6,7 @@ namespace Arxiv.«2501.03234».ThetaStrongPrimeTail
 open Finset Filter Real ThetaPrimeDensity ThetaStrongDeviation
 noncomputable section
 
-private theorem compare_rate {X N : ℕ} (hN : 0<N) (hX : 0<X) (hlo : X≤N^64)
+theorem compare_rate {X N : ℕ} (hN : 0<N) (hX : 0<X) (hlo : X≤N^64)
     (hNlog : 1≤log N) (hXlog : 1≤log X) (h64 : log 64≤log (log N)) :
     rate X≤16*rate N := by
   have hr : 0<(N:ℝ) := by exact_mod_cast hN

@@ -1,4 +1,4 @@
-import ThetaWindowPowerEndpoint
+import ThetaIntervalPowerEndpoint
 
 /-! Finite moments of reciprocal windows, uniform in the numerator cutoffs. -/
 namespace Arxiv.«2501.03234».ThetaWindowFiniteMoments
@@ -35,17 +35,17 @@ theorem pointwise_power {a : ℝ} (ha : 0<a) (k : ℕ) (x : ℝ) :
 
 /-- The complete moment grows factorially in the exponent; truncation adds
 at most two times a fixed multiple of the squared denominator cutoff to that power. -/
-theorem finite_moment : ∃ a K : ℝ, 0<a ∧ 0<K ∧ ∀ (Y : ℕ) (W : Window), 2≤Y → ∀ X k : ℕ,
-    (∑ n∈range X,(rowModel Y W n)^k) ≤ (X:ℝ)*K*((k:ℝ)/a)^k+2*(6*Z*(Y:ℝ)^2)^k := by
+theorem translated_moment : ∃ a K : ℝ, 0<a ∧ 0<K ∧ ∀ (Y : ℕ) (W : Window), 2≤Y → ∀ M X k : ℕ,
+    (∑ n∈range X,(rowModel Y W (M+n))^k) ≤ (X:ℝ)*K*((k:ℝ)/a)^k+2*(6*Z*(Y:ℝ)^2)^k := by
   obtain ⟨a,K,ha,hK,H⟩ := all_bound
   refine ⟨a,K,ha,hK,?_⟩
-  intro Y W hY X k
+  intro Y W hY M X k
   have hz : 0≤Z := tsum_nonneg (fun _ => by positivity)
-  have hp := ThetaWindowPowerEndpoint.power_endpoint (Y:=Y)
-    (fun d n => (commonWeight W.weightCutoff d/d)*row d (W.width d) n) X k
+  have hp := ThetaIntervalPowerEndpoint.translated_power (Y:=Y)
+    (fun d n => (commonWeight W.weightCutoff d/d)*row d (W.width d) n) M X k
     (show 0≤6*Z by positivity) (fun d _ n => congrArg (fun z => commonWeight W.weightCutoff d/d*z) (row_onMod d (W.width d) n))
     (fun d hd => weighted_bound (mem_Icc.mp hd).1 W)
-  change (∑ n∈range X,(rowModel Y W n)^k)≤(X:ℝ)*mean Y.factorial (fun n => (rowModel Y W n)^k)+_ at hp
+  change (∑ n∈range X,(rowModel Y W (M+n))^k)≤(X:ℝ)*mean Y.factorial (fun n => (rowModel Y W n)^k)+_ at hp
   have hm : mean Y.factorial (fun n => (rowModel Y W n)^k) ≤ ((k:ℝ)/a)^k*K := by
     have h₁ := sum_le_sum (s:=range Y.factorial) (fun n _ => pointwise_power ha k (rowModel Y W n))
     rw [← mul_sum] at h₁
@@ -54,6 +54,14 @@ theorem finite_moment : ∃ a K : ℝ, 0<a ∧ 0<K ∧ ∀ (Y : ℕ) (W : Window
     exact mul_le_mul_of_nonneg_left (H Y W hY) (pow_nonneg (div_nonneg (Nat.cast_nonneg _) ha.le) _)
   exact hp.trans (by linarith only [mul_le_mul_of_nonneg_left hm (Nat.cast_nonneg X)])
 
+theorem finite_moment : ∃ a K : ℝ, 0<a ∧ 0<K ∧ ∀ (Y : ℕ) (W : Window), 2≤Y → ∀ X k : ℕ,
+    (∑ n∈range X,(rowModel Y W n)^k) ≤ (X:ℝ)*K*((k:ℝ)/a)^k+2*(6*Z*(Y:ℝ)^2)^k := by
+  obtain ⟨a,K,ha,hK,H⟩ := translated_moment
+  refine ⟨a,K,ha,hK,?_⟩
+  intro Y W hY X k
+  simpa using H Y W hY 0 X k
+
+#print axioms translated_moment
 #print axioms finite_moment
 end
 end Arxiv.«2501.03234».ThetaWindowFiniteMoments

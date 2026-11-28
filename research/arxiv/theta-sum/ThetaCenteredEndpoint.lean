@@ -6,7 +6,7 @@ namespace Arxiv.«2501.03234».ThetaCenteredEndpoint
 open Finset Filter Real ThetaPrimeDensity ThetaCenteredDeviation
 noncomputable section
 
-private theorem compare_rate {X N : ℕ} (hX : 0<X) (hlo : X≤N^64)
+theorem compare_rate {X N : ℕ} (hX : 0<X) (hlo : X≤N^64)
     (hNlog : 1≤log N) (hXlog : 1≤log X) : rate X≤64*rate N := by
   have hx : 0<(X:ℝ) := by exact_mod_cast hX
   have hl := log_le_log hx (show (X:ℝ)≤(N:ℝ)^64 by exact_mod_cast hlo)
