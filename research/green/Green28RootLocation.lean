@@ -43,19 +43,24 @@ private lemma fromRoots_reverse (s : Multiset ℂ) (unit : ∀ z ∈ s, ‖z‖=
     simp only [coeff_sub,coeff_X_zero,coeff_C_zero,zero_sub,C_mul]
     ring
 
+/-- A real monic polynomial with unit-modulus roots is reciprocal up to
+its constant term, which can have either sign. -/
+theorem reverse_eq_scaled_of_unit_roots (f : ℝ[X]) (fm : f.Monic)
+    (unit : ∀ z ∈ (f.map Complex.ofRealHom).roots, ‖z‖ = 1) :
+    f.reverse = C (f.coeff 0)*f := by
+  let F := f.map Complex.ofRealHom
+  have fact : F = fromRoots F.roots := (IsAlgClosed.splits F).eq_prod_roots_of_monic (fm.map _)
+  have h := fromRoots_reverse F.roots unit
+  have conjfix : F.map (starRingEnd ℂ) = F := by ext n; simp [F,coeff_map]
+  rw [←fact,conjfix] at h
+  apply Polynomial.map_injective Complex.ofRealHom Complex.ofReal_injective
+  simpa only [reverse,F,reflect_map,fm.natDegree_map,coeff_map,Polynomial.map_mul,map_C] using h
+
 /-- A real monic polynomial with constant coefficient one and all its complex
 roots on the unit circle agrees with its reversal. -/
 theorem reciprocal_of_unit_roots (f : ℝ[X]) (fm : f.Monic) (fc : f.coeff 0 = 1)
     (unit : ∀ z ∈ (f.map Complex.ofRealHom).roots, ‖z‖=1) : f.reverse = f := by
-  let F := f.map Complex.ofRealHom
-  have fact : F = fromRoots F.roots := (IsAlgClosed.splits F).eq_prod_roots_of_monic (fm.map _)
-  have h := fromRoots_reverse F.roots unit
-  rw [←fact] at h
-  have const : F.coeff 0 = 1 := by simp [F,coeff_map,fc]
-  have conjfix : F.map (starRingEnd ℂ) = F := by ext n; simp [F,coeff_map]
-  rw [const,map_one,one_mul,conjfix] at h
-  apply Polynomial.map_injective Complex.ofRealHom Complex.ofReal_injective
-  simpa only [reverse,F,reflect_map,fm.natDegree_map] using h
+  simpa [fc] using reverse_eq_scaled_of_unit_roots f fm unit
 
 private lemma norm_product (f : ℝ[X]) (fm : f.Monic) (fc : f.coeff 0 = 1) :
     (((f.map Complex.ofRealHom).roots).map (fun z => ‖z‖₊)).prod = 1 := by
@@ -92,35 +97,58 @@ private lemma both_sides (f : ℝ[X]) (fm : f.Monic) (fc : f.coeff 0 = 1) (bad :
 
 open Green28PolynomialReduction
 
-private theorem disjoint_of_reciprocal {f g : ℝ[X]} (fm : f.Monic) (gc : g.coeff 0 = 1)
-    (fp : ∀ i, 0 ≤ f.coeff i) (gp : ∀ i, 0 ≤ g.coeff i) (bin : Binary (f*g)) (sym : f.reverse = f)
-    {n : ℕ} (hn : 0 < n) : f.coeff n = 0 ∨ g.coeff n = 0 := by
-  by_contra! nonzero
-  let d := f.natDegree
-  have nd : n ≤ d := le_of_not_gt (fun h => nonzero.1 (coeff_eq_zero_of_natDegree_lt h))
-  have mirror : f.coeff (d-n) = f.coeff n := by
-    have h := congrArg (fun p : ℝ[X] => p.coeff n) sym
-    change f.reverse.coeff n = f.coeff n at h
-    rw [coeff_reverse,revAt_le (N:=f.natDegree) nd] at h
-    exact h
-  let T := antidiagonal d
+/-- The interior terms of a convolution coefficient only use earlier
+coefficients of the factors. -/
+theorem coeff_mul_middle_mem {f g : ℝ[X]} (K : Subfield ℝ) {n : ℕ} (hn : 0 < n)
+    (hf : ∀ i < n, f.coeff i ∈ K) (hg : ∀ i < n, g.coeff i ∈ K) :
+    (f*g).coeff n-(f.coeff n*g.coeff 0 + f.coeff 0*g.coeff n) ∈ K := by
+  let T := antidiagonal n
   let w (ij : ℕ×ℕ) := f.coeff ij.1*g.coeff ij.2
-  have pos (ij : ℕ×ℕ) : 0 ≤ w ij := mul_nonneg (fp _) (gp _)
-  have e : (d,0) ∈ T := mem_antidiagonal.mpr (by omega)
-  have v : (d-n,n) ∈ T.erase (d,0) := mem_erase.mpr
-    ⟨fun h => hn.ne' (congrArg Prod.snd h),mem_antidiagonal.mpr (by omega)⟩
-  have le : w (d-n,n) ≤ ∑ ij ∈ T.erase (d,0), w ij := single_le_sum (fun x _ => pos x) v
-  have eq : (∑ ij ∈ T.erase (d,0), w ij)+w (d,0) = (f*g).coeff d := by
-    rw [sum_erase_add _ _ e,coeff_mul]
-  have corner : w (d,0) = 1 := by simp [w,d,fm.coeff_natDegree,gc]
-  have extra : 0 < w (d-n,n) := by
-    change 0 < f.coeff (d-n)*g.coeff n
-    rw [mirror]
-    exact mul_pos (lt_of_le_of_ne (fp _) nonzero.1.symm) (lt_of_le_of_ne (gp _) nonzero.2.symm)
-  rcases bin d with h|h <;> linarith
+  have e : (0,n) ∈ T := mem_antidiagonal.mpr (by omega)
+  have d : (n,0) ∈ T.erase (0,n) := mem_erase.mpr
+    ⟨fun h => hn.ne' (congrArg Prod.fst h),mem_antidiagonal.mpr (by omega)⟩
+  have rest : (∑ ij ∈ (T.erase (0,n)).erase (n,0), w ij) ∈ K := by
+    apply K.sum_mem
+    rintro ⟨i,j⟩ hij
+    obtain ⟨ne,mem⟩ := mem_erase.mp hij
+    obtain ⟨ne',elt⟩ := mem_erase.mp mem
+    have eq : i+j = n := mem_antidiagonal.mp elt
+    have l : i < n := by
+      by_contra! h
+      exact ne (Prod.ext (by change i = n; omega) (by change j = 0; omega))
+    have r : j < n := by
+      by_contra! h
+      exact ne' (Prod.ext (by change i = 0; omega) (by change j = n; omega))
+    exact K.mul_mem (hf i l) (hg j r)
+  have eq : (f*g).coeff n = (∑ ij ∈ (T.erase (0,n)).erase (n,0), w ij)+(w (n,0)+w (0,n)) := by
+    rw [←add_assoc,sum_erase_add _ _ d,sum_erase_add _ _ e,coeff_mul]
+  change (f*g).coeff n-(w (n,0)+w (0,n)) ∈ K
+  simpa only [eq,add_sub_cancel_right] using rest
 
-/-- Positive-degree overlap is necessary for nonrational coefficients: inspect
-the first exponent where either factor leaves the rational subfield. -/
+/-- At a positive offset, the reflected left coefficient and the right coefficient
+cannot both be nonzero: the boundary sum already has a contribution of one. -/
+theorem reverse_coeff_eq_zero_or {f g : ℝ[X]} (fm : f.Monic) (gc : g.coeff 0 = 1)
+    (fp : ∀ i, 0 ≤ f.coeff i) (gp : ∀ i, 0 ≤ g.coeff i) (bin : Binary (f*g))
+    {n : ℕ} (hn : 0 < n) : f.reverse.coeff n = 0 ∨ g.coeff n = 0 := by
+  by_cases nd : n ≤ f.natDegree
+  · by_contra! nonzero
+    let d := f.natDegree
+    have rev : f.reverse.coeff n = f.coeff (d-n) := by rw [coeff_reverse,revAt_le nd]
+    let T := antidiagonal d
+    let w (ij : ℕ×ℕ) := f.coeff ij.1*g.coeff ij.2
+    have e : (d,0) ∈ T := mem_antidiagonal.mpr (by omega)
+    have v : (d-n,n) ∈ T.erase (d,0) := mem_erase.mpr
+      ⟨fun h => hn.ne' (congrArg Prod.snd h),mem_antidiagonal.mpr (by dsimp [d]; omega)⟩
+    have le : w (d-n,n) ≤ ∑ ij ∈ T.erase (d,0), w ij :=
+      single_le_sum (fun x _ => mul_nonneg (fp _) (gp _)) v
+    have eq : (∑ ij ∈ T.erase (d,0), w ij)+w (d,0) = (f*g).coeff d := by
+      rw [sum_erase_add _ _ e,coeff_mul]
+    have top : w (d,0) = 1 := by simp [w,d,fm.coeff_natDegree,gc]
+    have extra : 0 < w (d-n,n) := mul_pos
+      (lt_of_le_of_ne (fp _) (rev ▸ nonzero.1).symm) (lt_of_le_of_ne (gp _) nonzero.2.symm)
+    rcases bin d with h|h <;> linarith
+  · exact Or.inl (coeff_eq_zero_of_natDegree_lt ((reverse_natDegree_le f).trans_lt (lt_of_not_ge nd)))
+
 private theorem rational_of_disjoint {f g : ℝ[X]} (fc : f.coeff 0 = 1) (gc : g.coeff 0 = 1)
     (bin : Binary (f*g)) (disj : ∀ i : ℕ, 0 < i → f.coeff i = 0 ∨ g.coeff i = 0) :
     ∀ i, f.coeff i ∈ (algebraMap ℚ ℝ).fieldRange ∧ g.coeff i ∈ (algebraMap ℚ ℝ).fieldRange := by
@@ -130,32 +158,10 @@ private theorem rational_of_disjoint {f g : ℝ[X]} (fc : f.coeff 0 = 1) (gc : g
   | h n ih =>
     rcases Nat.eq_zero_or_pos n with rfl|hn
     · exact ⟨fc ▸ K.one_mem,gc ▸ K.one_mem⟩
-    let T := antidiagonal n
-    let w (ij : ℕ×ℕ) := f.coeff ij.1*g.coeff ij.2
-    have e : (0,n) ∈ T := mem_antidiagonal.mpr (by omega)
-    have d : (n,0) ∈ T.erase (0,n) := mem_erase.mpr
-      ⟨fun h => hn.ne' (congrArg Prod.fst h),mem_antidiagonal.mpr (by omega)⟩
-    have rest : (∑ ij ∈ (T.erase (0,n)).erase (n,0), w ij) ∈ K := by
-      apply K.sum_mem
-      rintro ⟨i,j⟩ hij
-      obtain ⟨ne,mem⟩ := mem_erase.mp hij
-      obtain ⟨ne',elt⟩ := mem_erase.mp mem
-      have eq : i+j = n := mem_antidiagonal.mp elt
-      have l : i < n := by
-        by_contra! h
-        exact ne (Prod.ext (by change i = n; omega) (by change j = 0; omega))
-      have r : j < n := by
-        by_contra! h
-        exact ne' (Prod.ext (by change i = 0; omega) (by change j = n; omega))
-      apply K.mul_mem (ih i l).1 (ih j r).2
-    have total : (f*g).coeff n ∈ K := (bin n).elim (fun eq => eq ▸ K.zero_mem) (fun eq => eq ▸ K.one_mem)
-    have eq : (f*g).coeff n = (∑ ij ∈ (T.erase (0,n)).erase (n,0), w ij)+(f.coeff n+g.coeff n) := by
-      rw [←add_assoc]
-      have a : w (0,n) = g.coeff n := by simp [w,fc]
-      have b : w (n,0) = f.coeff n := by simp [w,gc]
-      rw [←b,←a,sum_erase_add _ _ d,sum_erase_add _ _ e,coeff_mul]
-    have plus := K.sub_mem total rest
-    rw [eq,add_sub_cancel_left] at plus
+    have mid := coeff_mul_middle_mem K hn (fun i hi => (ih i hi).1) (fun i hi => (ih i hi).2)
+    have zn : (f*g).coeff n ∈ K := (bin n).elim (fun e => e ▸ K.zero_mem) (fun e => e ▸ K.one_mem)
+    have plus := K.sub_mem zn mid
+    simp only [fc,gc,one_mul,mul_one,sub_sub_cancel] at plus
     rcases disj n hn with h|h
     · rw [h,zero_add] at plus
       exact ⟨h ▸ K.zero_mem,plus⟩
@@ -167,7 +173,8 @@ normalized factor. The cofactor may have arbitrary support and degree. -/
 theorem binary_of_reciprocal {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
     (fc : f.coeff 0 = 1) (gc : g.coeff 0 = 1) (fp : ∀ i, 0 ≤ f.coeff i) (gp : ∀ i, 0 ≤ g.coeff i)
     (bin : Binary (f*g)) (sym : f.reverse = f) : Binary f ∧ Binary g := by
-  have rational := rational_of_disjoint fc gc bin (fun _ hi => disjoint_of_reciprocal fm gc fp gp bin sym hi)
+  have rational := rational_of_disjoint fc gc bin (fun n hi => by
+    simpa only [sym] using reverse_coeff_eq_zero_or fm gc fp gp bin hi)
   exact rational_factor fm gm fp gp bin (fun i => (rational i).1)
 
 /-- Count roots with nonnegative imaginary part, with multiplicity, to avoid
@@ -263,18 +270,23 @@ private lemma both_counts_le_degree (R : ℂ[X]) :
     rw [Multiset.filter_add_filter,empty,add_zero]] at le
   exact (Multiset.card_add .. ▸ le).trans (Polynomial.card_roots' R)
 
-private lemma count_cyclotomic_part (m e : ℕ) (pos : 0 < m) (r : ℝ → Prop) (off : ¬r 1) :
-    rootCount (((X:ℂ[X])^m-1)^e) r = 0 := by
-  classical
+/-- A root of a power of a roots-of-unity polynomial has modulus one. -/
+theorem norm_of_cyclotomic_part {m e : ℕ} (pos : 0 < m) {z : ℂ}
+    (hz : z ∈ (((X:ℂ[X])^m-1)^e).roots) : ‖z‖=1 := by
   have nz : (X:ℂ[X])^m-1 ≠ 0 := by simpa using X_pow_sub_C_ne_zero pos (1:ℂ)
-  apply Multiset.card_eq_zero.mpr
-  apply Multiset.filter_eq_nil.mpr
-  intro z hz h
   have van := (mem_roots (pow_ne_zero e nz)).mp hz
   rw [IsRoot.def,eval_pow,eval_sub,eval_pow,eval_X,eval_one] at van
   have unity := congrArg (fun t : ℂ => ‖t‖) (sub_eq_zero.mp (eq_zero_of_pow_eq_zero van))
   rw [norm_pow,norm_one,pow_eq_one_iff_of_nonneg (norm_nonneg _) pos.ne'] at unity
-  exact off (unity ▸ h.1)
+  exact unity
+
+private lemma count_cyclotomic_part (m e : ℕ) (pos : 0 < m) (r : ℝ → Prop) (off : ¬r 1) :
+    rootCount (((X:ℂ[X])^m-1)^e) r = 0 := by
+  classical
+  apply Multiset.card_eq_zero.mpr
+  apply Multiset.filter_eq_nil.mpr
+  intro z hz h
+  exact off (norm_of_cyclotomic_part pos hz ▸ h.1)
 
 /-- An integer-polynomial divisibility certificate covers arbitrary cyclotomic
 degrees and multiplicities after removal of a residual factor of degree at most three. -/
@@ -310,7 +322,11 @@ theorem uniform_of_two_cubic_blocks {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Non
   rw [mask,pow_one,pow_mul]
   exact ⟨X^k-1,by ring⟩
 
+#print axioms reverse_eq_scaled_of_unit_roots
+#print axioms norm_of_cyclotomic_part
 #print axioms reciprocal_of_unit_roots
+#print axioms coeff_mul_middle_mem
+#print axioms reverse_coeff_eq_zero_or
 #print axioms binary_of_reciprocal
 #print axioms two_root_obstruction
 #print axioms uniform_of_root_count
