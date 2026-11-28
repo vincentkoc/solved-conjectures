@@ -21,7 +21,8 @@ private theorem linear_iterate_reflect (m i : ℕ) :
       pow_zero,grow,ih,polynomialTerm]
     simp [mul_comm,add_comm]
 
-private theorem chain_of_irreducible_sums {m : ℕ} (hm : 0 < m)
+/-- Reversing the positive-degree sums gives the first-kind iterates from mX+1. -/
+theorem chain_of_irreducible_sums {m : ℕ} (hm : 0 < m)
     (h : ∀ i : ℕ, Irreducible ((jonesSumPolynomial m (i+1)).map (Int.castRingHom ℚ))) :
     IsInfinitePolynomialChain true (C (m:ℤ)*X+1) := by
   have hm' : (m:ℤ) ≠ 0 := by exact_mod_cast hm.ne'
