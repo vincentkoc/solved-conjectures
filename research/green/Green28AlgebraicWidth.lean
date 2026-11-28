@@ -190,7 +190,9 @@ theorem endpoints {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
   · nlinarith [mul_le_mul_of_nonneg_left b f0.le]
   · nlinarith [mul_le_mul_of_nonneg_right a g0.le]
 
-private theorem unequal_widths {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
+/-- Two positive-width normalized factors cannot have the same degree: the two
+opposite endpoint cells would both contribute one at that degree. -/
+theorem unequal_widths {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic)
     (fp : ∀ i, 0 ≤ f.coeff i) (gp : ∀ i, 0 ≤ g.coeff i)
     (f0 : f.coeff 0=1) (g0 : g.coeff 0=1) (bin : Binary (f*g)) (d : 0 < f.natDegree) :
     f.natDegree≠g.natDegree := by
@@ -409,6 +411,7 @@ theorem uniform_of_one_deficit_of_width {P Q : PMF ℤ} (sum : IsUniformOnSuppor
     rintro ⟨a,e,ha,he,top,u,lt,degree,strict,bound,levels⟩
     omega)
 
+#print axioms unequal_widths
 #print axioms cofactor_degree
 #print axioms cofactor_span
 #print axioms degree_of_affine_ratios

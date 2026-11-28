@@ -148,15 +148,15 @@ private theorem coefficients_in_O (H : ℤ[X]) (hm : H.Monic) (f : ℝ[X]) (fm :
   obtain ⟨i,_,rfl⟩ := Polynomial.mem_coeffs_iff.mp hx
   exact isIntegral_coeff_of_dvd H f hm fm dvd i
 
-/-- A primitive binary reduction prevents two positive-degree monic real
-factors with constant terms one. The other coefficients may have either sign. -/
-theorem no_unit_constant_split (H : ℤ[X]) (hm : H.Monic) (prim : PrimitiveBinary H)
-    {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic) (f0 : f.coeff 0=1)
-    (eq : f*g=H.map (Int.castRingHom ℝ)) : f.natDegree=0 ∨ g.natDegree=0 := by
+/-- Any restriction on the degrees of monic factors with constant term one
+that holds after reduction over algebraically closed fields of characteristic two
+also holds for monic real factors of the integer polynomial. -/
+theorem degrees_of_binary_reduction (H : ℤ[X]) (hm : H.Monic) {f g : ℝ[X]}
+    (fm : f.Monic) (gm : g.Monic) (f0 : f.coeff 0=1) (eq : f*g=H.map (Int.castRingHom ℝ))
+    (D : ℕ → ℕ → Prop) (test : ∀ (K : Type) [Field K] [CharP K 2] [IsAlgClosed K]
+      (F G : K[X]), F.Monic → G.Monic → F.coeff 0=1 → F*G=H.map (Int.castRingHom K) →
+      D F.natDegree G.natDegree) : D f.natDegree g.natDegree := by
   classical
-  by_contra! bad
-  have deg : f.natDegree+g.natDegree=H.natDegree := by rw [←natDegree_mul fm.ne_zero gm.ne_zero,eq,hm.natDegree_map]
-  have hd : 2≤H.natDegree := by omega
   let T := (integralClosure ℤ ℝ).toSubring
   let F := f.toSubring T (coefficients_in_O H hm f fm (eq ▸ dvd_mul_right f g))
   let G := g.toSubring T (coefficients_in_O H hm g gm (eq ▸ dvd_mul_left g f))
@@ -169,6 +169,23 @@ theorem no_unit_constant_split (H : ℤ[X]) (hm : H.Monic) (prim : PrimitiveBina
     simpa only [F,G,map_toSubring] using eq
   apply with_residue
   intro K fld cp closed φ
+  have prodK : F.map φ*G.map φ=H.map (Int.castRingHom K) := by
+    rw [←Polynomial.map_mul,product,Polynomial.map_map,RingHom.ext_int (φ.comp _) (Int.castRingHom K)]
+  have zero : (F.map φ).coeff 0=1 := by rw [coeff_map,zF,map_one]
+  have h := test K (F.map φ) (G.map φ) (mF.map φ) (mG.map φ) zero prodK
+  simpa only [mF.natDegree_map,mG.natDegree_map,F,G,natDegree_toSubring] using h
+
+/-- A primitive binary reduction prevents two positive-degree monic real
+factors with constant terms one. The other coefficients may have either sign. -/
+theorem no_unit_constant_split (H : ℤ[X]) (hm : H.Monic) (prim : PrimitiveBinary H)
+    {f g : ℝ[X]} (fm : f.Monic) (gm : g.Monic) (f0 : f.coeff 0=1)
+    (eq : f*g=H.map (Int.castRingHom ℝ)) : f.natDegree=0 ∨ g.natDegree=0 := by
+  apply degrees_of_binary_reduction H hm fm gm f0 eq (fun i j => i=0 ∨ j=0)
+  intro K fld cp closed F G mF mG zero product
+  by_contra! bad
+  have deg : F.natDegree+G.natDegree=H.natDegree := by
+    rw [←natDegree_mul mF.ne_zero mG.ne_zero,product,hm.natDegree_map]
+  have hd : 2≤H.natDegree := by omega
   let _ := ZMod.algebra K 2
   let emb : GaloisField 2 H.natDegree →ₐ[ZMod 2] K := IsAlgClosed.lift
   obtain ⟨_,α,root,ord⟩ := prim
@@ -176,18 +193,10 @@ theorem no_unit_constant_split (H : ℤ[X]) (hm : H.Monic) (prim : PrimitiveBina
     have v := H.hom_eval₂ (Int.castRingHom _) emb.toRingHom α
     rw [root,map_zero,RingHom.ext_int (emb.toRingHom.comp _) (Int.castRingHom K)] at v
     exact v.symm
-  have prodK : F.map φ*G.map φ=H.map (Int.castRingHom K) := by
-    rw [←Polynomial.map_mul,product,Polynomial.map_map,RingHom.ext_int (φ.comp _) (Int.castRingHom K)]
-  have zero : (F.map φ).coeff 0=1 := by rw [coeff_map,zF,map_one]
-  have choices := orbit_obstruction (ord.map_of_injective emb.injective) (mF.map φ) (mG.map φ) zero
-    (prodK.trans (orbit_factorization hm hd r (ord.map_of_injective emb.injective)))
-  rcases choices with e|e
-  · have z := congrArg natDegree e
-    rw [mF.natDegree_map,natDegree_one] at z
-    exact bad.1 (by simpa only [F,natDegree_toSubring] using z)
-  · have z := congrArg natDegree e
-    rw [mG.natDegree_map,natDegree_one] at z
-    exact bad.2 (by simpa only [G,natDegree_toSubring] using z)
+  rcases orbit_obstruction (ord.map_of_injective emb.injective) mF mG zero
+      (product.trans (orbit_factorization hm hd r (ord.map_of_injective emb.injective))) with e|e
+  · exact bad.1 (by simp [e])
+  · exact bad.2 (by simp [e])
 
 open Green28 Green28UniformSums Green28PolynomialReduction
 
@@ -209,7 +218,8 @@ private theorem outputMask_coeff (S : Finset ℤ) (ne : S.Nonempty) (j : ℕ) :
       exact mem_image.mpr ⟨_,h,by omega⟩
   simp only [outputMask,finsetSum_coeff,coeff_monomial,sum_ite_eq',e]
 
-private theorem pure_of_width_zero {P : PMF ℤ} (fin : P.support.Finite) (hw : Green28AlgebraicWidth.width P=0) :
+/-- An integer law whose two support endpoints coincide is a point mass. -/
+theorem pure_of_width_zero {P : PMF ℤ} (fin : P.support.Finite) (hw : Green28AlgebraicWidth.width P=0) :
     ∃ x, P=PMF.pure x := by
   classical
   let A := fin.toFinset
@@ -323,23 +333,21 @@ private theorem periodic_prod {M : Type*} [CommMonoid M] (u : ℕ → M) (d : �
   | zero => simp
   | succ d => rw [prod_range_succ,prod_range_succ' u d,period]
 
-/-- Every positive degree occurs as the width of a primitive support mask. -/
-theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
+/-- Lift the binary coefficients of a full product of Frobenius conjugates to
+an integer support mask of the same width. The roots may repeat. -/
+theorem exists_orbit_support (d : ℕ) (hd : 0<d) (α : GaloisField 2 d) (power : α^(2^d-1)=1) :
     ∃ (S : Finset ℤ) (ne : S.Nonempty), S.min' ne=0 ∧ (outputMask S ne).natDegree=d ∧
-      PrimitiveBinary (outputMask S ne) := by
+      (outputMask S ne).map (Int.castRingHom (GaloisField 2 d))=
+        ∏ i∈range d, (X-C (α^(2^i))) := by
   classical
   let K := GaloisField 2 d
   let _ : NeZero d := ⟨hd.ne'⟩
-  obtain ⟨u,hu⟩ := (isCyclic_iff_exists_orderOf_eq_natCard (α := Kˣ)).mp inferInstance
-  let α : K := u
-  have ord : IsPrimitiveRoot α (2^d-1) := IsPrimitiveRoot.iff_orderOf.mpr (by
-    rw [show orderOf α=orderOf u from orderOf_units,hu,Nat.card_units,show Nat.card K=2^d from GaloisField.card 2 d hd.ne'])
   let r := fun i : ℕ => α^(2^i)
   let F : K[X] := ∏ i ∈ range d, (X-C (r i))
   have fm : F.Monic := monic_prod_of_monic _ _ (fun i _ => monic_X_sub_C _)
   have fd : F.natDegree=d := by simp [F,natDegree_finsetProd_X_sub_C_eq_card]
   have period : r d=r 0 := by
-    have pow := ord.pow_eq_one
+    have pow := power
     have e : 2^d=(2^d-1)+1 := by have := Nat.two_pow_pos d; omega
     change α^2^d=α^2^0
     rw [e,pow_succ,pow]; simp
@@ -365,7 +373,7 @@ theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
     simp only [r,Finset.prod_pow_eq_pow_sum]
     have h := binary_sum d
     rw [show (∑ i ∈ range d, 2^i)=2^d-1 by omega]
-    exact ord.pow_eq_one
+    exact power
   let S := F.support.image (Nat.cast : ℕ → ℤ)
   have z : (0:ℤ)∈S := Finset.mem_image.mpr ⟨0,mem_support_iff.mpr (c0 ▸ one_ne_zero),by simp⟩
   let ne : S.Nonempty := ⟨0,z⟩
@@ -393,17 +401,31 @@ theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
     change H.coeff H.natDegree=1
     rw [deg,outputMask_coeff,least,zero_add,if_pos site]
   have deg : H.natDegree=d := by rw [←mon.natDegree_map (Int.castRingHom K),mapped,fd]
+  exact ⟨S,ne,least,deg,mapped⟩
+
+/-- Every positive degree occurs as the width of a primitive support mask. -/
+theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
+    ∃ (S : Finset ℤ) (ne : S.Nonempty), S.min' ne=0 ∧ (outputMask S ne).natDegree=d ∧
+      PrimitiveBinary (outputMask S ne) := by
+  classical
+  let K := GaloisField 2 d
+  let _ : NeZero d := ⟨hd.ne'⟩
+  obtain ⟨u,hu⟩ := (isCyclic_iff_exists_orderOf_eq_natCard (α := Kˣ)).mp inferInstance
+  let α : K := u
+  have ord : IsPrimitiveRoot α (2^d-1) := IsPrimitiveRoot.iff_orderOf.mpr (by
+    rw [show orderOf α=orderOf u from orderOf_units,hu,Nat.card_units,show Nat.card K=2^d from GaloisField.card 2 d hd.ne'])
+  obtain ⟨S,ne,least,deg,mapped⟩ := exists_orbit_support d hd α ord.pow_eq_one
   refine ⟨S,ne,least,deg,?_⟩
-  change PrimitiveBinary H
   unfold PrimitiveBinary
   rw [deg]
   refine ⟨hd,α,?_,ord⟩
-  rw [←eval_map,mapped]
-  dsimp only [F]
-  rw [eval_prod]
+  rw [←eval_map,mapped,eval_prod]
   apply Finset.prod_eq_zero (Finset.mem_range.mpr hd)
-  simp [r]
+  simp
 
+#print axioms pure_of_width_zero
+#print axioms degrees_of_binary_reduction
+#print axioms exists_orbit_support
 #print axioms orbit_obstruction
 #print axioms no_unit_constant_split
 #print axioms pure_factor_of_primitive
