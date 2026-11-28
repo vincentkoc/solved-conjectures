@@ -25,6 +25,45 @@ class ReplayKernelTests(unittest.TestCase):
         )
 
 
+class ReplaySelectionTests(unittest.TestCase):
+    def test_requested_roots_only_visit_their_shared_imports(self):
+        upstream = ROOT / "upstream"
+        a, b, shared, unused = [
+            ROOT / "research" / (name + ".lean") for name in ("A", "B", "Shared", "Unused")
+        ]
+        deps = {
+            a: [shared],
+            b: [shared],
+            shared: [upstream / "FormalConjectures/Source.lean",
+                     upstream / ".lake/packages/mathlib/Mathlib.lean"],
+        }
+        seen = []
+
+        def source_deps(command, **kwargs):
+            if command == ["lean", "--deps-json", "--stdin"]:
+                headers = []
+                for source in map(Path, kwargs["input"].splitlines()):
+                    names = [path.stem for path in deps[source]]
+                    if source == b:
+                        names = ["research.Shared"]
+                    imports = [{"module": name} for name in names]
+                    headers.append({"errors": [], "result": {"imports": imports}})
+                return json.dumps({"imports": headers})
+            self.assertEqual(command[:2], ["lean", "--src-deps"])
+            seen.append(command[2])
+            return "\n".join(map(str, deps[command[2]]))
+
+        with patch.object(subprocess, "check_output", side_effect=source_deps):
+            order, targets, aliases = runner["dependency_order"](
+                [b, a, b], {a, b, shared, unused}, upstream, {},
+            )
+        self.assertCountEqual(seen, [a, b, shared])
+        self.assertCountEqual(order, [a, b, shared])
+        self.assertEqual(aliases, {shared})
+        self.assertEqual(order[0], shared)
+        self.assertEqual(targets, ["FormalConjectures/Source.lean:olean"])
+
+
 class ReplayAxiomTests(unittest.TestCase):
     def replay(self, *reports):
         output = "\n".join(
