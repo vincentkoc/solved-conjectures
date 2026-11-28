@@ -11,10 +11,8 @@ variable {K : Type*} [Field K] [CharP K 2] [Algebra F K] [Fintype K]
 
 /-- The nonzero vectors of a nonzero polar radical satisfy a cubic equation. -/
 theorem root_criterion (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
-    {b r : K} (nb : b≠0) (nr : r≠0) : r∈(bracketForm Q b).ker ↔ b*r^3=1 := by
-  rw [radical Q nq sq]
-  rw [show b^2*r^4+b*r=(b*r)*(b*r^3+1) from by ring,mul_eq_zero]
-  simp only [mul_ne_zero nb nr,false_or,CharTwo.add_eq_zero]
+    {b r : K} (nb : b≠0) (nr : r≠0) : r∈(bracketForm Q b).ker ↔ b*r^3=1 :=
+  radical_cube_iff Q nq sq nb nr
 
 private theorem radical_line (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
     {b r : K} (nb : b≠0) (nr : r≠0) (br : b*r^3=1) (a:K) :

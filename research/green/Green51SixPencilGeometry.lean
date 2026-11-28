@@ -47,8 +47,7 @@ theorem normalized_eq (m : Module.finrank F K=6) (Q : K →ₗ[F] F) (nq : Q≠0
 
 open Green51BCH
 open scoped Pointwise
-def tracePair (Q : K →ₗ[F] F) (a b : K) : K →ₗ[F] F×F :=
-  (Q.comp (LinearMap.mulLeft F a)).prod (Q.comp (LinearMap.mulLeft F b))
+abbrev tracePair (Q : K →ₗ[F] F) (a b : K) : K →ₗ[F] F×F := twoTraces Q a b
 
 def HasFour (L : K →ₗ[F] F×F) : Prop :=
   ∃ (p : Space K × (F×F)) (W : Submodule F (Space K × (F×F))), 4≤Module.finrank F W ∧
