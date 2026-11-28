@@ -1,0 +1,25 @@
+# Paired Cunningham chains at a fixed gap
+
+Start a first-kind chain at p and a second-kind chain at p+h, with h a fixed nonnegative integer. Under Dickson’s prime-tuples conjecture, arbitrarily long simultaneous prime prefixes exist **if and only if h = 2**. Even one seed per requested common length suffices for the necessity. At h = 2 the two chains can stop independently. For every k,l ≥ 1 there are infinitely many p with first-kind exact length k and second-kind exact length l from p+2. The word “exact” includes the next composite on each side. [Lean proof](CunninghamPairedGaps.lean) · [Pinned Jones predicates](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/1104.1579/CunninghamChain.lean) · [Pinned prime-tuples hypothesis](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Paper/PrimeTuples.lean)
+
+For h = 2 set a = p+1. The two terms at depth i are `2ⁱa−1` and `2ⁱa+1`, the usual bi-twin pattern. Jones asks about each sign separately. The new statement couples their seeds and permits unequal lengths. Both infinitude assertions use Dickson as an explicit hypothesis. [Jones](https://arxiv.org/abs/1104.1579) · [Bi-twin record terminology](https://primerecords.dk/constellations.htm)
+
+## Exact local criterion
+
+Call h locally admissible at every length when, for each prime q and each length k, some seed residue avoids q in every term of both prefixes. This condition holds **exactly when h is even and h ≡ 2 modulo every prime q at which 2 is a primitive root**. Consequently the assertion that 2 is the unique locally admissible gap is equivalent, unconditionally, to the infinitude of those primes. Only the infinitude part of Artin’s problem occurs here. [Pinned set of primitive-root primes](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Wikipedia/ArtinPrimitiveRootsConjecture.lean) · [Related prime-chain congruences](https://arxiv.org/abs/0908.2166)
+
+Modulo an odd q let d be the order of 2. If d < q−1 then d ≤ (q−1)/2. Each side forbids at most d residues even over a full period, so the union leaves at least one allowed residue. If d = q−1 the first side forces a ≡ 0 and the second forces a+h−2 ≡ 0. Modulo 2 the two seeds must have the same parity. If the primitive-root primes formed a finite set of product M, the additional gap 2+2M would pass every local test.
+
+Dickson provides infinitely many primes r = 4n+1 with q = 2r+1 also prime. Here q ≡ 3 modulo 8, so 2 is a quadratic nonresidue. Its order divides 2r, cannot divide r, and cannot divide 2 for q > 3. Thus it is q−1. For any h ≠ 2, one such q exceeding h+2 obstructs the paired prefixes. Taking longer and longer prime prefixes forces their seeds to grow, since Fermat gives a composite at depth p−1 for odd prime seeds and seed 2 has a composite at depth 5. [Single-seed termination](CunninghamUnboundedPrefixes.lean)
+
+## Forcing both stops
+
+For prescribed lengths k,l put D = max(k,l) and choose B as four times the factorial of `2^(D+1)+1`. Take centers a = Mn+B with `M = (2ᵏB−1)(2ˡB+1)`. Both factors exceed one. They divide their respective stopping terms and are proper divisors for n > 0.
+
+For each prime q dividing M, the factorial ensures q > `2^(D+1)+1`. If q divided two signed forms at B, eliminating B would make the corresponding signed powers of 2 congruent modulo q. Up to depth D their difference has absolute value less than q. Equality therefore forces the same exponent and sign, which excludes every collision between a stopping term and a required prime prefix term. For q outside M, choose n so that Mn+B ≡ 0 modulo q. All prefix terms are then ±1. These witnesses establish admissibility of the full k+l affine forms used in Dickson. [Construction and exact-length theorem](CunninghamPairedGaps.lean)
+
+## Replay and related formalizations
+
+Lean 4.33.1 compiled four upstream files from the pinned revision and both notebook modules in a fresh directory. Each notebook module passed a separate kernel replay. All nine audited declarations used only `propext`, `Classical.choice` and `Quot.sound`. The declarations include `gap_admissible_iff`, `unique_admissible_gap_iff`, `infinite_paired_exact_of_prime_tuples` and `unbounded_paired_prefixes_iff` in `CunninghamChain.PairedGaps`. [Replay instructions](../../README.md#replay)
+
+Searches of DeepMind and OMA issues and pull requests and 4,407 LTS solved records found the canonical single-chain statements and single-kind reductions. [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/4755) · [First statement PR](https://github.com/google-deepmind/formal-conjectures/pull/4765) · [Second statement PR](https://github.com/google-deepmind/formal-conjectures/pull/4770) · [First-kind exact length one](https://github.com/lefttosolve2/open-math-agents/pull/9857) · [Second-kind exact length one](https://github.com/lefttosolve2/open-math-agents/pull/9875) · [LTS records](https://lefttosolve.com/api/solved)
