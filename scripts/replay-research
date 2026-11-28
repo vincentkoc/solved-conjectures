@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Replay the notebook inside the pinned Formal Conjectures Lake environment."""
 
+import argparse
 import json
 import os
 import re
@@ -47,40 +48,60 @@ def replay_kernel(sources, env):
         subprocess.run(["leanchecker", "-v", source.stem], env=env, check=True)
 
 
+def dependency_order(selected, sources, upstream, env):
+    graph = TopologicalSorter()
+    targets = set()
+    visited = set()
+    pending = list(reversed(selected))
+    while pending:
+        source = pending.pop()
+        if source in visited:
+            continue
+        visited.add(source)
+        deps = subprocess.check_output(["lean", "--src-deps", source], env=env, text=True)
+        paths = {Path(line).resolve() for line in deps.splitlines()}
+        local = sorted(paths & sources)
+        graph.add(source, *local)
+        pending.extend(reversed(local))
+        for path in paths - sources:
+            if path.is_relative_to(upstream) and not path.is_relative_to(upstream / ".lake"):
+                targets.add(str(path.relative_to(upstream)) + ":olean")
+    return list(graph.static_order()), sorted(targets)
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("modules", metavar="MODULE", nargs="*",
+                        help="bare notebook module name (default: replay the whole notebook)")
+    args = parser.parse_args()
     upstream = Path.cwd().resolve()
     if not (upstream / "FormalConjectures").is_dir() or not os.environ.get("LEAN_PATH"):
         raise SystemExit("Run from the Formal Conjectures checkout with lake env python3.")
     files = sorted(RESEARCH.rglob("*.lean"))
     if not files:
         raise SystemExit("No notebook modules found.")
-    if len({f.stem for f in files}) != len(files):
+    by_name = {f.stem: f for f in files}
+    if len(by_name) != len(files):
         raise SystemExit("Notebook module names must be unique for bare Lean imports.")
+    unknown = sorted(set(args.modules) - by_name.keys())
+    if unknown:
+        parser.error("unknown notebook module: " + ", ".join(unknown))
+    selected = [by_name[name] for name in args.modules] if args.modules else files
     roots = sorted({str(f.parent) for f in files})
     env = os.environ.copy()
     env["LEAN_SRC_PATH"] = os.pathsep.join([*roots, env["LEAN_SRC_PATH"]])
-    graph = TopologicalSorter()
-    targets = set()
-    sources = set(files)
-    for source in files:
-        deps = subprocess.check_output(["lean", "--src-deps", source], env=env, text=True)
-        paths = {Path(line).resolve() for line in deps.splitlines()}
-        graph.add(source, *(paths & sources))
-        for path in paths:
-            if path.is_relative_to(upstream) and not path.is_relative_to(upstream / ".lake"):
-                targets.add(str(path.relative_to(upstream)) + ":olean")
+    order, targets = dependency_order(selected, set(files), upstream, env)
     if targets:
-        subprocess.run(["lake", "build", *sorted(targets)], check=True)
+        subprocess.run(["lake", "build", *targets], check=True)
 
     with tempfile.TemporaryDirectory(prefix="conjecture-replay-") as directory:
         out = Path(directory)
         env["LEAN_PATH"] = os.pathsep.join([directory, env["LEAN_PATH"]])
-        order = list(graph.static_order())
         for source in order:
             print(f"Checking {source.relative_to(RESEARCH)}", flush=True)
             compile_proof(source, out, env)
         replay_kernel(order, env)
-    print(f"Replayed {len(files)} notebook modules.")
+    print(f"Replayed {len(order)} notebook modules.")
 
 
 if __name__ == "__main__":
