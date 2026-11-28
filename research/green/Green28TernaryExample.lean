@@ -7,10 +7,11 @@ namespace Green28TernaryExample
 
 open Finset Polynomial Green28 Green28PrimitiveSupport Green28PrimeOrbitIndex
 
-private abbrev Word := List (ZMod 3)
+/-- Most-significant-first base-three coefficients. -/
+abbrev Word := List (ZMod 3)
 
 /-- Evaluate a most-significant-first word at a field element. -/
-private def value {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K) : Word → K
+def value {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K) : Word → K
   | [] => 0
   | a::v => algebraMap (ZMod 3) K a*x^v.length+value x v
 
@@ -110,7 +111,8 @@ private theorem product_len (h a b : Word) (bl : b.length = h.length) :
     (product h a b).length = h.length :=
   accumulate_len h b a _ bl (by simp [zeroWord])
 
-private def unpack : ℕ → ℕ → Word
+/-- Decode an integer into a fixed-width word in base three. -/
+def unpack : ℕ → ℕ → Word
   | 0, _ => []
   | k+1, n => unpack k (n/3)++[((n%3:ℕ):ZMod 3)]
 
@@ -134,42 +136,47 @@ private theorem value_x {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K) : val
 
 /-- Read the certificate backwards. Each listed residue is for the preceding
 binary prefix of the exponent. The final prefix is one. -/
-private def checkPower (n w : ℕ) : List ℕ → Bool
+private def checkPower (relation : Word) (n w : ℕ) : List ℕ → Bool
   | [] => n==1 && w==3
   | a::tail =>
-    let sq := product relation (word a) (word a)
+    let sq := product relation (unpack relation.length a) (unpack relation.length a)
     let next := if n%2 = 0 then sq else shift relation sq
-    decide (word w = next) && checkPower (n/2) a tail
+    decide (unpack relation.length w = next) && checkPower relation (n/2) a tail
 
-private theorem checked_power {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K)
+/-- Verify a power by repeated squaring against an arbitrary monic relation. -/
+theorem checked_power (relation : Word) {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K)
+    (base : value x (unpack relation.length 3) = x)
     (root : x^relation.length = value x relation) (n w : ℕ) (steps : List ℕ)
-    (ok : checkPower n w steps = true) : value x (word w) = x^n := by
+    (ok : checkPower relation n w steps = true) : value x (unpack relation.length w) = x^n := by
   induction steps generalizing n w with
   | nil =>
     simp only [checkPower,Bool.and_eq_true,beq_iff_eq] at ok
     obtain ⟨rfl,rfl⟩ := ok
-    simpa using value_x x
+    simpa using base
   | cons a tail ih =>
     simp only [checkPower,Bool.and_eq_true,decide_eq_true_eq] at ok
     have prev := ih (n/2) a ok.2
-    have sq := value_product x relation (word a) (word a) root (width a)
+    have sq := value_product x relation (unpack relation.length a) (unpack relation.length a) root (unpack_len relation.length a)
     rw [prev] at sq
     by_cases even : n%2 = 0
     · rw [ok.1,if_pos even,sq,←pow_add,show n/2+n/2 = n by omega]
-    · rw [ok.1,if_neg even,value_shift _ _ _ root (product_len _ _ _ (width a)),sq,←pow_add,
+    · rw [ok.1,if_neg even,value_shift _ _ _ root (product_len _ _ _ (unpack_len relation.length a)),sq,←pow_add,
         ←pow_succ',show n/2+n/2+1 = n by omega]
 
-private def checkInverse (w v : ℕ) : Bool :=
-  decide (product relation (word w) (word v) = add (word v) (word 1))
+private def checkInverse (relation : Word) (w v : ℕ) : Bool :=
+  decide (product relation (unpack relation.length w) (unpack relation.length v) =
+    add (unpack relation.length v) (unpack relation.length 1))
 
-private theorem checked_ne_one {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K)
-    (root : x^relation.length = value x relation) {w v : ℕ} (ok : checkInverse w v = true) :
-    value x (word w) ≠ 1 := by
+/-- A modular inverse certificate proves a residue is distinct from one. -/
+theorem checked_ne_one (relation : Word) {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K)
+    (oneValue : value x (unpack relation.length 1) = 1)
+    (root : x^relation.length = value x relation) {w v : ℕ} (ok : checkInverse relation w v = true) :
+    value x (unpack relation.length w) ≠ 1 := by
   intro one
   have words := of_decide_eq_true ok
   have eq := congrArg (value x) words
-  rw [value_product _ _ _ _ root (width v),one,one_mul,value_add _ _ _ ((width v).trans (width 1).symm),
-    value_one] at eq
+  rw [value_product _ _ _ _ root (unpack_len relation.length v),one,one_mul,
+    value_add _ _ _ ((unpack_len relation.length v).trans (unpack_len relation.length 1).symm),oneValue] at eq
   apply one_ne_zero (α:=K)
   linear_combination -eq
 
@@ -181,43 +188,44 @@ private theorem signed_order {K : Type*} [Field K] [Algebra (ZMod 3) K] (x : K)
     (root : x^relation.length = value x relation) : IsPrimitiveRoot x 10761680 := by
   apply IsPrimitiveRoot.iff_orderOf.mpr
   apply orderOf_eq_of_pow_and_pow_div_prime (by decide)
-  · have h := checked_power x root 10761680 1
+  · have h := checked_power relation x (value_x x) root 10761680 1
       [2,1570656,1570658,9512394,8027579,42429337,8793639,
         25445565,16993226,12507391,39893377,26954496,10074641,5566559,
         41732483,15233664,42354864,11934775,25632851,59049,243,
         9,3] (by decide +kernel)
-    rw [←h,value_one]
+    rw [←h]
+    exact value_one x
   · intro q prime dvd
     have mem := Nat.mem_primeFactors.mpr ⟨prime,dvd,(by decide : (10761680:ℕ) ≠ 0)⟩
     have factors : (10761680:ℕ).primeFactors = {2,5,17,41,193} := by decide +kernel
     simp only [factors,Finset.mem_insert,Finset.mem_singleton] at mem
     rcases mem with rfl|rfl|rfl|rfl|rfl
-    · have h := checked_power x root 5380840 2
+    · have h := checked_power relation x (value_x x) root 5380840 2
         [1570656,1570658,9512394,8027579,42429337,8793639,25445565,
         16993226,12507391,39893377,26954496,10074641,5566559,41732483,
         15233664,42354864,11934775,25632851,59049,243,9,
         3] (by decide +kernel)
-      exact h ▸ checked_ne_one x root (w:=2) (v:=1) (by decide +kernel)
-    · have h := checked_power x root 2152336 10182232
+      exact h ▸ checked_ne_one relation x (value_one x) root (w:=2) (v:=1) (by decide +kernel)
+    · have h := checked_power relation x (value_x x) root 2152336 10182232
         [12743299,3565392,5746108,4987500,38578298,34347738,36611307,
         8583299,24836195,27578789,41904575,28896815,37524737,32324250,
         1033810,16760660,25511054,6561,81,9,3] (by decide +kernel)
-      exact h ▸ checked_ne_one x root (w:=10182232) (v:=11932231) (by decide +kernel)
-    · have h := checked_power x root 633040 31553167
+      exact h ▸ checked_ne_one relation x (value_one x) root (w:=10182232) (v:=11932231) (by decide +kernel)
+    · have h := checked_power relation x (value_x x) root 633040 31553167
         [27069735,13070866,39047394,31977788,20081263,39391195,9466420,
         12846648,40795260,42044239,21376671,31024656,2949542,22290507,
         14390235,19683,81,9,3] (by decide +kernel)
-      exact h ▸ checked_ne_one x root (w:=31553167) (v:=42040371) (by decide +kernel)
-    · have h := checked_power x root 262480 31120573
+      exact h ▸ checked_ne_one relation x (value_one x) root (w:=31553167) (v:=42040371) (by decide +kernel)
+    · have h := checked_power relation x (value_x x) root 262480 31120573
         [42693866,30865128,37288765,24570984,38117099,24358866,1512324,
         10052181,4798687,5127337,22632108,37545288,16760660,25511054,
         6561,81,9,3] (by decide +kernel)
-      exact h ▸ checked_ne_one x root (w:=31120573) (v:=20719370) (by decide +kernel)
-    · have h := checked_power x root 55760 11889439
+      exact h ▸ checked_ne_one relation x (value_one x) root (w:=31120573) (v:=20719370) (by decide +kernel)
+    · have h := checked_power relation x (value_x x) root 55760 11889439
         [29512482,40096167,37582840,32941121,22874305,22248161,19053527,
         18719964,29021134,496999,23997106,1594323,729,27,
         3] (by decide +kernel)
-      exact h ▸ checked_ne_one x root (w:=11889439) (v:=4660903) (by decide +kernel)
+      exact h ▸ checked_ne_one relation x (value_one x) root (w:=11889439) (v:=4660903) (by decide +kernel)
 
 /-- A ten-site sumset of width sixteen. -/
 def sites : Finset ℤ := {0,1,2,4,5,6,13,14,15,16}
@@ -379,7 +387,7 @@ private theorem fourteen_orbit : PrimeOrbit fourteenMask 3 16 5380840 := by
   have ord : IsPrimitiveRoot y 5380840 := IsPrimitiveRoot.iff_orderOf.mpr (by
     dsimp only [y];rw [orderOf_pow' _ (by decide : (381386:ℕ) ≠ 0),
       IsPrimitiveRoot.iff_orderOf.mp (signed_order x root)];decide)
-  have yw : value x (word 35304686) = y := checked_power x root 381386 35304686
+  have yw : value x (word 35304686) = y := checked_power relation x (value_x x) root 381386 35304686
     [17650149,28629096,27296724,7468866,31777393,34806371,9301538,
       42396323,13353325,41149118,19256558,40502305,14436928,17676567,
       177147,243,9,3] (by decide +kernel)
@@ -416,6 +424,8 @@ theorem no_binary_orbit_fourteen (d n : ℕ) :
   · simp [fourteenMask,CharTwo.add_self_eq_zero]
   · norm_num [fourteenMask,Polynomial.map_add,coeff_X_pow,coeff_X,coeff_one]
 
+#print axioms checked_power
+#print axioms checked_ne_one
 #print axioms signed_order
 #print axioms support_sumset
 #print axioms site_orbit
