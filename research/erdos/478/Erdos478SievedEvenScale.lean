@@ -10,10 +10,10 @@ resolvent degree from the logarithm of the prime ceiling.
 
 namespace Erdos478.EffectiveResolvent
 
-private def heightExp (b : ℕ) := b+b+(b+b^2*2+0+1)*b
-private def badExp (b m : ℕ) := 1+(1+b)*((b*b)*(b*b))+(1+heightExp b)*(m*m)
+def heightExp (b : ℕ) := b+b+(b+b^2*2+0+1)*b
+def badExp (b m : ℕ) := 1+(1+b)*((b*b)*(b*b))+(1+heightExp b)*(m*m)
 
-private theorem bit_budget {b m B D : ℕ} (hb : 4≤b) (hm : m ≤ 2^(b^2))
+theorem bit_budget {b m B D : ℕ} (hb : 4≤b) (hm : m ≤ 2^(b^2))
     (hd : D ≤ 2^(b^2)) (hB : B ≤ 2^(badExp b m)) : sieveBits D B ≤ b^6 := by
   apply Nat.clog_le_of_le_pow
   apply max_le
@@ -33,13 +33,33 @@ private theorem bit_budget {b m B D : ℕ} (hb : 4≤b) (hm : m ≤ 2^(b^2))
     ring_nf
     omega
 
-private theorem final_exponent (b m : ℕ) (hb : 4≤b) (hm : 1 ≤ m) :
-    let H := heightExp b
-    let S := b^2*m + 32*(m+1)*(b^6+1)^2
-    ((1+H+1+1)+((1+H+0+1)+S+(1+H+1+1)*m*2)+1)*m ≤ b^17*m^2 := by
+def schurExponent (b m K : ℕ) :=
+  let H := heightExp b
+  let S := b^2*m + 32*(m+1)*(K+1)^2
+  ((1+H+1+1)+((1+H+0+1)+S+(1+H+1+1)*m*2)+1)*m
+
+/-- Separate the size of the exceptional integer from the polynomial height and degree. -/
+theorem schur_bound_of_bits {b m D V B K : ℕ} (hD : D ≤ m) (hD' : D≤2^(b^2))
+    (hH : V≤2^(heightExp b)) (hbgt : sieveBits D B ≤ K) :
+    sievedSchurBound D V B ≤ 2^(schurExponent b m K) := by
+  have hfac : D.factorial ≤ 2^(b^2*m) := (Nat.factorial_le_pow D).trans (pow_bound hD' hD)
+  have hsearch : 2^(32*(D+1)*(sieveBits D B+1)^2) ≤ 2^(32*(m+1)*(K+1)^2) := by
+    gcongr
+    decide
+  have hS := mul_bound hfac hsearch
+  have one : 1 ≤ (2:ℕ)^0 := by decide
+  have two : 2 ≤ (2:ℕ)^1 := by decide
+  have h₁ := add_bound (mul_bound two hH) one
+  have h₂ := add_bound (mul_bound two hH) two
+  have he := pow_bound (add_bound h₂ (mul_bound (mul_bound h₁ hS)
+    (pow_bound (pow_bound h₂ hD) (le_refl 2)))) hD
+  exact he
+
+theorem base_exponent_bound (b m : ℕ) (hb : 4≤b) (hm : 1 ≤ m) :
+    schurExponent b m (b^6) ≤ b^17*m^2 := by
   obtain ⟨v,rfl⟩ := Nat.exists_eq_add_of_le hb
   obtain ⟨u,rfl⟩ := Nat.exists_eq_add_of_le hm
-  dsimp [heightExp]
+  dsimp [schurExponent,heightExp]
   ring_nf
   omega
 
@@ -55,21 +75,11 @@ theorem sieved_even_bound (n : ℕ) :
     simpa only [pow_two] using pow_bound (Nat.lt_two_pow_self.le : b ≤ 2^b) (by dsimp [b]; omega : n≤b)
   obtain ⟨hD,hD',hH,hE⟩ := even_resolvent_sizes n
   have hbgt : sieveBits D B ≤ b^6 := bit_budget hb hm hD' hE
-  have hfac : D.factorial ≤ 2^(b^2*m) := (Nat.factorial_le_pow D).trans (pow_bound hD' hD)
-  have hsearch : 2^(32*(D+1)*(sieveBits D B+1)^2) ≤ 2^(32*(m+1)*(b^6+1)^2) := by
-    gcongr
-    decide
-  have hS := mul_bound hfac hsearch
-  have one : 1 ≤ (2:ℕ)^0 := by decide
-  have two : 2 ≤ (2:ℕ)^1 := by decide
-  have h₁ := add_bound (mul_bound two hH) one
-  have h₂ := add_bound (mul_bound two hH) two
-  have he := pow_bound (add_bound h₂ (mul_bound (mul_bound h₁ hS)
-    (pow_bound (pow_bound h₂ hD) (le_refl 2)))) hD
+  have he := schur_bound_of_bits hD hD' hH hbgt
   apply he.trans
   apply Nat.pow_le_pow_right (by decide)
   calc
-    _ ≤ b^17*m^2 := final_exponent b m hb (Nat.one_le_pow _ _ (by omega))
+    _ ≤ b^17*m^2 := base_exponent_bound b m hb (Nat.one_le_pow _ _ (by omega))
     _ = _ := by dsimp [b,m]; rw [← pow_mul,← pow_add]; congr 1; omega
 
 #print axioms sieved_even_bound

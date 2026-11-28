@@ -23,18 +23,20 @@ theorem explicit_even_gap_prime (n : ℕ) (hn : 0<n) :
   obtain ⟨p,hp,h⟩ := simultaneous_even_prime n hn
   exact ⟨p,hp.trans (evenWitnessBound_le n hn),h⟩
 
-theorem loglog_power_ceiling {b k p : ℕ} (hp : 1<p) (h : p≤2^(b^k)) :
-    Real.log (Real.log p) ≤ (k:ℝ)*Real.log b := by
-  have hr : (p:ℝ) ≤ (2:ℝ)^(b^k) := by exact_mod_cast h
+theorem loglog_two_pow {p m : ℕ} (hp : 1<p) (h : p≤2^m) :
+    Real.log (Real.log p) ≤ Real.log (m:ℝ) := by
+  have hr : (p:ℝ) ≤ (2:ℝ)^m := by exact_mod_cast h
   have hl := Real.log_le_log (by exact_mod_cast (by omega : 0<p)) hr
   rw [Real.log_pow] at hl
   have h₂ : Real.log 2 ≤ 1 := by
     linarith [Real.log_le_sub_one_of_pos (by norm_num : 0<(2:ℝ))]
-  have hl' : Real.log p ≤ ((b^k : ℕ):ℝ) :=
+  have hl' : Real.log p ≤ (m:ℝ) :=
     hl.trans (by simpa only [mul_one] using mul_le_mul_of_nonneg_left h₂ (Nat.cast_nonneg _))
-  have hx := Real.log_le_log (Real.log_pos (by exact_mod_cast hp)) hl'
-  push_cast at hx
-  simpa [Real.log_pow] using hx
+  exact Real.log_le_log (Real.log_pos (by exact_mod_cast hp)) hl'
+
+theorem loglog_power_ceiling {b k p : ℕ} (hp : 1<p) (h : p≤2^(b^k)) :
+    Real.log (Real.log p) ≤ (k:ℝ)*Real.log b := by
+  simpa using loglog_two_pow hp h
 
 private theorem loglog_bound {n p : ℕ} (hn : 2≤n) (hp : n<p) (h : p≤2^((2*n+4)^(3*n+9))) :
     Real.log (Real.log p) ≤ (3*(n:ℝ)+9)*Real.log (2*n+4) := by

@@ -104,15 +104,24 @@ def evenBoundWith (method : RootPrimeBound) (n : ℕ) :=
 
 def evenWitnessBound := evenBoundWith elementarySchur
 
-/-- One bounded prime witnesses two disjoint upper endpoints for each
-of the lengths 2,4,...,2n. -/
-theorem simultaneous_even_with (method : RootPrimeBound) (n : ℕ) (hn : 0<n) :
-    ∃ p ≤ evenBoundWith method n, p.Prime ∧ 2*n<p ∧
+/-- Select a common-root prime while excluding an additional positive integer. -/
+def evenBoundAvoidingWith (method : RootPrimeBound) (n C : ℕ) :=
+  let D := evenWordDegree n
+  let U := 2*n+1
+  let V := wordBound n D U
+  method.bound D V (C*(2*(2*U)^((n*(2*n))^2)*(2*V)^(D^2)))
+
+/-- Two distinct endpoints at each even length, with no overlap across lengths. -/
+def EvenGapWitness (n p : ℕ) : Prop :=
+  p.Prime ∧ 2*n<p ∧
       (∏ i : Fin n, (descPochhammer (ZMod p) (2*(i.val+1))-1)).Separable ∧
       (∀ i : Fin n, ∃ z w : ZMod p, z ≠ w ∧
         (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot z ∧
         (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot w) ∧
-      ((Ico 1 p).image (fun j => j.factorial % p)).card+2*n ≤ p-1 := by
+      ((Ico 1 p).image (fun j => j.factorial % p)).card+2*n ≤ p-1
+
+theorem simultaneous_even_avoiding (method : RootPrimeBound) (n C : ℕ) (hn : 0<n) (hC : 0<C) :
+    ∃ p ≤ evenBoundAvoidingWith method n C, ¬p ∣ C ∧ EvenGapWitness n p := by
   classical
   let G := family ℤ (lengths n)
   let U := 2*n+1
@@ -148,11 +157,12 @@ theorem simultaneous_even_with (method : RootPrimeBound) (n : ℕ) (hn : 0<n) :
     rw [ha]; simp only [IsRoot.def,eval_prod,eval_sub,eval_X,eval_C]
     exact prod_eq_zero (mem_univ j) (sub_self _)
   have hprod (i : Fin n) := (map_gap (Int.castRingHom ℂ) i).trans (ha i)
-  obtain ⟨p,hp,hprime,havoid,hr⟩ := joint_prime_with method hn evenLength he (gapPoly ℤ) a hprod U B
-    (by dsimp [U];omega) (by dsimp [B];omega) hu (by
+  obtain ⟨p,hp,hprime,hboth,hr⟩ := joint_prime_with method hn evenLength he (gapPoly ℤ) a hprod U (C*B)
+    (by dsimp [U];omega) (Nat.mul_pos hC (by dsimp [B];omega)) hu (by
       intro p _ h i
       rw [map_gap]
-      exact (family_prod (ZMod p) n ▸ good p h).of_dvd (Finset.dvd_prod_of_mem _ (mem_univ i)))
+      exact (family_prod (ZMod p) n ▸ good p (fun d => h (dvd_mul_of_dvd_right d C))).of_dvd (Finset.dvd_prod_of_mem _ (mem_univ i)))
+  have havoid : ¬p ∣ B := fun d => hboth (dvd_mul_of_dvd_right d C)
   let : Fact p.Prime := ⟨hprime⟩
   simp only [map_gap] at hr
   have h₂ : (2 : ZMod p) ≠ 0 := by
@@ -170,12 +180,25 @@ theorem simultaneous_even_with (method : RootPrimeBound) (n : ℕ) (hn : 0<n) :
     obtain ⟨z,hz⟩ := hr i
     obtain ⟨hne,hy⟩ := two_even_roots h₂ (i.val+1) si hz
     exact ⟨z,_,hne,hz,hy⟩
-  refine ⟨p,hp.trans ?_,hprime,by omega,sf,two,hh⟩
+  refine ⟨p,hp.trans ?_,fun d => hboth (dvd_mul_of_dvd_left d B),hprime,by omega,sf,two,hh⟩
   apply method.mono
+  rw [Nat.mul_assoc C B]
   dsimp only [B,U] at *
   simp only [Fintype.card_fin] at hb₂
   gcongr
   exact hb₂.trans (by gcongr; omega)
+
+/-- One bounded prime witnesses two disjoint upper endpoints for each
+of the lengths 2,4,...,2n. -/
+theorem simultaneous_even_with (method : RootPrimeBound) (n : ℕ) (hn : 0<n) :
+    ∃ p ≤ evenBoundWith method n, p.Prime ∧ 2*n<p ∧
+      (∏ i : Fin n, (descPochhammer (ZMod p) (2*(i.val+1))-1)).Separable ∧
+      (∀ i : Fin n, ∃ z w : ZMod p, z ≠ w ∧
+        (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot z ∧
+        (descPochhammer (ZMod p) (2*(i.val+1))-1).IsRoot w) ∧
+      ((Ico 1 p).image (fun j => j.factorial % p)).card+2*n ≤ p-1 := by
+  obtain ⟨p,hp,_,h⟩ := simultaneous_even_avoiding method n 1 hn (by decide)
+  exact ⟨p,by simpa [evenBoundAvoidingWith,evenBoundWith] using hp,h⟩
 
 theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
     ∃ p ≤ evenWitnessBound n, p.Prime ∧ 2*n<p ∧
@@ -186,6 +209,7 @@ theorem simultaneous_even_prime (n : ℕ) (hn : 0<n) :
       ((Ico 1 p).image (fun j => j.factorial % p)).card+2*n ≤ p-1 :=
   simultaneous_even_with elementarySchur n hn
 
+#print axioms simultaneous_even_avoiding
 #print axioms simultaneous_even_with
 #print axioms simultaneous_even_prime
 
