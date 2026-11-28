@@ -194,7 +194,7 @@ noncomputable def cotCone (p J K : ℕ) : ℝ :=
   2/(p:ℝ) * ∑ j ∈ range J, weight p (2*j+1) *
     ∑ k ∈ range (K*(2*j+1)/2), weight p (2*k+1)*(nondivSign p (2*j+1) (2*k+1):ℝ)
 
-private lemma full_strip (p : ℕ) : ThetaDivisibleDiagonal.offDiagonal p = strip p (p/2) := by
+lemma full_strip (p : ℕ) : ThetaDivisibleDiagonal.offDiagonal p = strip p (p/2) := by
   unfold ThetaDivisibleDiagonal.offDiagonal strip
   congr 1
   apply sum_congr rfl; intro j _

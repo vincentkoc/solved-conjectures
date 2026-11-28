@@ -396,7 +396,7 @@ private lemma tail_row (hp : p%2=1) {k J l : ℕ} (hk : k<l) (hJ : J≤l) :
   · rw [Ico_eq_empty_of_le (by omega : p/2≤l),sum_empty,abs_zero]
     positivity
 
-private lemma transpose_tail (N J : ℕ) (w : ℕ → ℝ) (g : ℕ → ℕ → ℝ) :
+lemma transpose_tail (N J : ℕ) (w : ℕ → ℝ) (g : ℕ → ℕ → ℝ) :
     ∑ j ∈ Ico J N, w j * ∑ k ∈ range j, w k * g j k =
       ∑ k ∈ range N, w k * ∑ j ∈ Ico (max J (k+1)) N, w j * g j k := by
   have h₁ (j : ℕ) (hj : j ∈ Ico J N) : range j = (range N).filter (·<j) := by
