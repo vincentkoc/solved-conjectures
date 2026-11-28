@@ -16,7 +16,7 @@ def PrefixBound (p : ℕ) [Fact p.Prime] (K : ℝ) : Prop :=
   ∀ (N : ℕ), 2 ≤ N → N < p → ∀ c : ZMod p, c ≠ 0 →
     ‖recipSum N c‖ ≤ K*N/(log N*sqrt (log N))
 
-private lemma odd_sum (T : ℕ) (c : ZMod p) :
+lemma odd_sum (T : ℕ) (c : ZMod p) :
     ∑ j ∈ range T, ZMod.stdAddChar (c / denom p j) = recipSum (2*T) c - recipSum T (c/2) := by
   induction T with
   | zero => simp [recipSum]
