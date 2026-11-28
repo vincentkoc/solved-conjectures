@@ -61,9 +61,11 @@ private theorem inertia_multiple (K : Type*) [Field K] [NumberField K] (s : Bool
   apply transfer _ _ (Int.quotientSpanNatEquivZMod 2) s m
   simpa only [Polynomial.map_sub,descPochhammer_map,Polynomial.map_one] using hs.map (Ideal.Quotient.mk J)
 
-/-- No number field of degree prime to three contains every root of these gaps. -/
-theorem three_dvd_number_field (K : Type*) [Field K] [NumberField K] (s : Bool) (m : ℕ)
-    (hs : (descPochhammer K (2*(7*m+(if s then 5 else 1))+1)-1).Splits) : 3∣Module.finrank ℚ K := by
+/-- The residue degree at every prime over two detects the cubic factor. -/
+theorem three_dvd_binary_inertia (K : Type*) [Field K] [NumberField K] (s : Bool) (m : ℕ)
+    (J : Ideal (𝓞 K)) [J.IsPrime] [J.LiesOver (span {(2:ℤ)})]
+    (hs : (descPochhammer K (2*(7*m+(if s then 5 else 1))+1)-1).Splits) :
+    3∣J.inertiaDeg ℤ := by
   classical
   let k := 2*(7*m+(if s then 5 else 1))+1
   let f := descPochhammer ℤ k-1
@@ -74,6 +76,12 @@ theorem three_dvd_number_field (K : Type*) [Field K] [NumberField K] (s : Bool) 
   have hsplit : (f.map (Int.castRingHom K)).Splits := by simpa [f,k] using hs
   have hi := integral_splits hm.monic hsplit
   simp only [f,Polynomial.map_sub,descPochhammer_map,Polynomial.map_one] at hi
+  exact inertia_multiple K s m J hi
+
+/-- No number field of degree prime to three contains every root of these gaps. -/
+theorem three_dvd_number_field (K : Type*) [Field K] [NumberField K] (s : Bool) (m : ℕ)
+    (hs : (descPochhammer K (2*(7*m+(if s then 5 else 1))+1)-1).Splits) : 3∣Module.finrank ℚ K := by
+  classical
   let p : Ideal ℤ := span {(2:ℤ)}
   let : p.IsMaximal := Int.ideal_span_isMaximal_of_prime 2
   let : Fintype (p.primesOver (𝓞 K)) := (show (p.primesOver (𝓞 K)).Finite by
@@ -84,8 +92,9 @@ theorem three_dvd_number_field (K : Type*) [Field K] [NumberField K] (s : Bool) 
   intro J _
   let := J.property.1
   let := J.property.2
-  exact dvd_mul_of_dvd_right (inertia_multiple K s m J.val hi) _
+  exact dvd_mul_of_dvd_right (three_dvd_binary_inertia K s m J.val hs) _
 
+#print axioms three_dvd_binary_inertia
 #print axioms three_dvd_number_field
 end
 end Erdos478.BinaryGap

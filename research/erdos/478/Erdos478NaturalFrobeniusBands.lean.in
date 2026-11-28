@@ -1,0 +1,81 @@
+import Erdos478FrobeniusBandVariance
+import Erdos478NaturalProportionalCollisions
+
+/-!
+# The doubled endpoint density for factorial collisions
+
+The classes 3 and 4 modulo seven each contribute one sixth of the
+prime-length von Mangoldt mass. The ordinary prime ideal theorem and
+Wiener–Ikehara discharge the analytic inputs to the broad-family rate.
+-/
+
+namespace Erdos478.FrobeniusBands
+open Finset Filter BandWeights BinaryGap GapDensity GapSieve GapBands
+open scoped Topology Classical
+noncomputable section
+
+theorem broad_mass : countingInput broad (1/3) := by
+  have h₃ := Proportional.residue_mass (q:=7) (r:=3) (by decide) (by decide)
+  have h₄ := Proportional.residue_mass (q:=7) (r:=4) (by decide) (by decide)
+  have e : (1/(Nat.totient 7:ℝ))+(1/(Nat.totient 7:ℝ))=1/3 := by
+    rw [show Nat.totient 7=6 by decide]
+    norm_num
+  rw [← e]
+  apply (h₃.add h₄).congr'
+  apply Eventually.of_forall
+  intro N
+  change mass _ N/N+mass _ N/N=mass _ N/N
+  rw [← add_div]
+  congr 1
+  rw [mass,mass,mass,← sum_add_distrib]
+  apply sum_congr rfl
+  intro n _
+  by_cases h : n%7=3 <;> simp [broad,h]
+
+theorem ordinary_rate {H : ℕ → ℕ} {L η A : ℝ} (hL : 1<L)
+    (h : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hη : 0<η) (hA : (L-1)/3/η^2<A) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop,
+      1-A*Proportional.scale K<fraction X (good K (H K) ((L-1)/3) η) :=
+  rate_of_inputs degree_one_prime_ideal_theorem broad_mass hL h hη hA
+
+theorem ordinary_law {H : ℕ → ℕ} {L η ε : ℝ} (hL : 1<L)
+    (h : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hη : 0<η) (hε : 0<ε) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-ε<fraction X (good K (H K) ((L-1)/3) η) := by
+  let A := (L-1)/3/η^2+1
+  have rate := ordinary_rate hL h hη (show (L-1)/3/η^2<A by dsimp [A]; linarith)
+  have small := (tendsto_const_nhds (x:=A)).mul Proportional.scale_zero
+  rw [mul_zero] at small
+  filter_upwards [rate,small.eventually_lt_const hε] with K hk hs
+  filter_upwards [hk] with X hx
+  exact (sub_lt_sub_left hs 1).trans hx
+
+/-- For arbitrary moving upper cutoff, every b below (L−1)/3 is a
+coefficient for both the endpoint count and the canonical missing residues. -/
+theorem ordinary_deficit_rate {H : ℕ → ℕ} {L b A : ℝ} (hL : 1<L)
+    (h : Tendsto (fun K : ℕ => (H K:ℝ)/K) atTop (𝓝 L)) (hb : b<(L-1)/3)
+    (hA : (L-1)/3/((L-1)/3-b)^2<A) :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-A*Proportional.scale K<fraction X (fun p =>
+      let D := ⌈b*K/Real.log K⌉₊
+      D≤(joined (family K (H K)) p).card ∧ ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  filter_upwards [ordinary_rate hL h (sub_pos.mpr hb) hA,eventually_gt_atTop 1] with K hk hK
+  filter_upwards [hk] with X hx
+  exact hx.trans_le (Proportional.family_deficit_fraction _ hK)
+
+/-- In (K,2K] the coefficient 1/4 costs fewer than 49 log K/K exceptions. -/
+theorem dyadic_quarter :
+    ∀ᶠ K : ℕ in atTop, ∀ᶠ X : ℕ in atTop, 1-49*Proportional.scale K<fraction X (fun p =>
+      let D := ⌈(1/4:ℝ)*K/Real.log K⌉₊
+      D≤(joined (family K (2*K)) p).card ∧ ((Ico 1 p).image (fun n => n.factorial%p)).card+D≤p-1) := by
+  apply ordinary_deficit_rate (H:=fun K => 2*K) (L:=2) (by norm_num) _ (by norm_num) (by norm_num)
+  apply (tendsto_const_nhds (x:=(2:ℝ))).congr'
+  filter_upwards [eventually_gt_atTop 0] with K hK
+  push_cast
+  field_simp
+
+#print axioms broad_mass
+#print axioms ordinary_rate
+#print axioms ordinary_law
+#print axioms ordinary_deficit_rate
+#print axioms dyadic_quarter
+end
+end Erdos478.FrobeniusBands

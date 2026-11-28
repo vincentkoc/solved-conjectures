@@ -9,9 +9,9 @@ noncomputable section
 variable {G : Type*} [Group G] {p : ℕ} [Fact p.Prime]
 
 /-- The orbit of an ordered pair defines an invariant set of differences. -/
-theorem affine_or_pair_orbit (ρ : G →* Perm (ZMod p)) (hinj : Function.Injective ρ)
+theorem affine_or_pair_transitive (ρ : G →* Perm (ZMod p))
     (ht : ∀ t : ZMod p, ∃ g : G, ∀ x, ρ g x=t+x) :
-    Nat.card G∣p*(p-1) ∨ ∀ x y : ZMod p, x≠y → ∃ g : G, ρ g 0=x ∧ ρ g 1=y := by
+    (∀ g, ∃ a b : ZMod p, ∀ x, ρ g x=a*x+b) ∨ ∀ x y : ZMod p, x≠y → ∃ g : G, ρ g 0=x ∧ ρ g 1=y := by
   classical
   let R (x y : ZMod p) := ∃ g : G, ρ g 0=x ∧ ρ g 1=y
   have mapR (g : G) {x y : ZMod p} : R x y → R (ρ g x) (ρ g y) := by
@@ -35,7 +35,6 @@ theorem affine_or_pair_orbit (ρ : G →* Perm (ZMod p)) (hinj : Function.Inject
   have hT (u : ZMod p) : u∈T ↔ u≠0 ∧ u∉S := by simp [T]
   by_cases hTn : T.Nonempty
   · left
-    apply card_dvd_of_affine ρ hinj
     have hs : S⊆univ.erase 0 := fun u hu => mem_erase.mpr ⟨fun he => hS₀ (he ▸ hu),mem_univ _⟩
     have size : T.card+S.card=p-1 := by
       calc
@@ -59,6 +58,12 @@ theorem affine_or_pair_orbit (ρ : G →* Perm (ZMod p)) (hinj : Function.Inject
     by_contra hu
     exact hTn ⟨y-x,(hT _).mpr ⟨sub_ne_zero.mpr hxy.symm,hu⟩⟩
 
+theorem affine_or_pair_orbit (ρ : G →* Perm (ZMod p)) (hinj : Function.Injective ρ)
+    (ht : ∀ t : ZMod p, ∃ g : G, ∀ x, ρ g x=t+x) :
+    Nat.card G∣p*(p-1) ∨ ∀ x y : ZMod p, x≠y → ∃ g : G, ρ g 0=x ∧ ρ g 1=y :=
+  (affine_or_pair_transitive ρ ht).imp_left (card_dvd_of_affine ρ hinj)
+
+#print axioms affine_or_pair_transitive
 #print axioms affine_or_pair_orbit
 end
 end Erdos478.PrimeDifferences
