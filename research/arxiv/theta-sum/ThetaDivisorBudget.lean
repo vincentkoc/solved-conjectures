@@ -32,18 +32,12 @@ private lemma split_primes {m y : ℕ} (hy : 0< y) (hmy : log m≤ y) :
   rw [←sum_filter_add_sum_filter_not m.primeFactors (·≤ y)]
   exact add_le_add hg hh
 
-/-- When y ≥ log m and log y ≥ 1, the reciprocal divisors of m have total
-mass O(log y), and their log moment is O((log y)²). -/
-theorem bounds {m y : ℕ} (hm : 0< m) (hy : 0< y) (hmy : log m≤ y) (hlog : 1≤ log y) :
-    mass m ≤ 2+32*log y ∧ logMass m≤ 238*(log y)^2 := by
+private theorem truncate {m y : ℕ} (hy : 0<y) (hlog : 1≤log y)
+    (hL : logMass m ≤ 7*mass m*log y) :
+    mass m ≤ 2+32*log y ∧ logMass m≤238*(log y)^2 := by
   classical
   let D := mass m
-  have hD : 0≤ D := mass_nonneg _
-  have hz := logMass_upper hm
-  have hf := mul_le_mul_of_nonneg_left (split_primes hy hmy) (show 0≤ 2*D by positivity)
-  have hL : logMass m≤ 7*D*log y := by
-    change logMass m≤ D+2*D*_ at hz
-    nlinarith only [hz,hf,mul_le_mul_of_nonneg_left hlog hD]
+  have hD : 0≤D := mass_nonneg _
   let z := y^16
   let A := m.divisors.filter (·≤ z)
   let F := m.divisors.filter (fun d => ¬d≤ z)
@@ -74,6 +68,30 @@ theorem bounds {m y : ℕ} (hm : 0< m) (hy : 0< y) (hmy : log m≤ y) (hlog : 1�
   have hlim := mul_le_mul_of_nonneg_right hu (by linarith : 0≤ log y)
   nlinarith only [hL,hlim,mul_le_mul_of_nonneg_right hlog (by linarith : 0≤ log y)]
 
+/-- When y ≥ log m and log y ≥ 1, the reciprocal divisors of m have total
+mass O(log y), and their log moment is O((log y)²). -/
+theorem bounds {m y : ℕ} (hm : 0< m) (hy : 0< y) (hmy : log m≤ y) (hlog : 1≤ log y) :
+    mass m ≤ 2+32*log y ∧ logMass m≤ 238*(log y)^2 := by
+  classical
+  let D := mass m
+  have hD : 0≤ D := mass_nonneg _
+  have hz := logMass_upper hm
+  have hf := mul_le_mul_of_nonneg_left (split_primes hy hmy) (show 0≤ 2*D by positivity)
+  have hL : logMass m≤ 7*D*log y := by
+    change logMass m≤ D+2*D*_ at hz
+    nlinarith only [hz,hf,mul_le_mul_of_nonneg_left hlog hD]
+  exact truncate hy hlog hL
+
+/-- The same bound holds for every modulus supported on primes up to y,
+uniformly in all prime-power exponents. -/
+theorem smooth_bounds {m y : ℕ} (hm : 0<m) (hy : 0<y) (hlog : 1≤log y)
+    (hs : ∀ q∈m.primeFactors, q≤y) :
+    mass m ≤ 2+32*log y ∧ logMass m ≤ 238*(log y)^2 := by
+  apply truncate hy hlog
+  have h := smooth_log hm hy hs
+  nlinarith only [h,mass_nonneg m,mul_le_mul_of_nonneg_left hlog (mass_nonneg m)]
+
+#print axioms smooth_bounds
 #print axioms bounds
 end
 end Arxiv.«2501.03234».ThetaDivisorBudget

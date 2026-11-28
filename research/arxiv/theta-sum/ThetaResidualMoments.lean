@@ -12,31 +12,12 @@ noncomputable section
 private def Tail (μ : ProbabilityMeasure ℝ) (C a : ℝ) : Prop :=
   ∀ t : ℝ, 0≤t → (μ:Measure ℝ).real {x : ℝ | t< |x|} ≤ C*Real.exp (-a*Real.sqrt t)
 
-/-- Layer cake at half the tail exponent bounds the exponential moment by 1+C. -/
-private theorem exponential_moment {μ : ProbabilityMeasure ℝ} {C a : ℝ} (hC : 0≤C) (ha : 0<a)
-    (h : Tail μ C a) :
-    Integrable (fun x : ℝ => Real.exp ((a/2)*Real.sqrt |x|)) (μ:Measure ℝ) ∧
-    (∫ x : ℝ, Real.exp ((a/2)*Real.sqrt |x|) ∂(μ:Measure ℝ))≤1+C := by
-  let U (x : ℝ) := (a/2)*Real.sqrt |x|
-  have hU : Continuous U := by dsimp [U]; fun_prop
-  have hpos (x) : 0≤U x := by dsimp [U]; positivity
-  have htail {t : ℝ} (ht : 0≤t) :
-      (μ:Measure ℝ) {x : ℝ | t<U x}≤ENNReal.ofReal (C*Real.exp (-2*t)) := by
-    let v := 2*t/a
-    have hv : 0≤v := by dsimp [v]; positivity
-    have he (x : ℝ) : t<U x ↔ v^2< |x| := by
-      have h₁ : t<U x ↔ v<Real.sqrt |x| := by
-        dsimp [v,U]; rw [div_lt_iff₀ ha]; constructor <;> intro H <;> linarith
-      rw [h₁]; constructor
-      · intro hs; nlinarith only [sq_lt_sq' (show -Real.sqrt |x|<v by linarith) hs,Real.sq_sqrt (abs_nonneg x)]
-      · intro hs; by_contra! hn
-        nlinarith only [hs,pow_le_pow_left₀ (Real.sqrt_nonneg _) hn 2,Real.sq_sqrt (abs_nonneg x)]
-    rw [show {x : ℝ | t<U x}={x : ℝ | v^2< |x|} from Set.ext he,← ofReal_measureReal]
-    apply ENNReal.ofReal_le_ofReal
-    have H := h (v^2) (sq_nonneg _)
-    rw [Real.sqrt_sq hv] at H
-    have hav : -a*v= -2*t := by dsimp [v]; field_simp
-    rwa [hav] at H
+/-- An exponential tail for a nonnegative test bounds its exponential moment. -/
+theorem exp_moment_of_tail {μ : ProbabilityMeasure ℝ} {C : ℝ} (hC : 0≤C)
+    {U : ℝ → ℝ} (hU : Continuous U) (hpos : ∀ x, 0≤U x)
+    (htail : ∀ {t : ℝ}, 0≤t → (μ:Measure ℝ) {x : ℝ | t < U x}≤ENNReal.ofReal (C*Real.exp (-2*t))) :
+    Integrable (fun x => Real.exp (U x)) (μ:Measure ℝ) ∧
+      (∫ x, Real.exp (U x) ∂(μ:Measure ℝ))≤1+C := by
   let G (x : ℝ) := Real.exp (U x)-1
   have hG : Continuous G := hU.rexp.sub continuous_const
   have hGpos (x) : 0≤G x := sub_nonneg.mpr (Real.one_le_exp (hpos x))
@@ -64,12 +45,39 @@ private theorem exponential_moment {μ : ProbabilityMeasure ℝ} {C a : ℝ} (hC
     (Eventually.of_forall hGpos)).mp (lt_of_le_of_lt hlin ENNReal.ofReal_lt_top).ne
   have he : (fun x => Real.exp (U x))=(fun x => G x+1) := by funext x; simp [G]
   change Integrable (fun x => Real.exp (U x)) _ ∧ _≤_
-  rw [show (fun x : ℝ => Real.exp (a/2*Real.sqrt |x|))=(fun x => Real.exp (U x)) from rfl,he]
+  rw [he]
   refine ⟨hi.add (integrable_const _),?_⟩
   rw [integral_add hi (integrable_const _),integral_const]
   rw [← ofReal_integral_eq_lintegral_ofReal hi (Eventually.of_forall hGpos)] at hlin
   have := (ENNReal.ofReal_le_ofReal_iff hC).mp hlin
   simpa [add_comm] using add_le_add_right this 1
+
+/-- Layer cake at half the tail exponent bounds the exponential moment by 1+C. -/
+private theorem exponential_moment {μ : ProbabilityMeasure ℝ} {C a : ℝ} (hC : 0≤C) (ha : 0<a)
+    (h : Tail μ C a) :
+    Integrable (fun x : ℝ => Real.exp ((a/2)*Real.sqrt |x|)) (μ:Measure ℝ) ∧
+    (∫ x : ℝ, Real.exp ((a/2)*Real.sqrt |x|) ∂(μ:Measure ℝ))≤1+C := by
+  let U (x : ℝ) := (a/2)*Real.sqrt |x|
+  have hU : Continuous U := by dsimp [U]; fun_prop
+  have hpos (x) : 0≤U x := by dsimp [U]; positivity
+  have htail {t : ℝ} (ht : 0≤t) :
+      (μ:Measure ℝ) {x : ℝ | t<U x}≤ENNReal.ofReal (C*Real.exp (-2*t)) := by
+    let v := 2*t/a
+    have hv : 0≤v := by dsimp [v]; positivity
+    have he (x : ℝ) : t<U x ↔ v^2< |x| := by
+      have h₁ : t<U x ↔ v<Real.sqrt |x| := by
+        dsimp [v,U]; rw [div_lt_iff₀ ha]; constructor <;> intro H <;> linarith
+      rw [h₁]; constructor
+      · intro hs; nlinarith only [sq_lt_sq' (show -Real.sqrt |x|<v by linarith) hs,Real.sq_sqrt (abs_nonneg x)]
+      · intro hs; by_contra! hn
+        nlinarith only [hs,pow_le_pow_left₀ (Real.sqrt_nonneg _) hn 2,Real.sq_sqrt (abs_nonneg x)]
+    rw [show {x : ℝ | t<U x}={x : ℝ | v^2< |x|} from Set.ext he,← ofReal_measureReal]
+    apply ENNReal.ofReal_le_ofReal
+    have H := h (v^2) (sq_nonneg _)
+    rw [Real.sqrt_sq hv] at H
+    have hav : -a*v= -2*t := by dsimp [v]; field_simp
+    rwa [hav] at H
+  exact exp_moment_of_tail hC hU hpos htail
 
 private lemma power_bound (b : ℝ) (hb : 0<b) (k : ℕ) :
     ∃ D : ℝ, 0≤D ∧ ∀ x : ℝ, |x|^k≤D*Real.exp (b*Real.sqrt |x|) := by
@@ -303,7 +311,7 @@ theorem dyadic_polynomial_growth (hAP : ProgressionMangoldt) {F : G →₁[haar]
     progression_integral hX residual hc.measurable)
 
 open ThetaDiagonalConstant
-private lemma centered_growth (B : ℝ) (k : ℕ) (x : ℝ) :
+lemma centered_growth (B : ℝ) (k : ℕ) (x : ℝ) :
     |(x-B)^k|≤(1+|B|)^k*(1+|x|^k) := by
   rw [abs_pow]
   have h := abs_sub x B
