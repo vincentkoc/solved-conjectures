@@ -59,15 +59,15 @@ private lemma model_character_limit (hAP : ProgressionMangoldt) {T V : ℕ} (hT 
   have hc : chi (n%M) = chi n := by simp only [chi,Nat.mod_mod_of_dvd _ h3]
   rw [hc,hper n]
 
-/-- Vanishing uniform mean approximation transfers existence of a limit and its lower bound. -/
-theorem limit_of_prime_models {f : ℕ → ℝ} {b : ℝ}
-    (h : ∀ ε : ℝ, 0 < ε → ∃ g : ℕ → ℝ, ∃ L : ℝ, b ≤ L ∧
-      Tendsto g atTop (𝓝 L) ∧ ∀ᶠ X : ℕ in atTop, |f X - g X| ≤ ε) :
-    ∃ L : ℝ, b ≤ L ∧ Tendsto f atTop (𝓝 L) := by
+/-- Arbitrarily close convergent models force an ordinary limit. -/
+theorem limit_of_approximants {f : ℕ → ℝ}
+    (h : ∀ ε : ℝ, 0 < ε → ∃ g : ℕ → ℝ, ∃ L : ℝ,
+      Tendsto g atTop (𝓝 L) ∧ ∀ᶠ X : ℕ in atTop, |f X-g X| ≤ ε) :
+    ∃ L : ℝ, Tendsto f atTop (𝓝 L) := by
   have hf : CauchySeq f := by
     apply Metric.cauchySeq_iff.mpr
     intro ε he
-    obtain ⟨g,L,_,hg,H⟩ := h (ε/5) (by positivity)
+    obtain ⟨g,L,hg,H⟩ := h (ε/5) (by positivity)
     obtain ⟨n,hn⟩ := eventually_atTop.mp (H.and (Metric.tendsto_nhds.mp hg (ε/5) (by positivity)))
     refine ⟨n,fun i hi j hj => ?_⟩
     have ha := hn i hi
@@ -79,7 +79,16 @@ theorem limit_of_prime_models {f : ℕ → ℝ} {b : ℝ}
     obtain ⟨ha₃,ha₄⟩ := abs_lt.mp ha.2
     obtain ⟨hb₃,hb₄⟩ := abs_lt.mp hb.2
     constructor <;> linarith
-  obtain ⟨L,hL⟩ := cauchySeq_tendsto_of_complete hf
+  exact cauchySeq_tendsto_of_complete hf
+
+/-- Vanishing uniform mean approximation transfers existence of a limit and its lower bound. -/
+theorem limit_of_prime_models {f : ℕ → ℝ} {b : ℝ}
+    (h : ∀ ε : ℝ, 0 < ε → ∃ g : ℕ → ℝ, ∃ L : ℝ, b ≤ L ∧
+      Tendsto g atTop (𝓝 L) ∧ ∀ᶠ X : ℕ in atTop, |f X - g X| ≤ ε) :
+    ∃ L : ℝ, b ≤ L ∧ Tendsto f atTop (𝓝 L) := by
+  obtain ⟨L,hL⟩ := limit_of_approximants (f:=f) (fun ε he => by
+    obtain ⟨g,L,_,hg,H⟩ := h ε he
+    exact ⟨g,L,hg,H⟩)
   refine ⟨L,?_,hL⟩
   by_contra! hbad
   let e := (b-L)/4
@@ -433,6 +442,7 @@ theorem S_prime_class_statistics (hAP : ProgressionMangoldt) :
 #print axioms bounded_twist_approx_eventually
 #print axioms bounded_residual_twist
 #print axioms primeMean_of_close
+#print axioms limit_of_approximants
 #print axioms limit_of_prime_models
 
 end Arxiv.«2501.03234».ThetaCharacterPrimeMeans

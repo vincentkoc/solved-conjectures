@@ -59,7 +59,8 @@ private lemma vector_period (q m j : ℕ) [NeZero q] :
   · exact (H ⟨G.1,G.2.1,hpar.symm ▸ G.2.2.1,hc.mpr G.2.2.2⟩).elim
   · rfl
 
-private lemma weighted_prefix {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+/-- Abel bound for a decreasing nonnegative real weight and bounded vector partial sums. -/
+theorem weighted_prefix {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (v : ℕ → E) (w : ℕ → ℝ) (C : ℝ) (hw : ∀ i, 0≤w i) (hm : Antitone w)
     (hs : ∀ n, ‖∑ i ∈ range n, v i‖ ≤ C) (n : ℕ) :
     ‖∑ i ∈ range n, w i • v i‖ ≤ w 0*C := by
@@ -212,6 +213,8 @@ theorem reciprocal_window_cauchy {E : Type*} [NormedAddCommGroup E] [NormedSpace
     simp only [← one_div]; exact tendsto_one_div_add_atTop_nhds_zero_nat
   exact hm.cauchySeq_series_mul_of_tendsto_zero_of_bounded hl
     (period_prefix hd v hv hp (reflect_period v hz hr))
+
+#print axioms weighted_prefix
 
 end Arxiv.«2501.03234».ThetaUniformWindows
 #print axioms Arxiv.«2501.03234».ThetaUniformWindows.reciprocal_window_cauchy

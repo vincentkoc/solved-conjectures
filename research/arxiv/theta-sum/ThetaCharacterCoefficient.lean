@@ -46,7 +46,7 @@ theorem commonWeight_limit {d : ℕ} (hd : 0 < d) :
   have hb : 2*b ≤ 2*N^52/d := (Nat.le_div_iff_mul_le hd).mpr (by rw [Nat.mul_comm]; omega)
   omega
 
-private lemma window_limit {d : ℕ} (hd : 2 ≤ d) :
+theorem window_limit {d : ℕ} (hd : 2 ≤ d) :
     Tendsto (fun N => coneWindow (coneWidth N) d) atTop atTop := by
   apply tendsto_atTop.mpr
   intro b
@@ -83,7 +83,7 @@ private theorem model_mean_limit {T : ℕ} (hT : 3 ≤ T) :
     ring
   · simp [H, coeff]
 
-private lemma iterated_model_limit {f : ℕ → ℝ} {g : ℕ → ℕ → ℕ → ℝ}
+theorem iterated_model_limit {f : ℕ → ℝ} {g : ℕ → ℕ → ℕ → ℝ}
     {gV : ℕ → ℕ → ℝ} {gT : ℕ → ℝ} {L : ℝ}
     (hf : Tendsto f atTop (𝓝 L))
     (hX : ∀ᶠ T : ℕ in atTop, ∀ V, Tendsto (g T V) atTop (𝓝 (gV T V)))
@@ -226,6 +226,8 @@ theorem prime_class_statistics_exact (hAP : ProgressionMangoldt) :
 #print axioms prime_character_exact
 #print axioms prime_class_statistics_exact
 
+#print axioms window_limit
+#print axioms iterated_model_limit
 #print axioms commonWeight_limit
 
 end Arxiv.«2501.03234».ThetaCharacterCoefficient
