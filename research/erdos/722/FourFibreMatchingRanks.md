@@ -1,0 +1,35 @@
+# The binary ranks of four-point matching lifts
+
+Put $n=2^d$ and $m=\binom{n-1}{2}$. Replace each point of the binary affine quadruple system on $n$ points by four labelled points. Fix the matchings on one spanning star. Each of the remaining $m$ pairs of fibres has six possible bijections between its three perfect matchings. For transversals whose four fibre coordinates sum to zero, the $6^m$ choices give the following counts of distinct Steiner systems on the same $4n$ labels. [Construction](Erdos722FourFibreRule.lean) · [label recovery](Erdos722FourFibreRecovery.lean) · [exact rank counts](Erdos722FourFibreSpectrum.lean)
+
+| Binary incidence rank | Number of labelled systems |
+| --- | ---: |
+| $4n-d-3$ | $1$ |
+| $4n-d-2$ | $3(2^m-1)$ |
+| $4n-d-1$ | $6^m-3\cdot2^m+2$ |
+
+**The last count is a sharp minimum over transversal fillings.** Choose a compatible ternary completion separately for every matching word. Compatibility fixes its projection to the base and its value on triples with two points in the same fibre. The resulting $6^m$ systems still have distinct labelled block sets, and at least $6^m-3\cdot2^m+2$ have rank $4n-d-1$. The zero-sum transversal choice attains equality simultaneously in every dimension. Thus the largest possible fraction of words missing that rank is $(3\cdot2^m-2)/6^m$. The checked statement quantifies over every such assignment in `FillingFamily`. [Sharp minimum](Erdos722FourFibreExtremal.lean)
+
+### How a parity check sees a matching
+
+Write points as $(i,x)$ with $i\in\mathbb F_2^d$, $x\in\mathbb F_2^2$. A nonzero vector $v$ names one of the three directions of a perfect matching on the fibre. The matching bijection $M_{ij}$ carries $\{x,x+v\}$ at $i$ to the direction $M_{ij}v$ at $j$. For three distinct base coordinates the split completion adds the three fibre coordinates. With two equal base coordinates $i$, the completion at $j$ adds the transported fibre difference to the singleton coordinate. Reversing an edge uses the inverse permutation. These operations satisfy both the repeated-point and cancellation identities required for a Steiner quadruple system. [Direction action](Erdos722FourFibreDirections.lean) · [ternary rule](Erdos722FourFibreRule.lean)
+
+A binary parity check $f$ satisfies $f(Q(a,b,c))=f(a)+f(b)+f(c)$ for every triple, including repetitions. The star identities give $f(i,x)=f(i,0)+g(x)$ for a single linear form $g$ on the four-point fibre. Each remaining edge preserves $g$. Every nonzero $g$ has exactly one nonzero kernel direction, so that direction must be fixed by **every** edge permutation. With no common direction all checks descend to the base, whose affine checks have dimension $d+1$. This argument uses only the pair equations and the projection. For zero-sum transversals the converse also holds. Every invariant $g$ and every base check give a check of the completed system. [Completion criterion](Erdos722CompletionParity.lean) · [restriction](Erdos722FourFibreChecks.lean) · [base dimension](Erdos722FourFibreCube.lean) · [converse for split transversals](Erdos722FourFibreSplit.lean)
+
+For a specified direction, each edge has two permutations that fix it. A permutation fixing two directions fixes all three, so the three sets of $2^m$ words intersect only at the identity word. This gives one word with three surviving directions, $3(2^m-1)$ with exactly one, and the rest with none. Each word can be recovered from the labelled block set by completing a triple across two fibres. [Word count](Erdos722FourFibreWordCounts.lean) · [rank isolation](Erdos722FourFibreIsolation.lean)
+
+### Examples and range
+
+At $d=0,1$ there are no nonstar edges. The construction then produces just the affine system. At $d=2$, the 216 split systems on 16 labels have ranks $11,12,13$ with multiplicities $1,21,194$. An independent enumeration recovered 140 distinct blocks for every word and reproduced these three counts by binary row reduction. In every dimension $d\ge2$, putting the same three-cycle on all nonstar edges gives an explicit system of rank $4n-d-1$, two above the affine minimum. [Labelled example and rank](Erdos722FourFibreLabelled.lean)
+
+### Relation to the host problem and prior work
+
+The pinned Erdős 722 declaration quantifies over every $1\le r<k$ and eventually every admissible order. Here the constructed objects satisfy its exact `Finset.IsBlockDesign 3 4` predicate on `Fin (4*2^d)`. The family adds rank and counting information on these orders. Keevash proved the full existence theorem, and the notebook already contains the Hanani spectrum at $(r,k)=(3,4)$. [Pinned statement](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/ErdosProblems/722.lean) · [Hanani spectrum](https://github.com/vincentkoc/solved-conjectures/pull/117)
+
+D. V. Zinoviev and V. A. Zinoviev give the underlying within-fibre, paired-fibre, and transversal construction, its rank-bounded representation theorem and its fixed-code count. Their order-16 classification gives 4,131 isomorphism classes of rank 13 across the whole stratum. Xu and Shi give an unrestricted enumeration by binary rank. The counts here keep one labelled fibre presentation and a specified family of completions. The extremal result lets the transversal filling depend on each matching word. Historical priority for these restricted formulas is unestablished. [Construction II(s), Theorems 1–3](https://www.moi.math.bas.bg/oc2013/p33.pdf#page=27) · [order-16 classification](https://www.mathnet.ru/php/archive.phtml?jrnid=ppi&option_lang=eng&paperid=150&wshow=paper) · [Xu and Shi](https://doi.org/10.1016/j.disc.2020.111844)
+
+The upstream definition change, the Erdős–Hanani asymptotic packing PR and the Open Math Agents threads concern different statements. The active H2 and H3 threads address assembly and divisibility for the general host theorem. The preceding notebook result treats the whole rank-one-above-minimum stratum. [DeepMind definitions](https://github.com/google-deepmind/formal-conjectures/pull/5495) · [asymptotic packings](https://github.com/google-deepmind/formal-conjectures/pull/4248) · [Left to Solve](https://www.lefttosolve.com/p/Erdos722.erdos_722) · [OMA reduction](https://github.com/lefttosolve2/open-math-agents/pull/17505) · [H2](https://github.com/lefttosolve2/open-math-agents/pull/35115) · [H3](https://github.com/lefttosolve2/open-math-agents/pull/35931) · [prior rank stratum](https://github.com/vincentkoc/solved-conjectures/pull/377)
+
+### Verification
+
+A fresh Lean 4.33.1 build used mathlib `0df444a360eaa60ab8c11dca51a86af692955474`. The kernel independently replayed all 35 notebook modules in the import closure. The axiom audit covered 100 declarations and found only `propext`, `Classical.choice` and `Quot.sound`. Twenty-one checks compared the pinned host predicate, the actual block-by-point matrix, the extremal quantifiers and the small orders. To replay from the pinned Formal Conjectures Lake environment, pass `Erdos722FourFibreExtremal` to the notebook replay runner.
