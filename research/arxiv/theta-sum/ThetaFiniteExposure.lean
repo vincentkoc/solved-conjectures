@@ -65,17 +65,18 @@ theorem increment (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y �
     _ ≤ ∑ _y∈A,a := sum_le_sum fun y hy => h x y (mem_filter.mp hy).2.symm
     _ = _ := by simp [mul_comm]
 
-theorem step (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y → k x=k y)
-    {a v : ℝ} (ha : 0≤a) (hs : |v| * a≤1) (h : ∀ x y,k x=k y → |proj l f x-proj l f y|≤a) :
-    (∑ x,exp (v*proj l f x)) ≤ exp (v^2*a^2)*∑ x,exp (v*proj k f x) := by
+theorem step_weighted (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y → k x=k y)
+    (weight : Ω → ℝ) (hn : ∀ x,0≤weight x) (fixed : ∀ x y,k x=k y → weight x=weight y)
+    {a v : ℝ} (_ha : 0≤a) (hs : |v| * a≤1) (h : ∀ x y,k x=k y → |proj l f x-proj l f y|≤a) :
+    (∑ x,weight x*exp (v*proj l f x)) ≤ exp (v^2*a^2)*∑ x,weight x*exp (v*proj k f x) := by
   classical
-  let w := fun x => exp (v*proj k f x)
+  let w := fun x => weight x*exp (v*proj k f x)
   let d := fun x => proj l f x-proj k f x
-  have hw (x y : Ω) (he : k x=k y) : w x=w y := by simp only [w,proj,he]
+  have hw (x y : Ω) (he : k x=k y) : w x=w y := by simp only [w,proj,he,fixed x y he]
   have hz : (∑ x,w x*d x)=0 := by
     simp only [d,mul_sub,sum_sub_distrib]
     rw [weighted l f w (fun x y he => hw x y (href x y he)),weighted k f w hw,sub_self]
-  have hloc (x : Ω) : exp (v*proj l f x) ≤ w x*(1+v*d x+v^2*a^2) := by
+  have hloc (x : Ω) : weight x*exp (v*proj l f x) ≤ w x*(1+v*d x+v^2*a^2) := by
     have hd := increment k l f href h x
     change |d x|≤a at hd
     have hab : |v*d x|≤1 := (abs_mul v (d x)).le.trans ((mul_le_mul_of_nonneg_left hd (abs_nonneg v)).trans hs)
@@ -84,7 +85,7 @@ theorem step (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y → k x
     rw [sq_abs] at hh
     have hsq := mul_le_mul_of_nonneg_left hh (sq_nonneg v)
     rw [show v*proj l f x=v*proj k f x+v*d x by dsimp [d];ring,exp_add]
-    exact mul_le_mul_of_nonneg_left (by nlinarith only [he,hsq]) (exp_pos _).le
+    rw [←mul_assoc]; exact mul_le_mul_of_nonneg_left (by nlinarith only [he,hsq]) (mul_nonneg (hn _) (exp_pos _).le)
   apply (sum_le_sum fun x _ => hloc x).trans
   calc
     _ = (1+v^2*a^2)*(∑ x,w x)+v*∑ x,w x*d x := by
@@ -92,9 +93,15 @@ theorem step (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y → k x
     _ ≤ _ := by
       rw [hz,mul_zero,add_zero]
       exact mul_le_mul_of_nonneg_right (by linarith only [add_one_le_exp (v^2*a^2)])
-        (sum_nonneg fun x _ => (exp_pos _).le)
+        (sum_nonneg fun x _ => mul_nonneg (hn _) (exp_pos _).le)
+
+theorem step (k l : Ω → ℕ) (f : Ω → ℝ) (href : ∀ x y,l x=l y → k x=k y)
+    {a v : ℝ} (ha : 0≤a) (hs : |v| * a≤1) (h : ∀ x y,k x=k y → |proj l f x-proj l f y|≤a) :
+    (∑ x,exp (v*proj l f x)) ≤ exp (v^2*a^2)*∑ x,exp (v*proj k f x) := by
+  simpa using step_weighted k l f href (fun _ => 1) (fun _ => zero_le_one) (fun _ _ _ => rfl) ha hs h
 
 #print axioms increment
+#print axioms step_weighted
 #print axioms step
 end
 end Arxiv.«2501.03234».ThetaFiniteExposure

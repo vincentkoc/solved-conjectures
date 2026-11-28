@@ -36,13 +36,13 @@ theorem residualModel_periodic (T V : ℕ) : OnMod T.factorial (residualModel T 
   simp only [residualModel,hper n]
 
 /-- Explicit reciprocal models approximate the original residual in ordinary prime mean. -/
-theorem residual_model_approximation {ε : ℝ} (he : 0 < ε) :
-    ∃ T V : ℕ, ∀ᶠ X : ℕ in atTop, primeMean (fun p => |residual p-residualModel T V p|) X ≤ ε := by
+theorem residual_models_approximate {ε : ℝ} (he : 0 < ε) :
+    ∀ᶠ T : ℕ in atTop, ∀ᶠ V : ℕ in atTop, ∀ᶠ X : ℕ in atTop, primeMean (fun p => |residual p-residualModel T V p|) X ≤ ε := by
   let c := 8/Real.pi^2
   have hc : 0<c := by dsimp [c]; positivity
-  obtain ⟨T,V,_,_,hv⟩ := prime_model_absolute (show 0 < ε/(2*c) by positivity)
+  filter_upwards [prime_model_absolute_eventually (show 0 < ε/(2*c) by positivity)] with T H
+  filter_upwards [H] with V hv
   let g (p : ℕ) := diagonalConstant+c*model T V p
-  refine ⟨T,V,?_⟩
   change ∀ᶠ X : ℕ in atTop, primeMean (fun p => |residual p-g p|) X ≤ ε
   have hπ := (tendsto_natCast_atTop_atTop (R:=ℝ)).comp Nat.tendsto_primeCounting
   filter_upwards [hv,diagonal_error_mean.eventually_le_const (half_pos he),hπ.eventually_gt_atTop 0] with X H hdiag hX
@@ -60,6 +60,12 @@ theorem residual_model_approximation {ε : ℝ} (he : 0 < ε) :
   have heq : c*(ε/(2*c))=ε/2 := by field_simp
   change primeMean (fun p => |residual p-d p|) X ≤ ε/2 at hdiag
   linarith only [h,hdiag,mul_le_mul_of_nonneg_left hv' hc.le,heq]
+
+theorem residual_model_approximation {ε : ℝ} (he : 0 < ε) :
+    ∃ T V : ℕ, ∀ᶠ X : ℕ in atTop, primeMean (fun p => |residual p-residualModel T V p|) X ≤ ε := by
+  obtain ⟨T,hT⟩ := (residual_models_approximate he).exists
+  obtain ⟨V,hV⟩ := hT.exists
+  exact ⟨T,V,hV⟩
 
 theorem residual_approximable : Approximable residual := by
   intro ε he
@@ -245,6 +251,7 @@ theorem S_prime_residual_distribution (hAP : ProgressionMangoldt) :
 
 #print axioms S_prime_residual_distribution
 
+#print axioms residual_models_approximate
 #print axioms residual_approximable
 #print axioms law_absolute_spread
 #print axioms law_nonconstant
