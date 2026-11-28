@@ -108,12 +108,11 @@ theorem empirical_real_set {X : ℕ} (hX : 2 ≤ X) (f : ℕ → ℝ) {s : Set �
   rw [← integral_indicator_one hs,empirical_integral hX f (measurable_one.indicator hs)]
   simp only [primeMean,primeSet,Set.indicator_apply,Pi.one_apply,sum_boole]
 
-private lemma positive_mass_of_density {f : ℕ → ℝ} {μ : ProbabilityMeasure ℝ} {P : ℕ → Prop}
+theorem mass_lower_of_count {f : ℕ → ℝ} {μ : ProbabilityMeasure ℝ} {P : ℕ → Prop}
     {s : Set ℝ} (hs : IsClosed s) (hc : Tendsto (empirical f) atTop (𝓝 μ))
-    (hP : PositiveLowerPrimeDensity P) (hsub : ∀ p, p.Prime → P p → f p ∈ s) :
-    0 < (μ : Measure ℝ) s := by
+    {δ : ℝ} (h : ∀ᶠ X in atTop,δ*X.primeCounting ≤ ((primeSet P X).card:ℝ)) (hsub : ∀ p, p.Prime → P p → f p ∈ s) :
+    ENNReal.ofReal δ ≤ (μ : Measure ℝ) s := by
   classical
-  obtain ⟨δ,hδ,h⟩ := hP
   have hπ := (tendsto_natCast_atTop_atTop (R:=ℝ)).comp Nat.tendsto_primeCounting
   have he : ∀ᶠ X : ℕ in atTop, ENNReal.ofReal δ ≤ (empirical f X : Measure ℝ) s := by
     filter_upwards [h,eventually_ge_atTop 2,hπ.eventually_gt_atTop 0] with X hX hx hp
@@ -126,8 +125,14 @@ private lemma positive_mass_of_density {f : ℕ → ℝ} {μ : ProbabilityMeasur
       intro p h
       obtain ⟨h,h'⟩ := mem_filter.mp h
       exact mem_filter.mpr ⟨h,hsub p (Nat.prime_of_mem_primesLE h) h'⟩)
-  exact (ENNReal.ofReal_pos.mpr hδ).trans_le ((le_limsup_of_frequently_le he.frequently).trans
-    (ProbabilityMeasure.limsup_measure_closed_le_of_tendsto hc hs))
+  exact (le_limsup_of_frequently_le he.frequently).trans (ProbabilityMeasure.limsup_measure_closed_le_of_tendsto hc hs)
+
+theorem positive_mass_of_density {f : ℕ → ℝ} {μ : ProbabilityMeasure ℝ} {P : ℕ → Prop}
+    {s : Set ℝ} (hs : IsClosed s) (hc : Tendsto (empirical f) atTop (𝓝 μ))
+    (hP : PositiveLowerPrimeDensity P) (hsub : ∀ p, p.Prime → P p → f p ∈ s) :
+    0 < (μ : Measure ℝ) s := by
+  obtain ⟨δ,hδ,h⟩ := hP
+  exact (ENNReal.ofReal_pos.mpr hδ).trans_le (mass_lower_of_count hs hc h hsub)
 
 /-- The limiting distribution assigns positive probability to both separated
 closed half-lines detected by the original signed prime excursions. -/

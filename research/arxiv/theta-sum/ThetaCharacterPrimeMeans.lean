@@ -150,14 +150,13 @@ theorem chi_prime_mean (hAP : ProgressionMangoldt) :
     norm_num [sum_range_succ,Nat.Coprime,chi]
   simpa only [hz] using periodic_prime_mean hAP hper
 
-/-- A centered bounded weight transfers an off-diagonal mean to the original residual. -/
-theorem bounded_residual_twist {L : ℝ} (w : ℕ → ℝ) (hw : ∀ p, |w p| ≤ 1)
-    (hw0 : Tendsto (primeMean w) atTop (𝓝 0))
+/-- A bounded weight transfers its own mean and its off-diagonal mean to the original residual. -/
+theorem bounded_residual_mean {b L : ℝ} (w : ℕ → ℝ) (hw : ∀ p, |w p| ≤ 1)
+    (hwb : Tendsto (primeMean w) atTop (𝓝 b))
     (hL : Tendsto (primeMean (fun p => w p*scaledOff p)) atTop (𝓝 L)) :
-    Tendsto (primeMean (fun p => w p*residual p)) atTop (𝓝 (8/Real.pi^2*L)) := by
+    Tendsto (primeMean (fun p => w p*residual p)) atTop (𝓝 (diagonalConstant*b+8/Real.pi^2*L)) := by
   let g (p : ℕ) := diagonalConstant*w p+(8/Real.pi^2)*(w p*scaledOff p)
-  have hg := (hw0.const_mul diagonalConstant).add (hL.const_mul (8/Real.pi^2))
-  rw [mul_zero,zero_add] at hg
+  have hg := (hwb.const_mul diagonalConstant).add (hL.const_mul (8/Real.pi^2))
   apply primeMean_of_close (g := g) _ (hg.congr' (Eventually.of_forall (fun X =>
     (primeMean_linear diagonalConstant (8/Real.pi^2) (fun n => w n) (fun n => w n*scaledOff n) X).symm)))
   intro ε he
@@ -171,6 +170,13 @@ theorem bounded_residual_twist {L : ℝ} (w : ℕ → ℝ) (hw : ∀ p, |w p| �
     ring
   rw [heq,abs_mul]
   exact (mul_le_of_le_one_left (abs_nonneg _) (hw p)).trans_lt H
+
+/-- A centered bounded weight transfers an off-diagonal mean to the original residual. -/
+theorem bounded_residual_twist {L : ℝ} (w : ℕ → ℝ) (hw : ∀ p, |w p| ≤ 1)
+    (hw0 : Tendsto (primeMean w) atTop (𝓝 0))
+    (hL : Tendsto (primeMean (fun p => w p*scaledOff p)) atTop (𝓝 L)) :
+    Tendsto (primeMean (fun p => w p*residual p)) atTop (𝓝 (8/Real.pi^2*L)) := by
+  simpa only [mul_zero,zero_add] using bounded_residual_mean w hw hw0 hL
 
 /-- Convert a twisted off-diagonal mean to a mean of the original residual. -/
 theorem residual_twist {L : ℝ} (hAP : ProgressionMangoldt)

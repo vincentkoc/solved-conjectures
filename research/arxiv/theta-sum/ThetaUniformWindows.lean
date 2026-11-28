@@ -80,7 +80,7 @@ theorem weighted_prefix {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     rw [← sum_mul,sum_range_sub']
     exact le_of_eq (by ring)
 
-private lemma reflect_period {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+theorem reflect_period {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {d : ℕ} (v : ℕ → E) (hz : v 0=0) (href : ∀ j≤2*d, v (2*d-j) = -v j) :
     ∑ i ∈ range (2*d), v (i+1)=0 := by
   let D := 2*d
