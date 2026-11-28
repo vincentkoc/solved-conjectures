@@ -16,7 +16,8 @@ private lemma unity_factor_constant {R : Type*} [CommRing R] [Nontrivial R]
   change _ = a.leadingCoeff^N at hr
   simpa [ha.leadingCoeff] using hr
 
-private lemma geom_map {R : Type*} [CommRing R] (f : ℤ →+* R) (m j : ℕ) :
+/-- The Jones sum times X−1 is a trinomial over every coefficient ring. -/
+lemma jones_geometric_map {R : Type*} [CommRing R] (f : ℤ →+* R) (m j : ℕ) :
     (X-1)*(jonesSumPolynomial m j).map f = X^(j+1)+(C (f m)-1)*X-C (f m) := by
   induction j with
   | zero => simp [jonesSumPolynomial]; ring
@@ -38,7 +39,7 @@ private lemma factor_signed_constant {m j : ℕ} (hm : 3 ≤ m) (hj : 0 < j)
          _ = 1 := by simp
   obtain ⟨b,hb⟩ := hdiv
   have hbm := ha.of_mul_monic_left (hb ▸ (jonesSumPolynomial_shape m j).2 hj)
-  have hgeom := geom_map f m j
+  have hgeom := jones_geometric_map f m j
   rw [hm1,hb,Polynomial.map_mul] at hgeom
   have hprod : a.map f*((X-1)*b.map f) = X^(j+1)-1 := by
     rw [mul_left_comm]
@@ -69,7 +70,8 @@ private lemma monic_factor_positive {m j : ℕ} (hm : 0 < m) {a : ℤ[X]} (ha : 
   have hr : A.IsRoot y := hroot
   exact (real_jones_positive m j hm y hy.1).ne' (hr.dvd (Polynomial.map_dvd _ hdiv))
 
-private lemma factor_even_of_odd_N {m j : ℕ} (hm : 2 ≤ m) {a : ℤ[X]} (ha : a.Monic)
+/-- There is no real root in even degree, so every monic integral factor has even degree. -/
+lemma jones_factor_even_degree {m j : ℕ} (hm : 2 ≤ m) {a : ℤ[X]} (ha : a.Monic)
     (hdiv : a ∣ jonesSumPolynomial m j) (hn : Odd (j+1)) : Even a.natDegree := by
   by_contra! h
   have hodd : Odd (a.map (Int.castRingHom ℝ)).natDegree := by
@@ -91,7 +93,7 @@ private lemma factor_even_of_odd_N {m j : ℕ} (hm : 2 ≤ m) {a : ℤ[X]} (ha :
   by_cases hz : 0 ≤ z
   · exact (real_jones_positive m j (by omega) z hz).ne' hp
   have hz' : z < 0 := lt_of_not_ge hz
-  have id := congrArg (fun f : ℝ[X] => f.eval z) (geom_map (Int.castRingHom ℝ) m j)
+  have id := congrArg (fun f : ℝ[X] => f.eval z) (jones_geometric_map (Int.castRingHom ℝ) m j)
   change ((jonesSumPolynomial m j).map _).eval z=0 at hp
   simp only [eval_mul,eval_sub,eval_one,eval_add,eval_C,eval_pow,eval_X,Int.coe_castRingHom,
     Int.cast_natCast,hp,mul_zero] at id
@@ -109,7 +111,7 @@ theorem jones_factor_constant_congruence {m j : ℕ} (hm : 3 ≤ m) (hj : 0 < j)
   have he : Even (a.natDegree*(j+1)) := by
     by_cases hn : Even (j+1)
     · exact hn.mul_left _
-    · exact (factor_even_of_odd_N (by omega) ha hdiv (Nat.not_even_iff_odd.mp hn)).mul_right _
+    · exact (jones_factor_even_degree (by omega) ha hdiv (Nat.not_even_iff_odd.mp hn)).mul_right _
   rw [he.neg_one_pow,one_mul] at h
   exact ⟨monic_factor_positive (by omega) ha hd hdiv,h⟩
 
@@ -229,6 +231,8 @@ theorem jones_nine_degree_obstruction {j : ℕ} (hj : 0 < j)
   change 10 ∣ (j+1)%30 ∨ 15 ∣ (j+1)%30 at h
   omega
 
+#print axioms jones_geometric_map
+#print axioms jones_factor_even_degree
 #print axioms jones_factor_constant_congruence
 #print axioms jones_reducible_implies_small_divisor
 #print axioms jones_semiprime_degree_obstruction
