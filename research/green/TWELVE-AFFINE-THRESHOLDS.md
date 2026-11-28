@@ -1,6 +1,6 @@
 # Affine three-spaces in twelve binary dimensions
 
-Let \(A\subseteq\mathbb F_2^{12}\). Every 25-point set has an affine three-space in \(A+A\). An explicit 20-point set avoids all such spaces. Thus the smallest forcing cardinality lies between 21 and 25 inclusive. For linear three-spaces through the origin the smallest forcing cardinality is 26. [Affine upper bound](Green51TwelveAffine.lean) · [Twenty-point example](Green51TwelveAffineWitness.lean) · [Linear threshold](TWELVE-DIMENSIONS.md)
+Let \(A\subseteq\mathbb F_2^{12}\). Every 25-point set has an affine three-space in \(A+A\). An explicit 20-point set avoids all such spaces. The later fifteen-point section argument sharpens the forcing range to 21 through 24 inclusive. [Twenty-four-point bound](SIMPLEX-SECTION.md) For linear three-spaces through the origin the smallest forcing cardinality is 26. [Affine upper bound](Green51TwelveAffine.lean) · [Twenty-point example](Green51TwelveAffineWitness.lean) · [Linear threshold](TWELVE-DIMENSIONS.md)
 
 For the guaranteed dimension \(F(12,\alpha)\) in Green's original question, the endpoints give the following exact values and bound. [Canonical density statements](Green51TwelveAffineBounds.lean) · [Pinned problem](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/GreensOpenProblems/51.lean)
 
