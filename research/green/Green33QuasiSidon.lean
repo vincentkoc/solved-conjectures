@@ -101,31 +101,42 @@ theorem sumset_upper (B : Finset ℕ) : (B+B).card ≤ (B.card+1).choose 2 := by
     exact mem_image.mpr ⟨Sym2.mk a b,mk_mem_sym2_iff.mpr ⟨ha,hb⟩,rfl⟩
   exact (card_le_card h).trans card_image_le
 
+/-- Both unordered-pair counts have the interval length as their scale along
+any sequence of lengths tending to infinity at the critical size. -/
+theorem pair_scales_along {N : ℕ → ℕ} (k : ℕ → ℕ)
+    (big : Tendsto N atTop atTop)
+    (size : Tendsto (fun i => (k i:ℝ)/Real.sqrt (N i)) atTop (𝓝 (Real.sqrt 2))) :
+    Tendsto (fun i => ((k i).choose 2:ℝ)/(N i:ℝ)) atTop (𝓝 1) ∧
+    Tendsto (fun i => ((k i+1).choose 2:ℝ)/(N i:ℝ)) atTop (𝓝 1) := by
+  have quad : Tendsto (fun i => (k i:ℝ)^2/(N i:ℝ)) atTop (𝓝 2) := by
+    simpa only [div_pow, Real.sq_sqrt (by norm_num : (0:ℝ)≤2),Real.sq_sqrt (Nat.cast_nonneg _)] using size.pow 2
+  have lin : Tendsto (fun i => (k i:ℝ)/(N i:ℝ)) atTop (𝓝 0) := by
+    have h := size.div_atTop (Real.tendsto_sqrt_atTop.comp (tendsto_natCast_atTop_atTop.comp big))
+    apply h.congr
+    intro i
+    change (k i:ℝ)/Real.sqrt (N i)/Real.sqrt (N i)=_
+    rw [div_div,← sq,Real.sq_sqrt (Nat.cast_nonneg _)]
+  constructor
+  · have h := (quad.sub lin).div_const 2
+    norm_num at h
+    apply h.congr
+    intro i
+    rw [Nat.cast_choose_two]
+    ring
+  · have h := (quad.add lin).div_const 2
+    norm_num at h
+    apply h.congr
+    intro i
+    rw [Nat.cast_choose_two]
+    push_cast
+    ring
+
 /-- The unordered pair counts on either diagonal convention have the same scale. -/
 theorem pair_scales_of_size {k : ℕ → ℕ}
     (h : Tendsto (fun N => (k N : ℝ)/Real.sqrt N) atTop (𝓝 (Real.sqrt 2))) :
     Tendsto (fun N => ((k N).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) ∧
-    Tendsto (fun N => ((k N+1).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) := by
-  have hs : Tendsto (fun N => (k N : ℝ)^2/(N : ℝ)) atTop (𝓝 2) := by
-    simpa [div_pow,Real.sq_sqrt (by norm_num : (0:ℝ)≤2),Real.sq_sqrt (Nat.cast_nonneg _)] using h.pow 2
-  have hl : Tendsto (fun N => (k N : ℝ)/(N : ℝ)) atTop (𝓝 0) := by
-    have ht := h.div_atTop (Real.tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop)
-    refine ht.congr (fun n => ?_)
-    change (k n : ℝ)/Real.sqrt n/Real.sqrt n=_
-    rw [div_div,← sq,Real.sq_sqrt (Nat.cast_nonneg n)]
-  constructor
-  · have hv := (hs.sub hl).div_const 2
-    norm_num at hv
-    apply hv.congr
-    intro n
-    rw [Nat.cast_choose_two]
-    ring
-  · have hv := (hs.add hl).div_const 2
-    norm_num at hv
-    apply hv.congr
-    intro n
-    rw [Nat.cast_choose_two,Nat.cast_add_one]
-    ring
+    Tendsto (fun N => ((k N+1).choose 2 : ℝ)/(N : ℝ)) atTop (𝓝 1) :=
+  pair_scales_along (N:=id) k tendsto_id h
 
 /-- If Green 33 holds, the constant √2 is attained in the all-interval
 quasi-Sidon problem of Erdős and Freud, in the pinned upstream definition. -/
@@ -170,6 +181,7 @@ theorem green_implies_erdos840 (hGreen : OrdinaryLimit) :
 #print axioms budget_fits
 #print axioms budget_scale
 #print axioms sumset_upper
+#print axioms pair_scales_along
 #print axioms pair_scales_of_size
 #print axioms finite_transfer
 #print axioms green_implies_erdos840
