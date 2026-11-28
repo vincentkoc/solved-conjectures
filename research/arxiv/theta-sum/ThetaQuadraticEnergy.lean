@@ -97,7 +97,7 @@ private lemma prime_zero (hAP : ProgressionMangoldt) (r : OddPrime) :
 private lemma const_mean (c : ℝ) : Tendsto (primeMean (fun _ => c)) atTop (𝓝 c) :=
   prime_mean_of_convergence (by intro ε he; simp [he])
 
-private theorem mean_part (hAP : ProgressionMangoldt) : Tendsto (primeMean quadraticPart) atTop (𝓝 0) := by
+theorem quadraticPart_mean (hAP : ProgressionMangoldt) : Tendsto (primeMean quadraticPart) atTop (𝓝 0) := by
   have H := quadratic_pairing hAP (f:=fun _ => 1) (b:=fun _ => 0) (M:=2) (by norm_num)
     (by simpa only [abs_one] using ((const_mean 1).eventually_le_const (by norm_num : (1:ℝ)<2)))
     (fun r => by simpa using prime_zero hAP r) (by simp)
@@ -157,7 +157,7 @@ theorem variance_decomposition (hAP : ProgressionMangoldt) :
   let B := diagonalConstant
   have hRQ := mean_RQ hAP
   have hQQ := mean_QQ hAP
-  have hQ := mean_part hAP
+  have hQ := quadraticPart_mean hAP
   have hZ := (hV.sub (hRQ.const_mul 2)).add (hQ.const_mul (2*B)) |>.add hQQ
   have hlim : Tendsto (primeMean (fun p => (R p-Q p-B)^2)) atTop (𝓝 (V-quadraticEnergy)) := by
     convert hZ.congr' _ using 2
@@ -214,4 +214,5 @@ theorem finite_energy_strict (hAP : ProgressionMangoldt) (s : Finset OddPrime) :
 #print axioms coefficient_squares_summable
 #print axioms variance_decomposition
 #print axioms quadratic_pairing
+#print axioms quadraticPart_mean
 end Arxiv.«2501.03234».ThetaQuadraticEnergy

@@ -20,7 +20,8 @@ private lemma bounded (n : ℕ) : |w q n| ≤ 1 := by
 
 private lemma onMod : OnMod q (w q) := fun n => congrArg (Int.cast (R:=ℝ)) (symbol_mod q (dvd_refl q) n)
 
-private lemma centered (hq : q≠2) : unitMean q (w q) = 0 := by
+lemma symbol_unitMean_zero (hq : q≠2) : unitMean q (fun n => (symbol q n:ℝ)) = 0 := by
+  change unitMean q (w q)=0
   rw [unitMean,ThetaReciprocalFibers.unit_sum_nat,sum_filter]
   have he (j : ℕ) : (if j.Coprime q then w q j else 0)=w q j := by
     by_cases h : j.Coprime q
@@ -35,15 +36,6 @@ private lemma centered (hq : q≠2) : unitMean q (w q) = 0 := by
 private lemma product_onMod {d e P : ℕ} (hd : d∣P) (he : e∣P)
     {f g : ℕ → ℝ} (hf : OnMod d f) (hg : OnMod e g) : OnMod P (fun n => f n*g n) :=
   fun n => congrArg₂ (·*·) (onMod_lift hd hf n) (onMod_lift he hg n)
-
-private theorem periodic_model (hAP : ProgressionMangoldt) {T : ℕ} (ht : q≤T) (V : ℕ) :
-    Tendsto (primeMean (fun n => w q n*model T V n)) atTop
-      (𝓝 (unitMean T.factorial (fun n => w q n*model T V n))) := by
-  apply periodic_prime_mean hAP
-  apply product_onMod (Nat.dvd_factorial (Fact.out : q.Prime).pos ht) (dvd_refl _) (onMod q)
-  apply low_onMod
-  intro d hd _
-  exact Nat.dvd_factorial (by have := (mem_Icc.mp hd).1; omega) (mem_Icc.mp hd).2
 
 /-- Nonnegative denominator weight after the signed conductor factor is taken out. -/
 noncomputable def amplitude (d : ℕ) : ℝ :=
@@ -97,44 +89,64 @@ private theorem row_lim {P d : ℕ} [NeZero P] [NeZero d] (hP : q∣P) (hd : d�
       · have hc := (Fact.out : q.Prime).coprime_iff_not_dvd.mpr (fun hh => H ⟨ho,hh⟩)
         rw [unitMean_lift (hc.mul_dvd_of_dvd_of_dvd hP hd) (product_onMod (Nat.dvd_mul_right q d)
           (Nat.dvd_mul_left d q) (onMod q) (row_onMod d K)),unitMean_mul hc (onMod q) (row_onMod d K),
-          centered q hq,zero_mul]
+          symbol_unitMean_zero q hq,zero_mul]
       · simp [even_row ho,unitMean]
     simpa only [he,zero_div] using (tendsto_const_nhds (x:=(0:ℝ)) (f:=atTop (α:=ℕ)))
 
-private theorem model_limit {T : ℕ} (ht : q≤T) (hq : q≠2)
-    {L : ℝ} (hL : Tendsto (siftedSum (term q) ∅) atTop (𝓝 L)) :
-    Tendsto (fun V => unitMean T.factorial (fun n => w q n*model T V n)) atTop
-      (𝓝 ((Real.pi^2/8)*((parityFactor q:ℝ)*L)*∑ d∈Icc 2 T,amplitude q d)) := by
-  simp only [model,mean_low,mul_sum]
-  apply tendsto_finsetSum
-  intro d hd
-  have h2 := (mem_Icc.mp hd).1
-  let : NeZero d := ⟨by omega⟩
-  have hP := Nat.dvd_factorial (Fact.out : q.Prime).pos ht
-  have hPd := Nat.dvd_factorial (by omega : 0<d) (mem_Icc.mp hd).2
-  have H := (commonWeight_limit (d:=d) (by omega)).mul ((row_lim q hP hPd hq hL).comp (window_limit h2))
-  convert H using 1
-  · funext V; dsimp only [Function.comp_apply]; ring
-  · congr 1; ring
+/-- Transfer a centered periodic twist from its fixed-denominator row limits to the
+original prime residual. The signed scalar is common to every denominator. -/
+theorem mean_from_rows (hAP : ProgressionMangoldt) {m : ℕ} [NeZero m]
+    (v : ℕ → ℝ) (hv : ∀ n, |v n| ≤ 1) (hvmod : OnMod m v) (hz : unitMean m v=0)
+    (F : ℝ) (a : ℕ → ℝ)
+    (hrow : ∀ {P d : ℕ} [NeZero P] [NeZero d], m∣P → d∣P →
+      Tendsto (fun K => unitMean P (fun n => v n*row d K n)/(d:ℝ)) atTop (𝓝 (F*a d))) :
+    ∃ C : ℝ, Tendsto (primeMean (fun p => v p*residual p)) atTop (𝓝 C) ∧
+      Tendsto (fun T => F*∑ d∈Icc 2 T,a d) atTop (𝓝 C) := by
+  have hper {T : ℕ} (ht : m≤T) (V : ℕ) :
+      Tendsto (primeMean (fun n => v n*model T V n)) atTop
+        (𝓝 (unitMean T.factorial (fun n => v n*model T V n))) := by
+    apply periodic_prime_mean hAP
+    apply product_onMod (Nat.dvd_factorial (NeZero.pos m) ht) (dvd_refl _) hvmod
+    apply low_onMod
+    intro d hd _
+    exact Nat.dvd_factorial (by have := (mem_Icc.mp hd).1; omega) (mem_Icc.mp hd).2
+  have hmod {T : ℕ} (ht : m≤T) :
+      Tendsto (fun V => unitMean T.factorial (fun n => v n*model T V n)) atTop
+        (𝓝 ((Real.pi^2/8)*F*∑ d∈Icc 2 T,a d)) := by
+    simp only [model,mean_low,mul_sum]
+    apply tendsto_finsetSum
+    intro d hd
+    have h2 := (mem_Icc.mp hd).1
+    let : NeZero d := ⟨by omega⟩
+    have hP := Nat.dvd_factorial (NeZero.pos m) ht
+    have hPd := Nat.dvd_factorial (by omega : 0<d) (mem_Icc.mp hd).2
+    have H := (commonWeight_limit (d:=d) (by omega)).mul ((hrow hP hPd).comp (window_limit h2))
+    convert H using 1
+    · funext V; dsimp only [Function.comp_apply]; ring
+    · congr 1; ring
+  obtain ⟨A,hA⟩ := limit_of_approximants (f:=primeMean (fun p => v p*scaledOff p)) (fun ε he => by
+    obtain ⟨T,hT,H⟩ := ((eventually_ge_atTop m).and (bounded_twist_approx_eventually _ hv he)).exists
+    obtain ⟨V,hV⟩ := H.exists
+    exact ⟨_,_,hper hT V,hV⟩)
+  have hlim := iterated_model_limit hA
+    ((eventually_ge_atTop m).mono fun T ht => hper ht)
+    ((eventually_ge_atTop m).mono fun T ht => hmod ht)
+    (fun ε he => bounded_twist_approx_eventually _ hv he)
+  have hw := periodic_prime_mean hAP hvmod
+  rw [hz] at hw
+  refine ⟨_,bounded_residual_twist _ hv hw hA,?_⟩
+  apply ((hlim.const_mul (8/Real.pi^2))).congr'
+  filter_upwards with T
+  field_simp [Real.pi_ne_zero]
+
+#print axioms mean_from_rows
 
 private theorem transfer (hAP : ProgressionMangoldt) (hq : q ≠ 2)
     {L : ℝ} (hL : Tendsto (siftedSum (term q) ∅) atTop (𝓝 L)) :
     ∃ C : ℝ, Tendsto (primeMean (fun p => w q p*residual p)) atTop (𝓝 C) ∧
       Tendsto (fun T => (parityFactor q:ℝ)*L*∑ d∈Icc 2 T,amplitude q d) atTop (𝓝 C) := by
-  obtain ⟨A,hA⟩ := limit_of_approximants (f:=primeMean (fun p => w q p*scaledOff p)) (fun ε he => by
-    obtain ⟨T,hT,H⟩ := ((eventually_ge_atTop q).and (bounded_twist_approx_eventually _ (bounded q) he)).exists
-    obtain ⟨V,hV⟩ := H.exists
-    exact ⟨_,_,periodic_model q hAP hT V,hV⟩)
-  have hlim := iterated_model_limit hA
-    ((eventually_ge_atTop q).mono fun T ht => periodic_model q hAP ht)
-    ((eventually_ge_atTop q).mono fun T ht => model_limit q ht hq hL)
-    (fun ε he => bounded_twist_approx_eventually _ (bounded q) he)
-  have hw := periodic_prime_mean hAP (onMod q)
-  rw [centered q hq] at hw
-  refine ⟨_,bounded_residual_twist _ (bounded q) hw hA,?_⟩
-  apply ((hlim.const_mul (8/Real.pi^2))).congr'
-  filter_upwards with T
-  field_simp [Real.pi_ne_zero]
+  exact mean_from_rows hAP (w q) (bounded q) (onMod q) (symbol_unitMean_zero q hq)
+    ((parityFactor q:ℝ)*L) (amplitude q) (fun hP hd => row_lim q hP hd hq hL)
 
 /-- Every prime conductor q ≡ 3 mod 4 has a nonzero ordinary prime correlation with the
 original residual. The magnitude dominates the individual conductor row. -/
@@ -210,7 +222,7 @@ theorem of_quadratic_excess_formula (hAP : ProgressionMangoldt) (hq : q%4=3)
 /-- The ordinary mean over primes of a nonprincipal prime Legendre character. -/
 theorem prime_character_mean (hAP : ProgressionMangoldt) (hq : q≠2) :
     Tendsto (primeMean (fun p => (symbol q p:ℝ))) atTop (𝓝 0) := by
-  simpa only [centered q hq] using periodic_prime_mean hAP (onMod q)
+  simpa only [symbol_unitMean_zero q hq] using periodic_prime_mean hAP (onMod q)
 
 #print axioms prime_character_mean
 
@@ -233,9 +245,27 @@ theorem prime_character_pair (hAP : ProgressionMangoldt) (hq : q≠2) (r : ℕ) 
       he ((Nat.prime_dvd_prime_iff_eq (Fact.out : q.Prime) (Fact.out : r.Prime)).mp hd))
     have ht := periodic_prime_mean hAP (product_onMod (Nat.dvd_mul_right q r) (Nat.dvd_mul_left r q)
       (onMod q) (onMod r))
-    rwa [unitMean_mul hc (onMod q) (onMod r),centered q hq,zero_mul] at ht
+    rwa [unitMean_mul hc (onMod q) (onMod r),symbol_unitMean_zero q hq,zero_mul] at ht
 
 #print axioms prime_character_pair
+#print axioms symbol_unitMean_zero
+
+/-- A bounded twist separating the two prime means witnesses their mean absolute distance. -/
+theorem error_of_twist {v f g : ℕ → ℝ} (hv : ∀ p, |v p|≤1) {C : ℝ}
+    (hC : Tendsto (primeMean (fun p => v p*f p)) atTop (𝓝 C))
+    (h0 : Tendsto (primeMean (fun p => v p*g p)) atTop (𝓝 0)) {a : ℝ} (ha : a < |C|) :
+    ∀ᶠ X : ℕ in atTop, a < primeMean (fun p => |f p-g p|) X := by
+  have H := hC.sub h0
+  rw [sub_zero] at H
+  filter_upwards [H.abs.eventually_const_lt ha] with X hX
+  apply hX.trans_le
+  simp only [primeMean,← sub_div,← sum_sub_distrib,abs_div,abs_of_nonneg (Nat.cast_nonneg (α:=ℝ) X.primeCounting)]
+  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
+  apply (abs_sum_le_sum_abs ..).trans (sum_le_sum fun p _ => ?_)
+  rw [← mul_sub,abs_mul]
+  exact mul_le_of_le_one_left (abs_nonneg _) (hv p)
+
+#print axioms error_of_twist
 
 /-- A correlation at a conductor coprime to the period gives a lower bound for the
 ordinary prime mean of the absolute approximation error. -/
@@ -246,16 +276,8 @@ theorem periodic_error_of_correlation (hAP : ProgressionMangoldt) {m : ℕ} [NeZ
     ∀ᶠ X : ℕ in atTop, a < primeMean (fun p => |residual p-g p|) X := by
   have hper := product_onMod (Nat.dvd_mul_right q m) (Nat.dvd_mul_left m q) (onMod q) hg
   have h0 := periodic_prime_mean hAP hper
-  rw [unitMean_mul hc (onMod q) hg,centered q hodd,zero_mul] at h0
-  have H := hC.sub h0
-  rw [sub_zero] at H
-  filter_upwards [H.abs.eventually_const_lt ha] with X hX
-  apply hX.trans_le
-  simp only [primeMean,← sub_div,← sum_sub_distrib,abs_div,abs_of_nonneg (Nat.cast_nonneg (α:=ℝ) X.primeCounting)]
-  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
-  apply (abs_sum_le_sum_abs ..).trans (sum_le_sum fun p _ => ?_)
-  rw [← mul_sub,abs_mul]
-  exact mul_le_of_le_one_left (abs_nonneg _) (bounded q p)
+  rw [unitMean_mul hc (onMod q) hg,symbol_unitMean_zero q hodd,zero_mul] at h0
+  exact error_of_twist (bounded q) hC h0 ha
 
 /-- For every fixed modulus, a positive absolute-mean error persists for every choice
 of values in its residue classes. The lower bound is independent of the model. -/
