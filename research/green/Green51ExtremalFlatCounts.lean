@@ -45,18 +45,23 @@ private theorem common_double {A B C:Finset V} (size:A.card=24) (avoid:¬FlatAt 
 
 private noncomputable def flats (A:Finset V) : Finset (Set V) := (family A).toFinset
 
-private theorem parts {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) :
-    (octadFamily A).biUnion (fun O => flats (A\O))=flats A := by
+private theorem parts {A U:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) (ua:U⊆A) :
+    ((octadFamily A).filter (U⊆·)).biUnion (fun O => flats (A\O))=flats (A\U) := by
   classical
   ext D
   constructor
   · intro h
-    obtain ⟨O,_,mem⟩:=mem_biUnion.mp h
+    obtain ⟨O,hO,mem⟩:=mem_biUnion.mp h
     obtain ⟨p,W,rank,eq,sub⟩:= (Set.mem_toFinset.mp mem : D∈family (A\O))
-    exact Set.mem_toFinset.mpr ⟨p,W,rank,eq,fun _ hx => add_subset_add sdiff_subset sdiff_subset (sub hx)⟩
+    have keep:A\O⊆A\U := fun x hx => mem_sdiff.mpr ⟨(mem_sdiff.mp hx).1,
+      fun h => (mem_sdiff.mp hx).2 ((mem_filter.mp hO).2 h)⟩
+    exact Set.mem_toFinset.mpr ⟨p,W,rank,eq,fun _ hx => add_subset_add keep keep (sub hx)⟩
   · intro h
-    obtain ⟨p,W,d,eq,inside⟩:=(Set.mem_toFinset.mp h : D∈family A)
-    obtain ⟨B,sub,sz,zero,retains⟩:=sixteen_relation_for avoid p W d (eq ▸ inside)
+    obtain ⟨p,W,d,eq,inside⟩:=(Set.mem_toFinset.mp h : D∈family (A\U))
+    have avoids:¬FlatAt (A\U) 0 := fun ⟨L,r,inside'⟩=>avoid ⟨L,r,fun v hv=>
+      add_subset_add sdiff_subset sdiff_subset (inside' hv)⟩
+    obtain ⟨B,localSub,sz,zero,retains⟩:=sixteen_relation_for avoids p W d (eq ▸ inside)
+    have sub:B⊆A:=localSub.trans sdiff_subset
     have oct : A\B∈octadFamily A := by
       apply mem_filter.mpr
       refine ⟨mem_powersetCard.mpr ⟨sdiff_subset,by rw [card_sdiff_of_subset sub,size,sz]⟩,?_⟩
@@ -64,7 +69,8 @@ private theorem parts {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) :
       change syndrome (A\B)+(∑x∈B,x)=syndrome A at sum
       simpa only [zero,add_zero,full_sum size avoid] using sum
     apply mem_biUnion.mpr
-    refine ⟨A\B,oct,?_⟩
+    refine ⟨A\B,mem_filter.mpr ⟨oct,fun x hx => mem_sdiff.mpr ⟨ua hx,
+      fun h => (mem_sdiff.mp (localSub h)).2 hx⟩⟩,?_⟩
     have back : A\(A\B)=B := by
       ext x
       simp only [mem_sdiff]
@@ -113,20 +119,28 @@ private theorem disjoint_parts {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0
   · intro hx; by_contra notU; exact (same.mpr ⟨oa hx,notU⟩).2 hx
   · intro hx; by_contra notO; exact (same.mp ⟨ua hx,notO⟩).2 hx
 
+/-- Deleting labels retains fifteen affine three-spaces for each zero-sum octad
+containing the deleted set. -/
+theorem deleted_flat_count {A U:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) (ua:U⊆A) :
+    (family (A\U)).ncard=((octadFamily A).filter (U⊆·)).card*15 := by
+  classical
+  rw [Set.ncard_eq_toFinset_card']
+  change (flats (A\U)).card=_
+  rw [←parts size avoid ua,card_biUnion]
+  swap
+  · intro x hx y hy ne; exact disjoint_parts size avoid (mem_filter.mp hx).1 (mem_filter.mp hy).1 ne
+  calc
+    _ = ∑ _O∈(octadFamily A).filter (U⊆·),(15:ℕ) := by
+      apply sum_congr rfl
+      intro O ho
+      exact (Set.ncard_eq_toFinset_card' (family (A\O))).symm.trans (complement_fifteen size avoid (mem_filter.mp ho).1).1
+    _ = _ := by simp
+
 /-- Every extremal twenty-four-label set has the same number of affine
 three-spaces in its double. The flats are counted by their point sets. -/
 theorem eleven_thousand_flats {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) :
     (family A).ncard=11385 := by
-  classical
-  rw [Set.ncard_eq_toFinset_card']
-  change (flats A).card=_
-  rw [←parts size avoid,card_biUnion (disjoint_parts size avoid)]
-  calc
-    _ = ∑ _O∈octadFamily A,(15:ℕ) := by
-      apply sum_congr rfl
-      intro O ho
-      exact (Set.ncard_eq_toFinset_card' (family (A\O))).symm.trans (complement_fifteen size avoid ho).1
-    _ = _ := by simp [octad_count size avoid]
+  simpa [octad_count size avoid] using deleted_flat_count size avoid (empty_subset A)
 
 private theorem avoiding_pair_count {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0)
     {x y:V} (hx:x∈A) (hy:y∈A) (ne:x≠y) :
@@ -156,14 +170,16 @@ private theorem avoiding_pair_count {A:Finset V} (size:A.card=24) (avoid:¬FlatA
   change H.card-(X∪Y).card=330
   rw [total,together]
 
-/-- Every nonzero point of an extremal double belongs to exactly 330 of its
-affine three-spaces. -/
-theorem through_nonzero {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0)
-    {v:V} (hv:v∈A+A) (nz:v≠0) :
-    ({D:Set V | D∈family A ∧ v∈D}:Set (Set V)).ncard=330 := by
+/-- A surviving pair sum lies on one affine three-space for each octad that
+contains the deleted labels and avoids the pair. -/
+theorem deleted_point_count {A U:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0) (ua:U⊆A)
+    {x y:V} (hx:x∈A) (hy:y∈A) (ne:x≠y) :
+    ({D:Set V | D∈family (A\U) ∧ x+y∈D}:Set (Set V)).ncard=
+      ((octadFamily A).filter (fun O=>U⊆O ∧ x∉O ∧ y∉O)).card := by
   classical
-  obtain ⟨x,hx,y,hy,xy⟩:=mem_add.mp hv
-  have ne : x≠y := fun e => nz (xy.symm.trans (e ▸ ZModModule.add_self y))
+  let v:=x+y
+  have xy:x+y=v:=rfl
+  have nz:v≠0 := fun z=>ne (add_right_cancel (z.trans (ZModModule.add_self y).symm))
   have localCount (O:Finset V) (ho:O∈octadFamily A) :
       ((flats (A\O)).filter (v∈·)).card=if x∉O ∧ y∉O then 1 else 0 := by
     let B:=A\O
@@ -195,18 +211,33 @@ theorem through_nonzero {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0)
       have sub : ({x,y}:Finset V)⊆B := eq ▸ insert_subset ha (singleton_subset_iff.mpr hb)
       exact cond ⟨(mem_sdiff.mp (sub (mem_insert_self ..))).2,
         (mem_sdiff.mp (sub (mem_insert_of_mem (mem_singleton_self _)))).2⟩
-  have dis : (octadFamily A:Set (Finset V)).PairwiseDisjoint
+  have dis : (((octadFamily A).filter (U⊆·)):Set (Finset V)).PairwiseDisjoint
       (fun O => (flats (A\O)).filter (v∈·)) := by
     intro O ho U hu neq
-    exact (disjoint_parts size avoid ho hu neq).mono (filter_subset ..) (filter_subset ..)
-  have eq : ({D:Set V | D∈family A ∧ v∈D}:Set (Set V)).toFinset=(flats A).filter (v∈·) := by
+    exact (disjoint_parts size avoid (mem_filter.mp ho).1 (mem_filter.mp hu).1 neq).mono (filter_subset ..) (filter_subset ..)
+  have eq : ({D:Set V | D∈family (A\U) ∧ v∈D}:Set (Set V)).toFinset=(flats (A\U)).filter (v∈·) := by
     ext; simp [flats]
-  rw [Set.ncard_eq_toFinset_card',eq,←parts size avoid,filter_biUnion,card_biUnion dis]
+  rw [Set.ncard_eq_toFinset_card',eq,←parts size avoid ua,filter_biUnion,card_biUnion dis]
   calc
-    _ = ∑O∈octadFamily A,if x∉O ∧ y∉O then (1:ℕ) else 0 := sum_congr rfl localCount
-    _ = _ := by rw [sum_boole];exact avoiding_pair_count size avoid hx hy ne
+    _ = ∑O∈(octadFamily A).filter (U⊆·),if x∉O ∧ y∉O then (1:ℕ) else 0 := sum_congr rfl fun O h => localCount O (mem_filter.mp h).1
+    _ = _ := by
+      rw [sum_boole,filter_filter]
+      rfl
+
+/-- Every nonzero point of an extremal double belongs to exactly 330 of its
+affine three-spaces. -/
+theorem through_nonzero {A:Finset V} (size:A.card=24) (avoid:¬FlatAt A 0)
+    {v:V} (hv:v∈A+A) (nz:v≠0) :
+    ({D:Set V | D∈family A ∧ v∈D}:Set (Set V)).ncard=330 := by
+  classical
+  obtain ⟨x,hx,y,hy,xy⟩:=mem_add.mp hv
+  have ne : x≠y := fun e => nz (xy.symm.trans (e ▸ ZModModule.add_self y))
+  have count:=deleted_point_count (U:=∅) size avoid (empty_subset A) hx hy ne
+  simpa [xy,avoiding_pair_count size avoid hx hy ne] using count
 
 end Green51PerfectColumns
+#print axioms Green51PerfectColumns.deleted_flat_count
+#print axioms Green51PerfectColumns.deleted_point_count
 #print axioms Green51PerfectColumns.eleven_thousand_flats
 
 #print axioms Green51PerfectColumns.through_nonzero
