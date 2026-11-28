@@ -24,18 +24,18 @@ private lemma high_coefficients (k : Bool) (a : ℤ) (i : ℕ) :
   | succ i ih =>
     exact ⟨(step _ _).trans ih.1,(step _ _).trans ih.2.1,(step _ _).trans ih.2.2⟩
 
-/-- Any integral factorization of a positive iterate at an odd prime-power coefficient
-has a factor with unit leading coefficient. -/
-theorem odd_prime_power_factor_leading {p : ℕ} (hp : p.Prime) (r : ℕ) (k : Bool)
-    {n : ℕ} (hn0 : n≠0) (A B : ℤ[X])
-    (hab : polynomialTerm k (C ((p^(2*r+1):ℕ):ℤ)*X+C (-(p^(2*r+1):ℕ):ℤ)) n=A*B) :
-    IsUnit A.leadingCoeff ∨ IsUnit B.leadingCoeff := by
-  let a := p^(2*r+1)
+/-- Reversing a factorization of a positive balanced iterate preserves its three
+leading coefficients as the constant, linear, and quadratic coefficients. -/
+theorem balanced_reverse_coefficients {a : ℕ} (ha : 0 < a) (k : Bool) {n : ℕ}
+    (hn0 : n≠0) (A B : ℤ[X])
+    (hab : polynomialTerm k (C (a:ℤ)*X+C (-(a:ℤ))) n=A*B) :
+    let H := A.reverse*B.reverse
+    H.coeff 0=(a:ℤ) ∧ H.coeff 1= -(a:ℤ) ∧ H.coeff 2=sign k := by
   obtain ⟨i,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn0
   let seed : ℤ[X] := C (a:ℤ)*X+C (-(a:ℤ))
   let f := polynomialTerm k seed (i+1)
-  have ha : (a:ℤ)≠0 := by exact_mod_cast (pow_ne_zero (2*r+1) hp.ne_zero)
-  have ds : seed.natDegree=1 := natDegree_linear ha
+  have a0 : (a:ℤ)≠0 := by exact_mod_cast ha.ne'
+  have ds : seed.natDegree=1 := natDegree_linear a0
   have df : f.natDegree=i+2 := by
     have h := (polynomialTerm_shape k seed (by omega) (i+1)).1
     change f.natDegree=_ at h
@@ -50,8 +50,17 @@ theorem odd_prime_power_factor_leading {p : ℕ} (hp : p.Prime) (r : ℕ) (k : B
     rw [←hf,rev _ (by omega),show i+2-1=i+1 by omega]; exact h₁
   have e₂ : (A.reverse*B.reverse).coeff 2 = sign k := by
     rw [←hf,rev _ (by omega),show i+2-2=i by omega]; exact h₂
+  exact ⟨e₀,e₁,e₂⟩
+
+/-- Any integral factorization of a positive iterate at an odd prime-power coefficient
+has a factor with unit leading coefficient. -/
+theorem odd_prime_power_factor_leading {p : ℕ} (hp : p.Prime) (r : ℕ) (k : Bool)
+    {n : ℕ} (hn0 : n≠0) (A B : ℤ[X])
+    (hab : polynomialTerm k (C ((p^(2*r+1):ℕ):ℤ)*X+C (-(p^(2*r+1):ℕ):ℤ)) n=A*B) :
+    IsUnit A.leadingCoeff ∨ IsUnit B.leadingCoeff := by
+  obtain ⟨e₀,e₁,e₂⟩ := balanced_reverse_coefficients (pow_pos hp.pos _) k hn0 A B hab
   have hu := unit_constant_of_odd_power (r:=r) hp A.reverse B.reverse
-    (by simp [e₀,a]) (by simp [e₀,e₁]) (by
+    (by simp [e₀]) (by simp [e₀,e₁]) (by
       rw [e₂]; cases k <;> simpa [sign] using (Nat.prime_iff_prime_int.mp hp).not_dvd_one)
   simpa using hu
 
@@ -77,6 +86,7 @@ theorem fixed_prime_eventually_shared_prefix {p : ℕ} (hp : p.Prime) (L : ℕ) 
   have hL : L≤4*s^2 := by dsimp [s]; nlinarith [Nat.zero_le (L^2)]
   exact hn.trans (hL.trans (Nat.le_mul_of_pos_right _ (by omega)))
 
+#print axioms balanced_reverse_coefficients
 #print axioms odd_prime_power_factor_leading
 #print axioms shared_odd_prime_power_prefix
 #print axioms fixed_prime_eventually_shared_prefix

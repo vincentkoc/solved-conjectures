@@ -6,7 +6,7 @@ import CunninghamLinearReciprocalRoots
 namespace CunninghamChain.LinearRoots
 open Polynomial CoefficientEnergy
 
-private lemma balanced_telescoping (k : Bool) (a : ℤ) (n : ℕ) :
+lemma balanced_telescoping (k : Bool) (a : ℤ) (n : ℕ) :
     (X-1)*polynomialTerm k (C a*X+C (-a)) n =
       X^n*C a*(X-1)^2+C (sign k)*(X^n-1) := by
   induction n with

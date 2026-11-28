@@ -5,18 +5,18 @@ import CunninghamCoefficientEnergy
 namespace CunninghamChain.CoefficientEnergy
 open Polynomial
 
-private noncomputable def fromList : List ℤ → ℤ[X]
+noncomputable def ofCoeffList : List ℤ → ℤ[X]
   | [] => 0
-  | a::t => C a + X*fromList t
+  | a::t => C a + X*ofCoeffList t
 
-private lemma fromList_coeff (l : List ℤ) (i : ℕ) :
-    (fromList l).coeff i = l[i]?.getD 0 := by
+lemma coeff_ofCoeffList (l : List ℤ) (i : ℕ) :
+    (ofCoeffList l).coeff i = l[i]?.getD 0 := by
   induction l generalizing i with
-  | nil => simp [fromList]
+  | nil => simp [ofCoeffList]
   | cons a t ih =>
     cases i with
-    | zero => simp [fromList]
-    | succ j => rw [fromList,coeff_add,coeff_C,coeff_X_mul,ih]; simp
+    | zero => simp [ofCoeffList]
+    | succ j => rw [ofCoeffList,coeff_add,coeff_C,coeff_X_mul,ih]; simp
 
 /-- Coefficients in ascending order of the sum of
 X^(64−2i)(1+X+⋯+X^(i−1))² for 1 ≤ i ≤ 32. -/
@@ -26,11 +26,11 @@ private def entries : List ℤ :=
    287,300,312,322,331,338,344,348,351,352,352,350,347,342,336,328,
    319,308,296,282,267,250,232,212,191,168,144,118,91,62,32]
 
-noncomputable def multiplier : ℤ[X] := fromList entries
+noncomputable def multiplier : ℤ[X] := ofCoeffList entries
 
 private def entry (i : ℕ) : ℤ := entries[i]?.getD 0
 
-private lemma coeff_entry (i : ℕ) : multiplier.coeff i = entry i := fromList_coeff ..
+private lemma coeff_entry (i : ℕ) : multiplier.coeff i = entry i := coeff_ofCoeffList ..
 
 set_option maxRecDepth 4096 in
 lemma multiplier_shape : multiplier.natDegree=62 ∧ multiplier.leadingCoeff=32 := by
