@@ -89,11 +89,13 @@ private theorem horizontal [Finite K] (L : K →ₗ[F] H)
   intro w
   exact fixed ⟨P w.val,⟨w.val,w.property,rfl⟩⟩
 
-private def shift (t x : K) : K := x^7+(x+t)^7
+/-- The change in the seventh power along an input difference. -/
+def seventhDerivative (t x : K) : K := x^7+(x+t)^7
 omit [Algebra F K] in
-private theorem rect_shift (t x b c : K) :
-    shift t x+shift t (x+b)+shift t (x+c)+shift t (x+b+c)=moore t b c := by
-  unfold moore shift
+/-- A mixed second difference of the derivative is the Moore determinant. -/
+theorem seventhDerivative_rect (t x b c : K) :
+    seventhDerivative t x+seventhDerivative t (x+b)+seventhDerivative t (x+c)+seventhDerivative t (x+b+c)=moore t b c := by
+  unfold moore seventhDerivative
   ring_nf
   reduce_mod_char!
 
@@ -102,22 +104,22 @@ private theorem projected_rect (L : K →ₗ[F] H) (t x : K) (p : Space K × H)
     (inside : p +ᵥ (W:Set (Space K × H)) ⊆ Set.range (lifted L)+Set.range (lifted L))
     (U : Submodule F K) (above : ∀ u∈U, ∃ w∈W,w.1=polar t u) :
     ∀ b∈U,∀ c∈U, L (moore t b c)=0 := by
-  have origin : L (shift t x)=p.2 := by
-    simpa [shift,lifted] using congrArg Prod.snd base
+  have origin : L (seventhDerivative t x)=p.2 := by
+    simpa [seventhDerivative,lifted] using congrArg Prod.snd base
   have first : curve t+polar t x=p.1 := (derivative x t).symm.trans (congrArg Prod.fst base)
   have eval (u : K) (w : Space K × H) (hw : w∈W) (eq : w.1=polar t u) :
-      L (shift t (x+u))=p.2+w.2 := by
+      L (seventhDerivative t (x+u))=p.2+w.2 := by
     have left : lifted L (x+u)+lifted L (x+u+t)∈Set.range (lifted L)+Set.range (lifted L) :=
       Set.add_mem_add ⟨_,rfl⟩ ⟨_,rfl⟩
     have right := inside (show p+w∈p +ᵥ (W:Set (Space K × H)) from ⟨w,hw,rfl⟩)
     have yes := same_lift L left right (by
       change curve (x+u)+curve (x+u+t)=p.1+w.1
       rw [derivative,map_add,←add_assoc,first,eq])
-    simpa [shift,lifted] using congrArg Prod.snd yes
+    simpa [seventhDerivative,lifted] using congrArg Prod.snd yes
   intro b hb c hc
   obtain ⟨u,hu,h⟩ := above b hb
   obtain ⟨v,hv,g⟩ := above c hc
-  rw [←rect_shift t x, map_add, map_add, map_add,origin,eval b u hu h,eval c v hv g,add_assoc x b c,
+  rw [←seventhDerivative_rect t x, map_add, map_add, map_add,origin,eval b u hu h,eval c v hv g,add_assoc x b c,
     eval (b+c) (u+v) (W.add_mem hu hv) (by rw [Prod.fst_add,h,g,map_add]),Prod.snd_add]
   calc _ = (p.2+p.2)+(p.2+p.2)+(u.2+u.2)+(v.2+v.2) := by abel
        _ = 0 := by simp [ZModModule.add_self]
@@ -182,3 +184,4 @@ theorem excludes_three [Finite K] (L : K →ₗ[F] H) (small : Module.finrank F 
 
 end Green51BCHCompression
 #print axioms Green51BCHCompression.excludes_three
+#print axioms Green51BCHCompression.seventhDerivative_rect
