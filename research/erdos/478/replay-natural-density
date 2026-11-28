@@ -21,6 +21,7 @@ TOPIC = Path(__file__).resolve().parent
 PORT = "bb3b4fff6bb0210a0f94fc535bf9adbf46ecc55a"
 MATHLIB = "0df444a360eaa60ab8c11dca51a86af692955474"
 DIGEST = "0fe69072de0e3e61a7eea4f6b1227303ad902bf5d6931b55c67f7c663fc99fbd"
+BAND_DIGEST = "3a293500f15a2b2ff58aa969535d76fce2e989ad6b76b0ef22c0ff089eb62031"
 URL = f"https://codeload.github.com/KitaKen1/simultaneous-primitive-roots/tar.gz/{PORT}"
 ADAPTERS = {
     "density": "Erdos478NaturalDensity",
@@ -30,12 +31,13 @@ ADAPTERS = {
     "paired": "Erdos478NaturalPairedDensity",
     "sextic": "Erdos478NaturalSexticCounts",
     "real-gaps": "Erdos478NaturalCubicPattern",
+    "gap-bands": "Erdos478NaturalPowerBands",
 }
 IMPORT = re.compile(r"^(?:(?:public|meta|private|protected|all)\s+)*import\s+(?:all\s+)?([\w.]+)", re.M)
 
 
 def external(name):
-    return name.startswith(("TauCeti.", "Compat4331."))
+    return name.startswith(("TauCeti.", "Compat4331.", "PrimeNumberTheoremAnd.Erdos970."))
 
 
 def collect(archive, src, target):
@@ -48,7 +50,7 @@ def collect(archive, src, target):
         if external(name):
             rel = name.replace(".", "/") + ".lean"
             path = src / rel
-            vendor = "vendor/" if name.startswith("TauCeti.") else ""
+            vendor = "" if name.startswith("Compat4331.") else "vendor/"
             member = archive.getmember(prefix + vendor + rel)
             if not member.isfile():
                 raise ValueError(member.name)
@@ -69,7 +71,8 @@ def collect(archive, src, target):
     digest = hashlib.sha256()
     for name in sorted(n for n in paths if external(n)):
         digest.update(name.encode() + b"\0" + hashlib.sha256(paths[name].read_bytes()).digest())
-    if digest.hexdigest() != DIGEST:
+    expected = BAND_DIGEST if target == ADAPTERS["gap-bands"] else DIGEST
+    if digest.hexdigest() != expected:
         raise ValueError("the external source closure differs from the audited pin")
     return paths, graph
 
