@@ -1,0 +1,52 @@
+import Erdos478SexticCountFrequencies
+import Erdos478SexticSaturation
+import Erdos478NaturalPatternLaw
+
+/-! # Natural prime densities for the sixth factorial gap -/
+
+namespace Erdos478.CollisionLaw
+noncomputable section
+open Filter Topology Finset GapDensity RootMoments SplittingDensity
+open scoped Classical
+
+theorem sextic_count_density (j : ℕ) :
+    Tendsto (fun X => (((Nat.primesLE X).filter fun p => (endpoints 6 p).card=j).card : ℝ) /
+      (Nat.primesLE X).card) atTop (𝓝 (sexticFrequency j : ℝ)) := by
+  apply (sextic_count_mean (countingAverage degree_one_prime_ideal_theorem) j).congr
+  intro X
+  change (Nat.primeCounting X : ℝ)⁻¹*(∑ p∈Nat.primesLE X, @ite ℝ ((endpoints 6 p).card=j) (Classical.propDecidable _) 1 0)=_
+  rw [← Nat.primesLE_card_eq_primeCounting,div_eq_inv_mul]
+  congr 1
+  rw [card_filter]
+  push_cast
+  apply sum_congr rfl
+  intro p _
+  by_cases h : (endpoints 6 p).card=j <;> simp [h]
+
+set_option maxHeartbeats 1000000 in
+/-- Three gap lengths force twelve distinct missing nonzero residues on a
+set of primes of natural density at least the reciprocal of 384 times the totient. -/
+theorem twelve_collision_density {m : ℕ} (hm : 0<m) :
+    ∃ δ : ℝ, ((m.totient*384 : ℕ):ℝ)⁻¹ ≤ δ ∧
+      Tendsto (fun X => (((Nat.primesLE X).filter fun p => m ∣ p-1 ∧
+        (∀ k∈({2,4,6}:Finset ℕ), (endpoints k p).card=k) ∧
+        ((Ico 1 p).image (fun j => j.factorial % p)).card + 12 ≤ p-1).card : ℝ) /
+        (Nat.primesLE X).card) atTop (𝓝 δ) := by
+  let S : Finset ℕ := {2,4,6}
+  have H := sextic_joint_cost hm ({1,2}:Finset ℕ) (by intro r hr; simp at hr; omega) (by simp)
+  have hset : insert 6 (evenLengths {1,2})=S := by ext k; simp [S,evenLengths]; omega
+  rw [hset,show 24*pairingProduct {1,2}=384 by norm_num [pairingProduct,Nat.factorial]] at H
+  refine ⟨splitDensity m S,H,?_⟩
+  have hh := (saturated_gap_density hm S (by intro k hk; simp [S] at hk; omega)).2
+  apply hh.congr
+  intro X
+  apply congrArg (fun U : Finset ℕ => (U.card:ℝ)/(Nat.primesLE X).card)
+  ext p
+  simp only [mem_filter]
+  rw [show ∑ k∈S, k=12 by norm_num [S]]
+
+#print axioms twelve_collision_density
+
+#print axioms sextic_count_density
+end
+end Erdos478.CollisionLaw
