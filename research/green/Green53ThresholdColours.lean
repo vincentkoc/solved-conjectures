@@ -115,7 +115,8 @@ private theorem stabilize {J : Type*} (c : ℕ) (s : Finset J) {r : ℕ}
       push_cast at margin
       linarith [add_mul (k:ℝ) (c:ℝ) M]
 
-private theorem row_cap {J : Type*} (s : Finset J) (a : J → ℝ) :
+/-- The maximum absolute weight of the free coordinates, with zero for an empty set. -/
+theorem row_cap {J : Type*} (s : Finset J) (a : J → ℝ) :
     ∃ M : ℝ, 0≤M ∧ (∀ j∈s, |a j|≤M) ∧ (M=0 ∨ ∃ j∈s, |a j|=M) := by
   classical
   rcases s.eq_empty_or_nonempty with rfl|hs
@@ -124,14 +125,15 @@ private theorem row_cap {J : Type*} (s : Finset J) (a : J → ℝ) :
   exact ⟨_,abs_nonneg _,m,Or.inr ⟨j,h,rfl⟩⟩
 
 
-/-- A common signing with a margin in every nonconstant row, by a union bound. -/
-private theorem polynomial_margins {J : Type*} [Fintype J] (r c : ℕ)
+/-- Inside any set of signings of density at least `2⁻ˢ`, choose a common signing and
+pinned coordinates with a margin in each row. -/
+theorem dense_margins {J : Type*} [Fintype J] (r c s : ℕ)
+    (G : Finset (J → Bool)) (density : 2^(Fintype.card J) ≤ 2^s*G.card)
     (A : Fin r → J → ℝ) (b : Fin r → ℝ) :
-    ∃ (t : Finset J) (f : J → ℝ), t.card ≤ 2*r*(r*(c+1))^2 ∧
-      (∀ j, f j=1 ∨ f j= -1) ∧ ∀ i j, j∉t →
-        (c:ℝ)*|A i j| ≤ |b i+∑ l∈t, A i l*f l| := by
+    ∃ (t : Finset J) (x : J → Bool), t.card ≤ 2*r*(2^s*r*(c+1))^2 ∧
+      x∈G ∧ ∀ i j, j∉t → (c:ℝ)*|A i j| ≤ |b i+∑ l∈t, A i l*signBit (x l)| := by
   classical
-  let u := r*(c+1)
+  let u := 2^s*r*(c+1)
   let h := 2*u^2
   let n := Fintype.card J
   by_cases enough : h≤n
@@ -159,17 +161,20 @@ private theorem polynomial_margins {J : Type*} [Fintype J] (r c : ℕ)
         have lim := block_small_ball (top i) (a i) (M i) (b i) c pos large
         simpa [bad,pos,len,h,Nat.centralBinom_eq_two_mul_choose] using lim
       · simp [bad,pos]
-    have count : (univ.biUnion bad).card < (univ : Finset (J → Bool)).card := by
+    have strict : 2^s*(univ.biUnion bad).card < 2^n := by
       calc
-        _ ≤ _ := card_biUnion_le
-        _ ≤ ∑ _i : Fin r,2^(n-h)*((c+1)*(u^2).centralBinom) := sum_le_sum (fun i _ => each i)
+        _ ≤ 2^s*(∑ i, (bad i).card) := Nat.mul_le_mul_left _ card_biUnion_le
+        _ ≤ 2^s*(∑ _i : Fin r,2^(n-h)*((c+1)*(u^2).centralBinom)) :=
+          Nat.mul_le_mul_left _ (sum_le_sum (fun i _ => each i))
         _ = (u*(u^2).centralBinom)*2^(n-h) := by simp [u]; ring
         _ < 2^h*2^(n-h) := (Nat.mul_lt_mul_right (by positivity)).mpr (central_layer_bound u)
-        _ = _ := by rw [←pow_add,Nat.add_sub_of_le enough]; simp [n]
+        _ = _ := by rw [←pow_add,Nat.add_sub_of_le enough]
+    have count : (univ.biUnion bad).card < G.card := by
+      by_contra! opp
+      exact strict.not_ge ((Nat.mul_le_mul_left (2^s) opp).trans' density)
     obtain ⟨x,hx⟩ := exists_mem_notMem_of_card_lt_card count
-    refine ⟨t,fun j => signBit (x j),?_,fun j => ?_,?_⟩
+    refine ⟨t,x,?_,hx.1,?_⟩
     · simpa [h,u,mul_left_comm,mul_comm,mul_assoc] using tc
-    · cases e : x j <;> simp [signBit,e]
     · intro i j hj
       have hj' : j∈U := mem_sdiff.mpr ⟨mem_univ j,hj⟩
       by_cases pos : 0<M i
@@ -180,12 +185,31 @@ private theorem polynomial_margins {J : Type*} [Fintype J] (r c : ℕ)
         exact (mul_le_mul_of_nonneg_left (cap i j hj') (Nat.cast_nonneg c)).trans ref.le
       · have zero := (cap i j hj').trans (not_lt.mp pos)
         rw [abs_nonpos_iff.mp zero,abs_zero,mul_zero]; exact abs_nonneg _
-  · refine ⟨univ,fun _ => 1,?_,by simp,by simp⟩
+  · have gn : G.Nonempty := by
+      by_contra! empty
+      rw [empty,card_empty,mul_zero] at density
+      exact (Nat.pow_pos (by decide) (n:=Fintype.card J)).not_ge density
+    obtain ⟨x,hx⟩ := gn
+    refine ⟨univ,x,?_,hx,by simp⟩
     have lr : 0<r := by by_contra! hr; have := Nat.eq_zero_of_le_zero hr; simp [h,u,this,n] at enough
     change n≤_
     have := (not_le.mp enough).le
     dsimp only [h,u] at this
-    nlinarith [Nat.mul_le_mul_right ((r*(c+1))^2) lr]
+    nlinarith [Nat.mul_le_mul_right ((2^s*r*(c+1))^2) lr]
+
+
+/-- A common signing with a margin in every nonconstant row, by a union bound. -/
+private theorem polynomial_margins {J : Type*} [Fintype J] (r c : ℕ)
+    (A : Fin r → J → ℝ) (b : Fin r → ℝ) :
+    ∃ (t : Finset J) (f : J → ℝ), t.card ≤ 2*r*(r*(c+1))^2 ∧
+      (∀ j, f j=1 ∨ f j= -1) ∧ ∀ i j, j∉t →
+        (c:ℝ)*|A i j| ≤ |b i+∑ l∈t, A i l*f l| := by
+  classical
+  have density : 2^Fintype.card J ≤ 2^0*(univ : Finset (J → Bool)).card := by simp
+  obtain ⟨t,x,card,_,margin⟩ := dense_margins r c 0 univ density A b
+  refine ⟨t,fun j => signBit (x j),by simpa using card,?_,margin⟩
+  intro j
+  cases h : x j <;> simp [signBit,h]
 
 private theorem stable_side {B x m u : ℝ} (hm : 0 ≤ m) (noise : |x| ≤ u*m)
     (margin : (u+1)*m ≤ |B|) : 0 ≤ B+x ↔ 0 ≤ B := by
@@ -311,7 +335,8 @@ open Green52Complements
 /-- The real sign assigned to a binary coordinate. -/
 def spin (v : ZMod 2) : ℝ := if v=0 then 1 else -1
 
-private theorem spin_add (u v : ZMod 2) :
+/-- Translating a binary coordinate flips its sign exactly when the shift is nonzero. -/
+theorem spin_add (u v : ZMod 2) :
     spin (u+v) = if v≠0 then -spin u else spin u := by
   have binary : ∀ x : ZMod 2, x=0 ∨ x=1 := by decide
   have two : (1:ZMod 2)+1=0 := by decide
@@ -450,6 +475,8 @@ theorem coordinate_lower (r : ℕ) :
   simp [bot]
 
 end Green53Threshold
+
+#print axioms Green53Threshold.dense_margins
 
 #print axioms Green53Threshold.sign_cell
 #print axioms Green53Threshold.coordinate_differences
