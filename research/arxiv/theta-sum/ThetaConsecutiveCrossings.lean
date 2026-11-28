@@ -86,6 +86,25 @@ def Crossing (X H q r : ℕ) := ∃ a b : ℕ, X<a ∧ a<b ∧ b≤X+H ∧
     a.Prime ∧ b.Prime ∧ a%q=r ∧ b%q=r ∧ deviation a*deviation b<0 ∧
     ∀ t : ℕ, a<t → t<b → t.Prime → t%q≠r
 
+/-- Opposite residual signs among the progression primes of a window with
+no zero residual give an adjacent strict crossing in that same window. -/
+theorem of_signs {X H q r : ℕ}
+    (hz : ∀ n∈(sample X H).filter (fun t => t%q=r), deviation n≠0)
+    (hpos : ∃ n∈(sample X H).filter (fun t => t%q=r), 0<deviation n)
+    (hneg : ∃ n∈(sample X H).filter (fun t => t%q=r), deviation n<0) : Crossing X H q r := by
+  classical
+  obtain ⟨p,hp,t,ht,hpt,hsign,hbetween⟩ := adjacent deviation hz
+    hpos hneg
+  obtain ⟨hpS,hpr⟩ := mem_filter.mp hp
+  obtain ⟨htS,htr⟩ := mem_filter.mp ht
+  obtain ⟨hpI,hp',_⟩ := mem_primes.mp hpS
+  obtain ⟨htI,ht',_⟩ := mem_primes.mp htS
+  have hx := (mem_Ioc.mp hpI).1
+  have hend := (mem_Ioc.mp htI).2
+  refine ⟨p,t,hx,hpt,hend,hp',ht',hpr,htr,hsign,?_⟩
+  intro n hpn hnt hn heqr
+  exact hbetween n (mem_filter.mpr ⟨mem_primes.mpr ⟨mem_Ioc.mpr ⟨hx.trans hpn,hnt.le.trans hend⟩,hn,trivial⟩,heqr⟩) hpn hnt
+
 theorem intervals {θ : ℝ} (hedge : Edge θ) :
     ∃ η b : ℝ, 0<η ∧ 0≤b ∧ ∀ᶠ X : ℕ in atTop,
     ∀ H : ℕ, H≤X → (X:ℝ)^θ≤H → ∀ q r : ℕ, 0 < q → r < q → r.Coprime q →
@@ -118,17 +137,7 @@ theorem intervals {θ : ℝ} (hedge : Edge θ) :
     exact hP n (hXP.trans (mem_Ioc.mp hI).1.le) hpr
   obtain ⟨a,ha,ha'⟩ := select 1 (by norm_num)
   obtain ⟨b,hb,hb'⟩ := select (-1) (by norm_num)
-  obtain ⟨p,hp,t,ht,hpt,hsign,hbetween⟩ := adjacent deviation nz
-    ⟨a,ha,by simpa only [one_mul] using ha'⟩ ⟨b,hb,by linarith only [hb']⟩
-  obtain ⟨hpS,hpr⟩ := mem_filter.mp hp
-  obtain ⟨htS,htr⟩ := mem_filter.mp ht
-  obtain ⟨hpI,hp',_⟩ := mem_primes.mp hpS
-  obtain ⟨htI,ht',_⟩ := mem_primes.mp htS
-  have hx := (mem_Ioc.mp hpI).1
-  have hend := (mem_Ioc.mp htI).2
-  refine ⟨p,t,hx,hpt,hend,hp',ht',hpr,htr,hsign,?_⟩
-  intro n hpn hnt hn heqr
-  exact hbetween n (mem_filter.mpr ⟨mem_primes.mpr ⟨mem_Ioc.mpr ⟨hx.trans hpn,hnt.le.trans hend⟩,hn,trivial⟩,heqr⟩) hpn hnt
+  exact of_signs nz ⟨a,ha,by simpa only [one_mul] using ha'⟩ ⟨b,hb,by linarith only [hb']⟩
 
 #print axioms intervals
 
