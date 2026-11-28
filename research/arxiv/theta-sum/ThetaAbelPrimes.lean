@@ -192,7 +192,99 @@ theorem rationalCone_prime_bias {J K M : ℕ} [NeZero M] (hM : Odd M) (hJ : 2≤
     div_le_div_of_nonneg_right (commonWeight_three hT) (by norm_num)
   exact ⟨_,_,hl.trans hs.1,hs.2.trans (neg_le_neg hl),hb 1,hb 17⟩
 
+private lemma weighted_prefix_le (w z : ℕ → ℝ) (hn : ∀ n,0≤w n) (ha : Antitone w) {C : ℝ} (hC : 0≤C)
+    (hz : ∀ N, (∑ i∈range N,z i)≤C) (N : ℕ) : (∑ i∈range N,w i*z i)≤w 0*C := by
+  cases N with
+  | zero => simpa using mul_nonneg (hn 0) hC
+  | succ n =>
+    have H := sum_range_by_parts w z (n+1)
+    simp only [smul_eq_mul,Nat.add_one_sub_one] at H
+    rw [H]
+    have hh (i : ℕ) : (w i-w (i+1))*(∑ j∈range (i+1),z j)≤(w i-w (i+1))*C :=
+      mul_le_mul_of_nonneg_left (hz _) (sub_nonneg.mpr (ha (Nat.le_succ _)))
+    calc
+      _ = w n*(∑ j∈range (n+1),z j)+∑ i∈range n,(w i-w (i+1))*(∑ j∈range (i+1),z j) := by
+        rw [sub_eq_add_neg,← sum_neg_distrib]; congr 1; apply sum_congr rfl; intro i _; ring
+      _ ≤ w n*C+∑ i∈range n,(w i-w (i+1))*C :=
+        add_le_add (mul_le_mul_of_nonneg_left (hz _) (hn n)) (sum_le_sum (fun i _ => hh i))
+      _ = _ := by rw [← sum_mul,sum_range_sub']; ring
+
+private lemma full_prefix (f : ℕ → ℝ) (X : ℕ) :
+    (∑ i∈range (X+1),if i.Prime then f i else 0)=∑ p∈Nat.primesLE X,f p := by
+  rw [Nat.primesLE_eq_filter_range,sum_filter]
+
+private lemma logWeight_le_one (k n : ℕ) (hn : 1≤n) :
+    Real.log n/(n:ℝ)^(1+parameter k)≤1 := by
+  have h : (1:ℝ)≤n := by exact_mod_cast hn
+  rw [div_le_one (Real.rpow_pos_of_pos (by linarith) _)]
+  apply (Real.log_le_self (Nat.cast_nonneg n)).trans
+  conv_lhs => rw [← Real.rpow_one n]
+  exact Real.rpow_le_rpow_of_exponent_le h (by linarith [parameter_pos k])
+
+/-- A periodic signed prime test of positive reduced-residue mean has
+ordinary prime partial sums unbounded above. This uses Abel summation, so
+no prime number theorem in progressions is needed. -/
+theorem prime_prefix_unbounded {q : ℕ} [NeZero q] {f : ℕ → ℝ} (hf : OnMod q f)
+    (hm : 0<unitMean q f) (C : ℝ) : ∃ X : ℕ, C<∑ p∈Nat.primesLE X,f p := by
+  by_contra! H
+  let D := q+3
+  let g (n : ℕ) := if n.Prime then f n else 0
+  let z (i : ℕ) := g (D+i)
+  let A := |C|+|∑ n∈range D,g n|
+  let B := A+∑ n∈range D,|f n|
+  have hA : 0≤A := by dsimp [A]; positivity
+  have hB : 0≤B := by dsimp [B,A]; positivity
+  have hpref (N : ℕ) : (∑ i∈range N,z i)≤A := by
+    have hD : D+N=(D+N-1)+1 := by dsimp [D]; omega
+    have hsum : (∑ i∈range (D+N),g i)≤C := by
+      rw [hD]; exact (full_prefix f _).trans_le (H _)
+    rw [sum_range_add] at hsum
+    dsimp only [z,A]
+    linarith only [hsum,le_abs_self C,neg_le_abs (∑ i∈range D,g i)]
+  have bound (k : ℕ) : primeAverage q f k≤parameter k*B := by
+    let x := 1+parameter k
+    let w (i : ℕ) := Real.log (D+i:ℕ)/((D+i:ℕ):ℝ)^x
+    let term (n : ℕ) := (if n.Prime ∧ n.Coprime q then f n*Real.log n else 0)/(n:ℝ)^x
+    have hx : 1<x := by dsimp [x]; linarith [parameter_pos k]
+    have hn (i : ℕ) : (3:ℝ)≤(D+i:ℕ) := by exact_mod_cast (show 3≤D+i by dsimp [D]; omega)
+    have hw (i : ℕ) : 0≤w i := div_nonneg (Real.log_nonneg (by linarith [hn i])) (by positivity)
+    have hanti : Antitone w := by
+      have hlt : Real.exp x⁻¹≤3 := (Real.exp_le_exp.mpr (inv_le_one_of_one_le₀ hx.le)).trans
+        (Real.exp_one_lt_d9.le.trans (by norm_num))
+      intro i j hij
+      exact Real.log_div_self_rpow_antitoneOn (by linarith : 0<x) (hlt.trans (hn i))
+        (hlt.trans (hn j)) (by exact_mod_cast Nat.add_le_add_left hij D)
+    have hw₀ : w 0≤1 := logWeight_le_one k _ (by dsimp [D]; omega)
+    have ht (i : ℕ) : term (D+i)=w i*z i := by
+      by_cases hp : (D+i).Prime
+      · have hq : (D+i).Coprime q := hp.coprime_iff_not_dvd.mpr (fun h =>
+          (show q<D+i by dsimp [D]; omega).not_ge (Nat.le_of_dvd (NeZero.pos q) h))
+        dsimp only [term,w,z,g]; rw [if_pos (And.intro hp hq),if_pos hp]; ring
+      · simp [term,w,z,g,hp]
+    have hinit (n : ℕ) : term n≤|f n| := by
+      by_cases hp : n.Prime ∧ n.Coprime q
+      · dsimp only [term]; rw [if_pos hp,mul_div_assoc]
+        apply (le_abs_self _).trans
+        rw [abs_mul,abs_of_nonneg (div_nonneg (Real.log_nonneg (by exact_mod_cast hp.1.one_le)) (by positivity))]
+        exact mul_le_of_le_one_right (abs_nonneg _) (logWeight_le_one k n hp.1.one_le)
+      · simp [term,hp]
+    have hb : ∀ᶠ N : ℕ in atTop, ∑ n∈range N,term n≤B := by
+      filter_upwards [eventually_ge_atTop D] with N hN
+      nth_rw 1 [show N=D+(N-D) by omega]; rw [sum_range_add]
+      simp_rw [ht]
+      exact (add_le_add (sum_le_sum (fun n _ => hinit n)) ((weighted_prefix_le w z hw hanti hA hpref _).trans
+        (by simpa using mul_le_mul_of_nonneg_right hw₀ hA))).trans_eq (add_comm ..)
+    apply mul_le_mul_of_nonneg_left _ (parameter_pos k).le
+    change ∑' n,term n≤B
+    by_cases hs : Summable term
+    · exact le_of_tendsto hs.hasSum.tendsto_sum_nat hb
+    · rwa [tsum_eq_zero_of_not_summable hs]
+  have hzero := parameter_limit.mul_const B
+  rw [zero_mul] at hzero
+  exact hm.not_ge (le_of_tendsto_of_tendsto' (periodic_prime_limit hf) hzero bound)
+
 end Arxiv.«2501.03234».ThetaAbelPrimes
+#print axioms Arxiv.«2501.03234».ThetaAbelPrimes.prime_prefix_unbounded
 #print axioms Arxiv.«2501.03234».ThetaAbelPrimes.rationalCone_prime_bias
 #print axioms Arxiv.«2501.03234».ThetaAbelPrimes.class_mangoldt
 #print axioms Arxiv.«2501.03234».ThetaAbelPrimes.periodic_prime_limit
