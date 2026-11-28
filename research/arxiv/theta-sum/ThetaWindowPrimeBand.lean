@@ -6,16 +6,15 @@ open Finset Real ThetaReciprocalInversion ThetaRowCorrelations ThetaSmoothCondit
 open ThetaDenominatorTails ThetaIdentityModels
 noncomputable section
 
-/-- Transfer a variance and an even moment on a translated interval to an
-exceptional count for the signed theta sum. -/
-theorem from_approximation {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y≤2*N^52) (M H k : ℕ) {u C V U A : ℝ}
+/-- Transfer two nonnegative moments restricted to the exceptional primes. -/
+theorem on_subset {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y≤2*N^52) (M k : ℕ) (s : Finset ℕ) {u C V U A : ℝ}
     (hu : 0<u) (L : ℕ → ℕ) (hL : L 1=0)
     (hctrl : ∀ p : ℕ,p.Prime → N^56≤p → p≤N^64 →
       |(S p:ℝ)/p-log p/2|≤C+8/Real.pi^2*‖windowExtension L Y p‖)
-    (hF : ∑ i∈range H,‖windowExtension (above T L) Y (M+i)‖^2≤V)
-    (g : ℕ → ℝ) (happrox : ∀ i<H, |rowModel T ⟨L,Y⟩ (M+i)|≤|g i|+A)
-    (hG : ∑ i∈range H,(g i)^(2*k)≤U)
-    (s : Finset ℕ) (hs : ∀ i∈s,i<H ∧ (M+i).Prime ∧ N^56≤M+i ∧ M+i≤N^64 ∧
+    (hF : ∑ i∈s,‖windowExtension (above T L) Y (M+i)‖^2≤V)
+    (g : ℕ → ℝ) (happrox : ∀ i∈s, |rowModel T ⟨L,Y⟩ (M+i)|≤|g i|+A)
+    (hG : ∑ i∈s,(g i)^(2*k)≤U)
+    (hs : ∀ i∈s, (M+i).Prime ∧ N^56≤M+i ∧ M+i≤N^64 ∧
       C+(8/Real.pi^2)*(u+A+1)≤|(S (M+i):ℝ)/(M+i:ℕ)-log (M+i:ℕ)/2|) :
     (s.card:ℝ)≤V+U/u^(2*k) := by
   let W : Window := ⟨L,Y⟩
@@ -23,10 +22,9 @@ theorem from_approximation {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y�
   let G (i : ℕ) := g i
   let G₀ (i : ℕ) := rowModel T W (M+i)
   have hden : 0<u^(2*k) := pow_pos hu _
-  have hs' : s⊆range H := fun i hi => mem_range.mpr (hs i hi).1
   have he (i : ℕ) (hi : i∈s) : 1≤‖F i‖^2+(G i)^(2*k)/u^(2*k) := by
     let p := M+i
-    obtain ⟨_,hpr,hlo,hhi,he⟩ := hs i hi
+    obtain ⟨hpr,hlo,hhi,he⟩ := hs i hi
     have hY := hYcap.trans_lt (ThetaPrimeDensity.cutoff_inside hN hlo)
     have hcop (d : ℕ) (hd : d∈Icc 1 Y) : p.Coprime d :=
       hpr.coprime_iff_not_dvd.mpr (fun hdiv => (lt_of_le_of_lt (mem_Icc.mp hd).2 hY).not_ge
@@ -44,7 +42,7 @@ theorem from_approximation {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y�
       linarith only [hx,hg]
     · have hg : u≤|G i| := by
         by_contra! hl
-        have hb : |G₀ i|≤|G i|+A := happrox i (hs i hi).1
+        have hb : |G₀ i|≤|G i|+A := happrox i hi
         have hl' : ‖(G₀ i:ℂ)+F i‖<u+A+1 := by linarith
         linarith only [hh,he,mul_lt_mul_of_pos_left hl' hc]
       have hh' := pow_le_pow_left₀ hu.le hg (2*k)
@@ -54,11 +52,28 @@ theorem from_approximation {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y�
   calc
     _ = ∑ _p∈s,(1:ℝ) := by simp
     _ ≤ ∑ i∈s,(‖F i‖^2+(G i)^(2*k)/u^(2*k)) := sum_le_sum he
-    _ ≤ ∑ i∈range H,(‖F i‖^2+(G i)^(2*k)/u^(2*k)) :=
-      sum_le_sum_of_subset_of_nonneg hs' (by intro p _ _;rw [← pow_abs_two_mul];positivity)
     _ ≤ _ := by
       rw [sum_add_distrib,← sum_div]
       exact add_le_add hF (div_le_div_of_nonneg_right hG hden.le)
+
+/-- Transfer a variance and an even moment on a translated interval to an
+exceptional count for the signed theta sum. -/
+theorem from_approximation {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y≤2*N^52) (M H k : ℕ) {u C V U A : ℝ}
+    (hu : 0<u) (L : ℕ → ℕ) (hL : L 1=0)
+    (hctrl : ∀ p : ℕ,p.Prime → N^56≤p → p≤N^64 →
+      |(S p:ℝ)/p-log p/2|≤C+8/Real.pi^2*‖windowExtension L Y p‖)
+    (hF : ∑ i∈range H,‖windowExtension (above T L) Y (M+i)‖^2≤V)
+    (g : ℕ → ℝ) (happrox : ∀ i<H, |rowModel T ⟨L,Y⟩ (M+i)|≤|g i|+A)
+    (hG : ∑ i∈range H,(g i)^(2*k)≤U)
+    (s : Finset ℕ) (hs : ∀ i∈s,i<H ∧ (M+i).Prime ∧ N^56≤M+i ∧ M+i≤N^64 ∧
+      C+(8/Real.pi^2)*(u+A+1)≤|(S (M+i):ℝ)/(M+i:ℕ)-log (M+i:ℕ)/2|) :
+    (s.card:ℝ)≤V+U/u^(2*k) := by
+  have hsub : s⊆range H := fun i hi => mem_range.mpr (hs i hi).1
+  apply on_subset hN hTY hYcap M k s hu L hL hctrl
+    ((sum_le_sum_of_subset_of_nonneg hsub (by intros;positivity)).trans hF) g
+    (fun i hi => happrox i (hs i hi).1)
+    ((sum_le_sum_of_subset_of_nonneg hsub (fun i _ _ => Even.pow_nonneg (even_two_mul k) _)).trans hG)
+    (fun i hi => (hs i hi).2)
 
 theorem from_moments {N T Y : ℕ} (hN : 2≤N) (hTY : T≤Y) (hYcap : Y≤2*N^52) (M H k : ℕ) {u C V U : ℝ}
     (hu : 0<u) (L : ℕ → ℕ) (hL : L 1=0)
