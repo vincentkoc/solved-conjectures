@@ -80,6 +80,37 @@ private theorem exact_slice {r g a s : ℕ} (hg : 0<g) (ha : 0<a) (hs : 0<s)
   push_cast
   field_simp
 
+/-- At a fixed modulus and row the conditional mean depends only on the
+residue class modulo the gcd of the two moduli. -/
+theorem residue_congr {r u m d P : ℕ} [NeZero P] (hm : 1 < m)
+    (hr : r < m) (hu : u < m) (hrc : r.Coprime m) (huc : u.Coprime m)
+    (hmod : r ≡ u [MOD m.gcd d]) (hd : 1 < d) (hmP : m∣P) (hdP : d∣P) (K : ℕ) :
+    residueMean r m d P K = residueMean u m d P K := by
+  let g := m.gcd d
+  let a := m/g
+  let s := d/g
+  have hg : 0<g := Nat.gcd_pos_of_pos_left _ (by omega)
+  have hma : g*a=m := Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
+  have hds : g*s=d := Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
+  have ha : 0<a := Nat.div_pos (Nat.le_of_dvd (by omega) (Nat.gcd_dvd_left _ _)) hg
+  have hs : 0<s := Nat.div_pos (Nat.le_of_dvd (by omega) (Nat.gcd_dvd_right _ _)) hg
+  have hc : a.Coprime s := Nat.coprime_div_gcd_div_gcd hg
+  let L := g*(a*s)
+  have heL : L=m.lcm d := by
+    have hh := Nat.gcd_mul_lcm m d
+    change g*m.lcm d=m*d at hh
+    apply Nat.eq_of_mul_eq_mul_left hg
+    calc g*L=(g*a)*(g*s) := by dsimp only [L]; ring
+         _ = _ := by rw [hma,hds,hh]
+  let : NeZero L := ⟨(by dsimp only [L]; positivity : 0<L).ne'⟩
+  have he (x : ℕ) (hx : x < m) (hxc : x.Coprime m) :
+      residueMean x m d P K = ((m.totient:ℝ)/L.totient)*∑ i∈range s,row d K (x%g+g*i) := by
+    rw [lifted (L:=L) (heL.symm ▸ Nat.lcm_dvd hmP hdP) (heL.symm ▸ Nat.dvd_lcm_left ..) (heL.symm ▸ Nat.dvd_lcm_right ..)]
+    have h := exact_slice hg ha hs (hma.symm ▸ hx) (hma.symm ▸ hxc) hc K
+    change residueMean x (g*a) (g*s) L K = _ at h
+    simpa only [hma,hds] using h
+  rw [he r hr hrc,he u hu huc,show r%g=u%g from hmod]
+
 theorem residue_bound {r m d P : ℕ} [NeZero P] (hm : 1 < m) (hr : r < m) (hcop : r.Coprime m) (hd : 1 < d) (hmP : m∣P) (hdP : d∣P) (K : ℕ) :
     |residueMean r m d P K| ≤ 3*(harmonic d:ℝ)*(d/(m.gcd d)).divisors.card/(d/(m.gcd d)).totient := by
   let g := m.gcd d
@@ -145,6 +176,7 @@ theorem captured {m d P : ℕ} [NeZero P] (hm : 1 < m) (hd : 1 < d) (hmP : m∣P
     rowMean m d P K=row d K 1 :=
   residue_captured hm hm (Nat.coprime_one_left _) hd hmP hdm K
 
+#print axioms residue_congr
 #print axioms residue_bound
 #print axioms residue_captured
 #print axioms captured
