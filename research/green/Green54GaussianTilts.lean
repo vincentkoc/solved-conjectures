@@ -98,24 +98,21 @@ private theorem density_mixture {ι V : Type*} [Fintype ι] [MeasurableSpace V] 
       simp only [lintegral_const_mul _ (hf _).ennreal_ofReal]
     _ = _ := by simp [hone]
 
-/-- Reconstruct the finite-atomic Gaussian triple from the two-Gaussian representation
-of centered log-concave Gaussian tilts. -/
-theorem finite_triple_of_tilt_pairs (h : GaussianTiltPairs) (J : Finset ℕ) (hJ : J.Nonempty)
-    {r : ℝ} (hr : 0 < r) (hr' : r < 1) :
+/-- It suffices to represent the conditional laws produced by the finite softmax construction. -/
+theorem finite_triple_of_softmax_pairs (J : Finset ℕ) {r : ℝ} (hr : 0 < r) (hr' : r < 1)
+    (pairs : ∀ {T : Type} [Fintype T] (w : Scores T (J → ℝ)) (p : T → ℝ) (m : T → J → ℝ),
+      (∀ i, 0 < p i) → HasConditionalDensities (finiteGaussian J) p m w → ∀ i,
+      ∃ ρ : ProbabilityMeasure ((J → ℝ) × (J → ℝ)),
+        (ρ : Measure ((J → ℝ) × (J → ℝ))).map Prod.fst = finiteGaussian J ∧ (ρ : Measure ((J → ℝ) × (J → ℝ))).map Prod.snd = finiteGaussian J ∧
+        (ρ : Measure ((J → ℝ) × (J → ℝ))).map (fun z => m i + z.1 + z.2) =
+          (finiteGaussian J).withDensity (fun x => ENNReal.ofReal (density p w i x))) :
     FiniteTripleDecomposition (finiteGaussian J) ((finiteGaussian J).map (fun x => r • x)) := by
   intro F hF ν hdom
   obtain ⟨s,w,hp,hp1,hν,hparts⟩ := gaussian_finite_conditionals J hF ν hr hr' hdom
   let p (i : s) := (ν : Measure F).real {i.val}
   let f (i : s) : C(J → ℝ, ℝ) := ⟨density p w i, (hparts.2 i).2.1⟩
   let τ (i : s) := (finiteGaussian J).withDensity (fun x => ENNReal.ofReal (f i x))
-  have hsmooth (i : s) : ContDiff ℝ 2 (f i : (J → ℝ) → ℝ) := by
-    have hrw (j : s) : ContDiff ℝ 2 (fun x => Real.exp (affineScore w j x)) :=
-      (contDiff_const.add (w.2 j).contDiff).exp
-    apply ContDiff.div_const
-    exact (hrw i).div (ContDiff.sum fun j _ => hrw j) fun x =>
-      (Finset.sum_pos (fun j _ => Real.exp_pos (affineScore w j x)) ⟨i, Finset.mem_univ _⟩).ne'
-  have hρ (i : s) := h J hJ (f i) i.val.val (hparts.2 i).1 (hsmooth i) (hparts.2 i).2.2.1
-    (hparts.2 i).2.2.2.1 (hparts.2 i).2.2.2.2
+  have hρ := pairs w p (fun i : s => i.val.val) hp hparts
   choose ρ hfst hsnd ht using hρ
   have hp' : ∑ i, ENNReal.ofReal (p i) = 1 := by
     rw [← ENNReal.ofReal_sum_of_nonneg (fun i _ => (hp i).le), hp1, ENNReal.ofReal_one]
@@ -126,6 +123,23 @@ theorem finite_triple_of_tilt_pairs (h : GaussianTiltPairs) (J : Finset ℕ) (hJ
     (fun i => ENNReal.ofReal (p i)) hp' (fun i : s => i.val.val) τ hm ρ hfst hsnd ht
   exact ⟨π, hπ, hsum.trans hν.symm⟩
 
+/-- Reconstruct the finite-atomic Gaussian triple from the two-Gaussian representation
+of centered log-concave Gaussian tilts. -/
+theorem finite_triple_of_tilt_pairs (h : GaussianTiltPairs) (J : Finset ℕ) (hJ : J.Nonempty)
+    {r : ℝ} (hr : 0 < r) (hr' : r < 1) :
+    FiniteTripleDecomposition (finiteGaussian J) ((finiteGaussian J).map (fun x => r • x)) := by
+  apply finite_triple_of_softmax_pairs J hr hr'
+  intro T _ w p m _ hparts i
+  let f : C(J → ℝ, ℝ) := ⟨density p w i, (hparts.2 i).2.1⟩
+  have hsmooth : ContDiff ℝ 2 (f : (J → ℝ) → ℝ) := by
+    have hrw (j : T) : ContDiff ℝ 2 (fun x => Real.exp (affineScore w j x)) :=
+      (contDiff_const.add (w.2 j).contDiff).exp
+    apply ContDiff.div_const
+    exact (hrw i).div (ContDiff.sum fun j _ => hrw j) fun x =>
+      (Finset.sum_pos (fun j _ => Real.exp_pos (affineScore w j x)) ⟨i, Finset.mem_univ _⟩).ne'
+  exact h J hJ f (m i) (hparts.2 i).1 hsmooth (hparts.2 i).2.2.1
+    (hparts.2 i).2.2.2.1 (hparts.2 i).2.2.2.2
+
 /-- The pinned positive Green 54 statement from the two-Gaussian theorem for log-concave tilts. -/
 theorem green_54_of_tilt_pairs (h : GaussianTiltPairs) :
     ∀ K : Set (ℕ → ℝ), IsCompact K → Balanced ℝ K → (0.99 : ℝ≥0∞) ≤ gaussian K →
@@ -133,6 +147,7 @@ theorem green_54_of_tilt_pairs (h : GaussianTiltPairs) :
       (0.01 : ℝ≥0∞) ≤ gaussian C :=
   green_54_of_finite_laws (fun J hJ _ hr hr' => finite_triple_of_tilt_pairs h J hJ hr hr')
 
+#print axioms finite_triple_of_softmax_pairs
 #print axioms finite_triple_of_tilt_pairs
 #print axioms green_54_of_tilt_pairs
 
