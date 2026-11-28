@@ -15,3 +15,5 @@ jobs:
           python-version: "3.12"
       - name: Check index.json and README
         run: python3 scripts/add-entry --check
+      - name: Test research replay
+        run: python3 -m unittest discover -s tests
