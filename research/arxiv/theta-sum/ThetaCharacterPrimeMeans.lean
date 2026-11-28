@@ -403,7 +403,7 @@ private lemma variance_limit (hAP : ProgressionMangoldt) {C : ℝ}
 noncomputable def sampleVariance (f : ℕ → ℝ) (X : ℕ) : ℝ :=
   primeMean (fun p => (f p-primeMean f X)^2) X
 
-private lemma variance_recentering (f : ℕ → ℝ) (b : ℝ) {X : ℕ} (hx : 0 < (X.primeCounting : ℝ)) :
+theorem variance_recentering (f : ℕ → ℝ) (b : ℝ) {X : ℕ} (hx : 0 < (X.primeCounting : ℝ)) :
     sampleVariance f X = primeMean (fun p => (f p-b)^2) X - (primeMean f X-b)^2 := by
   have center (c : ℝ) : primeMean (fun p => (f p-c)^2) X =
       primeMean (fun p => (f p)^2) X - 2*c*primeMean f X + c^2 := by
@@ -434,6 +434,7 @@ theorem S_prime_class_statistics (hAP : ProgressionMangoldt) :
   filter_upwards [hπ.eventually_gt_atTop 0] with X hx
   exact (variance_recentering residual diagonalConstant hx).symm
 
+#print axioms variance_recentering
 #print axioms S_prime_class_statistics
 #print axioms twisted_approx_eventually
 #print axioms residual_twist
