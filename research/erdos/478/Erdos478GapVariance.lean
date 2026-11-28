@@ -20,12 +20,12 @@ def mass (S : Finset Nat.Primes) : ℝ := ∑ i ∈ S, weight i
 def observation (i : Nat.Primes) := RootMoments.roots (gap i.val)
 def centered (i : Nat.Primes) : ℕ → ℝ := weight i • (observation i - 1)
 
-private theorem gap_degree (i : Nat.Primes) : (gap i.val).IsMonicOfDegree i.val := by
+theorem gap_degree (i : Nat.Primes) : (gap i.val).IsMonicOfDegree i.val := by
   have h : (descPochhammer ℤ i.val).IsMonicOfDegree i.val :=
     ⟨descPochhammer_natDegree _ _,monic_descPochhammer _ _⟩
   simpa only [gap,sub_eq_add_neg] using h.add_right (q := -(1 : ℤ[X])) (by simpa using i.property.pos)
 
-private theorem gap_irr (i : Nat.Primes) : Irreducible ((gap i.val).map (algebraMap ℤ ℚ)) := by
+theorem gap_irr (i : Nat.Primes) : Irreducible ((gap i.val).map (algebraMap ℤ ℚ)) := by
   simpa [gap] using GapFamilies.irreducible_gap_rat i.property.pos
 
 private theorem one_mean (A : PrimeAverage) (i : Nat.Primes) :
@@ -50,7 +50,7 @@ private theorem root_card (i : Nat.Primes) (p : ℕ) [Fact p.Prime] :
   rw [h]
   simpa [f,gap] using Multiset.toFinset_card_le f.roots
 
-private theorem bound (i : Nat.Primes) (p : ℕ) (hp : p.Prime) : observation i p ≤ i.val := by
+theorem bound (i : Nat.Primes) (p : ℕ) (hp : p.Prime) : observation i p ≤ i.val := by
   let : Fact p.Prime := ⟨hp⟩
   change (Nat.card _ : ℝ) ≤ _
   exact_mod_cast (root_card i p).trans ((Polynomial.card_roots' _).trans
