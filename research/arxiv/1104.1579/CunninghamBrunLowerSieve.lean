@@ -14,6 +14,8 @@ namespace CunninghamChain
 
 open Finset
 
+namespace BrunBlocks
+
 /-- Even Bonferroni truncation for a block with `n` forbidden prime hits. -/
 private def evenWeight (r n : ℕ) : ℝ :=
   ((∑ i ∈ range (2*r+1), (-1:ℤ)^i * (n.choose i : ℤ) : ℤ) : ℝ)
@@ -93,13 +95,13 @@ private lemma block_product_error {ι α : Type*} [Fintype ι] [DecidableEq ι] 
   rw [← mul_sum, mul_left_comm (N : ℝ), ← mul_sub, abs_mul, ← abs_prod]
   exact mul_le_mul_of_nonneg_left (h g hg) (abs_nonneg _)
 
-private noncomputable def intersection (T : Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (n : ℕ) : ℝ :=
+noncomputable def intersection (T : Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (n : ℕ) : ℝ :=
   if ∀ q ∈ T, (n : ZMod q) ∈ B q then 1 else 0
 
-private noncomputable def density (B : (q : ℕ) → Finset (ZMod q)) (q : ℕ) : ℝ :=
+noncomputable def density (B : (q : ℕ) → Finset (ZMod q)) (q : ℕ) : ℝ :=
   ((B q).card : ℝ)/q
 
-private lemma intersection_union {ι : Type*} [Fintype ι] [DecidableEq ι]
+lemma intersection_union {ι : Type*} [Fintype ι] [DecidableEq ι]
     (g : ι → Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (n : ℕ) :
     (∏ i, intersection (g i) B n) = intersection (univ.biUnion g) B n := by
   classical
@@ -144,12 +146,12 @@ private lemma mixed_block_error {ι : Type*} [Fintype ι] [DecidableEq ι] (N : 
   rw [← prod_biUnion hd', ← prod_biUnion hd']
   exact (sieve_residue_intersection_count N _ hP B).1
 
-private def selected (Q : Finset ℕ) (r : ℕ) (odd : Bool) : Finset (Finset ℕ) :=
+def selected (Q : Finset ℕ) (r : ℕ) (odd : Bool) : Finset (Finset ℕ) :=
   if odd then Q.powersetCard (2*r+1) else (range (2*r+1)).biUnion fun j => Q.powersetCard j
 
-private def sign (odd : Bool) (T : Finset ℕ) : ℝ := if odd then 1 else (-1)^T.card
+def sign (odd : Bool) (T : Finset ℕ) : ℝ := if odd then 1 else (-1)^T.card
 
-private lemma selected_spec {Q T : Finset ℕ} {r : ℕ} {odd : Bool} (hT : T ∈ selected Q r odd) :
+lemma selected_spec {Q T : Finset ℕ} {r : ℕ} {odd : Bool} (hT : T ∈ selected Q r odd) :
     T ⊆ Q ∧ T.card ≤ 2*r+1 := by
   cases odd with
   | false =>
@@ -160,10 +162,10 @@ private lemma selected_spec {Q T : Finset ℕ} {r : ℕ} {odd : Bool} (hT : T �
     obtain ⟨h,he⟩ := mem_powersetCard.mp hT
     exact ⟨h,he.le⟩
 
-private noncomputable def loc (Q : Finset ℕ) (r : ℕ) (odd : Bool) (u : Finset ℕ → ℝ) : ℝ :=
+noncomputable def loc (Q : Finset ℕ) (r : ℕ) (odd : Bool) (u : Finset ℕ → ℝ) : ℝ :=
   ∑ T ∈ selected Q r odd, sign odd T * u T
 
-private noncomputable def hits (Q : Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (n : ℕ) :=
+noncomputable def hits (Q : Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (n : ℕ) :=
   Q.filter fun q => (n : ZMod q) ∈ B q
 
 private lemma choose_hits (Q : Finset ℕ) (B : (q : ℕ) → Finset (ZMod q)) (j n : ℕ) :
@@ -291,7 +293,7 @@ private lemma survival_le_mean (Q : Finset ℕ) (r : ℕ) (hp : ∀ q ∈ Q, q.P
   rw [prod_congr rfl fun q hq => hc hq] at hh
   exact le_of_mul_le_mul_left hh (by exact_mod_cast prod_pos (fun q hq => (hp q hq).pos) : 0 < (M:ℝ))
 
-private lemma euler_lower {α : Type*} (Q : Finset α) (u : α → ℝ) (K : ℝ)
+lemma euler_lower {α : Type*} (Q : Finset α) (u : α → ℝ) (K : ℝ)
     (hu : ∀ q ∈ Q, 0 ≤ u q ∧ u q ≤ 1/2) (hs : ∑ q ∈ Q, u q ≤ K) :
     Real.exp (-2*K) ≤ ∏ q ∈ Q, (1-u q) := by
   have hl (q : α) (hq : q ∈ Q) : Real.exp (-(2*u q)) ≤ 1-u q := by
@@ -336,6 +338,48 @@ private lemma flagged_product {ι : Type*} [Fintype ι] [DecidableEq ι] (A : ι
   congr 1
   exact prod_congr rfl (fun j hj => by simp [ne_of_mem_erase hj])
 
+/-- Brun's block inequality for a finite sample whose truncated intersection sums
+have discrepancy at most D from the specified local means. -/
+lemma finite_block_lower {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (P : Finset ℕ) (M D : ℝ) (hM : 0 ≤ M) (Q : ι → Finset ℕ) (r : ι → ℕ)
+    (B : (q : ℕ) → Finset (ZMod q)) (U : ι → Bool → ℝ) (ε : ι → ℝ)
+    (hU : ∀ i, 0 ≤ U i false) (hE : ∀ i, U i true ≤ ε i * U i false)
+    (hmodel : ∀ o : ι → Bool,
+      |(∑ n ∈ P, ∏ i, loc (Q i) (r i) (o i) (fun T => intersection T B n)) -
+        M * (∏ i, U i (o i))| ≤ D) :
+    M * ((1 - ∑ i, ε i) * ∏ i, U i false) ≤
+      ((P.filter fun n => ∀ i, (hits (Q i) B n).card = 0).card : ℝ) +
+        (Fintype.card ι + 1 : ℝ)*D := by
+  classical
+  let V (n : ℕ) (i : ι) (o : Bool) := loc (Q i) (r i) o (fun T => intersection T B n)
+  let up (n : ℕ) := ∏ i, V n i false
+  let odd (i : ι) (n : ℕ) := ∏ j, V n j (decide (j=i))
+  let main := ∏ i, U i false
+  let loss (i : ι) := ∏ j, U j (decide (j=i))
+  have hmain : M * main - D ≤ ∑ n ∈ P, up n := by
+    have h := (abs_le.mp (hmodel (fun _ => false))).1
+    change -D ≤ (∑ n ∈ P, up n) - M * main at h
+    linarith
+  have hloss (i : ι) : (∑ n ∈ P, odd i n) ≤ M*loss i + D := by
+    have h := (abs_le.mp (hmodel (fun j => decide (j=i)))).2
+    change (∑ n ∈ P, odd i n) - M*loss i ≤ D at h
+    linarith
+  have hsum := sum_le_sum (s := univ) (fun i _ => hloss i)
+  rw [sum_add_distrib, ← mul_sum, sum_const, card_univ, nsmul_eq_mul] at hsum
+  have hpoint (n : ℕ) : up n - ∑ i, odd i n ≤ if ∀ i, (hits (Q i) B n).card = 0 then 1 else 0 := by
+    dsimp only [up, odd]
+    simp_rw [flagged_product (V n), V, local_hit_weight]
+    simpa using brun_product_lower univ r (fun i => (hits (Q i) B n).card)
+  have hs := sum_le_sum (s := P) (fun n _ => hpoint n)
+  rw [sum_sub_distrib, sum_comm (t := univ), sum_boole] at hs
+  have hb := brun_product_mass univ (fun i => U i false) (fun i => U i true) ε (fun i _ => hU i) (fun i _ => hE i)
+  have he (i : ι) := flagged_product U i
+  change ∀ i, loss i = _ at he
+  simp_rw [← he] at hb
+  change (1-∑ i, ε i)*main ≤ main-∑ i, loss i at hb
+  change _ ≤ _ + (_+1)*D
+  nlinarith only [hmain, hsum, hs, mul_le_mul_of_nonneg_left hb hM]
+
 private lemma finite_brun_lower {ι : Type*} [Fintype ι] [DecidableEq ι]
     (N : ℕ) (Q : ι → Finset ℕ) (r z : ι → ℕ) (hz : ∀ i, 0 < z i)
     (hd : Pairwise fun i j => Disjoint (Q i) (Q j)) (hp : ∀ i, ∀ q ∈ Q i, q.Prime ∧ q ≤ z i)
@@ -346,50 +390,21 @@ private lemma finite_brun_lower {ι : Type*} [Fintype ι] [DecidableEq ι]
     let D := ∏ i, (((z i)^(2*r i+1) : ℕ) : ℝ)^2
     N * ((1 - ∑ i, ε i) * ∏ i, binMean (Q i) (r i) false B) ≤
       (S.card:ℝ) + (Fintype.card ι + 1 : ℝ)*D := by
-  classical
-  let V (n : ℕ) (i : ι) (o : Bool) := loc (Q i) (r i) o (fun T => intersection T B n)
-  let U (i : ι) (o : Bool) := binMean (Q i) (r i) o B
-  let D := ∏ i, (((z i)^(2*r i+1) : ℕ) : ℝ)^2
-  let up (n : ℕ) := ∏ i, V n i false
-  let odd (i : ι) (n : ℕ) := ∏ j, V n j (decide (j=i))
-  let main := ∏ i, U i false
-  let loss (i : ι) := ∏ j, U j (decide (j=i))
-  have hmain : N * main - D ≤ ∑ n ∈ range N, up n := by
-    have h := (abs_le.mp (truncated_interval_error N Q r z hz hd hp B (fun _ => false))).1
-    change -D ≤ (∑ n ∈ range N, up n) - N * main at h
-    linarith
-  have hloss (i : ι) : (∑ n ∈ range N, odd i n) ≤ N*loss i + D := by
-    have h := (abs_le.mp (truncated_interval_error N Q r z hz hd hp B (fun j => decide (j=i)))).2
-    change (∑ n ∈ range N, odd i n) - N*loss i ≤ D at h
-    linarith
-  have hsum := sum_le_sum (s := univ) (fun i _ => hloss i)
-  rw [sum_add_distrib, ← mul_sum, sum_const, card_univ, nsmul_eq_mul] at hsum
-  have hpoint (n : ℕ) : up n - ∑ i, odd i n ≤ if ∀ i, (hits (Q i) B n).card = 0 then 1 else 0 := by
-    dsimp only [up, odd]
-    simp_rw [flagged_product (V n), V, local_hit_weight]
-    simpa using brun_product_lower univ r (fun i => (hits (Q i) B n).card)
-  have hs := sum_le_sum (s := range N) (fun n _ => hpoint n)
-  rw [sum_sub_distrib, sum_comm (t := univ), sum_boole] at hs
-  have hb := brun_product_mass univ (fun i => U i false) (fun i => U i true) ε (fun i _ => hU i) (fun i _ => hE i)
-  have he (i : ι) := flagged_product U i
-  change ∀ i, loss i = _ at he
-  simp_rw [← he] at hb
-  change (1-∑ i, ε i)*main ≤ main-∑ i, loss i at hb
-  dsimp only
-  change _ ≤ _ + (_+1)*D
-  nlinarith only [hmain, hsum, hs, mul_le_mul_of_nonneg_left hb (Nat.cast_nonneg (α := ℝ) N)]
+  exact finite_block_lower (range N) N _ (Nat.cast_nonneg _) Q r B
+    (fun i o => binMean (Q i) (r i) o B) ε hU hE
+    (truncated_interval_error N Q r z hz hd hp B)
 
-private def level (H i : ℕ) := H^(2^i)
+def level (H i : ℕ) := H^(2^i)
 
 private lemma level_step (H i : ℕ) : level H (i+1) = (level H i)^2 := by
   simp [level, pow_succ (n := i), pow_mul]
 
-private lemma level_mono {H : ℕ} (hH : 0 < H) : Monotone (level H) :=
+lemma level_mono {H : ℕ} (hH : 0 < H) : Monotone (level H) :=
   fun _ _ h => Nat.pow_le_pow_right hH (Nat.pow_le_pow_right (by decide) h)
 
-private def band (H i : ℕ) := (level H (i+1)).primesLE \ (level H i).primesLE
+def band (H i : ℕ) := (level H (i+1)).primesLE \ (level H i).primesLE
 
-private lemma mem_band {H i q : ℕ} :
+lemma mem_band {H i q : ℕ} :
     q ∈ band H i ↔ q.Prime ∧ level H i < q ∧ q ≤ level H (i+1) := by
   simp only [band, mem_sdiff, Nat.mem_primesLE]
   constructor
@@ -398,7 +413,7 @@ private lemma mem_band {H i q : ℕ} :
   · rintro ⟨hp,hl,hu⟩
     exact ⟨⟨hu,hp⟩,fun h => hl.not_ge h.1⟩
 
-private lemma band_cover {H J q : ℕ} (hp : q.Prime) (hlo : H < q) (hhi : q ≤ level H J) :
+lemma band_cover {H J q : ℕ} (hp : q.Prime) (hlo : H < q) (hhi : q ≤ level H J) :
     ∃ i : Fin J, q ∈ band H i := by
   induction J with
   | zero => simp [level] at hhi; omega
@@ -408,7 +423,7 @@ private lemma band_cover {H J q : ℕ} (hp : q.Prime) (hlo : H < q) (hhi : q ≤
     · obtain ⟨i, hi⟩ := ih (by omega)
       exact ⟨i.castSucc, hi⟩
 
-private lemma band_disjoint {H J : ℕ} (hH : 0 < H) :
+lemma band_disjoint {H J : ℕ} (hH : 0 < H) :
     Pairwise fun i j : Fin J => Disjoint (band H i) (band H j) := by
   intro i j hij
   apply Finset.disjoint_left.mpr
@@ -419,7 +434,7 @@ private lemma band_disjoint {H J : ℕ} (hH : 0 < H) :
   · exact hl₂.not_ge (hu₁.trans (level_mono hH (show i.val+1 ≤ j.val from h)))
   · exact hl₁.not_ge (hu₂.trans (level_mono hH (show j.val+1 ≤ i.val from h)))
 
-private lemma band_density (H i k : ℕ) (hH : 1 < H) (hkH : 2*k ≤ H)
+lemma band_density (H i k : ℕ) (hH : 1 < H) (hkH : 2*k ≤ H)
     (B : (q : ℕ) → Finset (ZMod q)) (hB : ∀ q, q.Prime → H < q → (B q).card ≤ k) :
     (∀ q ∈ band H i, 0 ≤ density B q ∧ density B q ≤ 1/2) ∧
       (∑ q ∈ band H i, density B q) ≤ 4*k := by
@@ -470,7 +485,7 @@ private lemma band_degree_sum (R J : ℕ) :
     rw [pow_succ]
     nlinarith only [h]
 
-private lemma band_cost (H J R : ℕ) (hH : 0 < H) :
+lemma band_cost (H J R : ℕ) (hH : 0 < H) :
     (∏ i : Fin J, (((level H (i.val+1))^(2*(R+i.rev.val+2)+1) : ℕ) : ℝ)^2) ≤
       ((level H J : ℕ) : ℝ)^(8*R+28) := by
   exact_mod_cast (show (∏ i : Fin J, (level H (i.val+1)^(2*(R+i.rev.val+2)+1))^2) ≤
@@ -483,7 +498,7 @@ private lemma band_cost (H J R : ℕ) (hH : 0 < H) :
     intro i _
     ring)
 
-private lemma geometric_errors (J : ℕ) :
+lemma geometric_errors (J : ℕ) :
     (∑ i : Fin J, (1:ℝ)/2^(i.rev.val+2)) ≤ 1/2 := by
   have he : (∑ i : Fin J, (1:ℝ)/2^(i.rev.val+2)) = ∑ i : Fin J, (1:ℝ)/2^(i.val+2) :=
     Equiv.sum_comp Fin.revPerm (fun i : Fin J => (1:ℝ)/2^(i.val+2))
@@ -495,7 +510,7 @@ private lemma geometric_errors (J : ℕ) :
   rw [Fin.sum_univ_eq_sum_range (fun i => (1:ℝ)/2^(i+2)), h]
   linarith [show 0 ≤ (1:ℝ)/2^(J+1) by positivity]
 
-private lemma sufficient_depth (k : ℕ) : Real.exp (24*k) ≤ (2:ℝ)^(36*k) := by
+lemma sufficient_depth (k : ℕ) : Real.exp (24*k) ≤ (2:ℝ)^(36*k) := by
   apply (Real.log_le_log_iff (Real.exp_pos _) (by positivity)).mp
   rw [Real.log_exp, Real.log_pow]
   push_cast
@@ -606,7 +621,7 @@ private lemma rough_parameters (k : ℕ) :
   have hmem : q ∈ hits (Q i) B n := mem_filter.mpr ⟨hi,hbad⟩
   simp [he] at hmem
 
-private lemma rough_factor_count {Z y L : ℕ} (hZ : 1 < Z) (hy : y ≠ 0) (hle : y ≤ Z^L)
+lemma rough_factor_count {Z y L : ℕ} (hZ : 1 < Z) (hy : y ≠ 0) (hle : y ≤ Z^L)
     (hrough : ∀ p, p.Prime → p ∣ y → Z < p) : Nat.IsAtMostAlmostPrime L y := by
   refine ⟨hy, ?_⟩
   rw [ArithmeticFunction.cardFactors_apply]
@@ -623,6 +638,10 @@ private lemma rough_factor_count {Z y L : ℕ} (hZ : 1 < Z) (hy : y ≠ 0) (hle 
   intro p hp
   exact (hrough p (Nat.prime_of_mem_primeFactorsList hp) ((Nat.mem_primeFactorsList_iff_dvd hy
     (Nat.prime_of_mem_primeFactorsList hp)).mp hp)).le
+
+end BrunBlocks
+
+open BrunBlocks
 
 /-- A qualitative Brun sieve for admissible positive-slope linear forms. The factor bound
 depends only on the number of forms. Every prescribed finite prime cutoff can be avoided. -/
@@ -712,22 +731,24 @@ theorem almostPrime_linear_forms (k : ℕ) :
     have := hr q hq hd
     omega⟩
 
-private def chain (b : Bool) : ℕ → ℕ → ℕ := if b then firstKindTerm else secondKindTerm
+namespace BrunBlocks
 
-private lemma chain_ge_two (b : Bool) {p : ℕ} (hp : 2 ≤ p) (i : ℕ) : 2 ≤ chain b p i := by
+def chain (b : Bool) : ℕ → ℕ → ℕ := if b then firstKindTerm else secondKindTerm
+
+lemma chain_ge_two (b : Bool) {p : ℕ} (hp : 2 ≤ p) (i : ℕ) : 2 ≤ chain b p i := by
   cases b <;> induction i with
   | zero => exact hp
   | succ i ih =>
     simp only [chain, Bool.false_eq_true, if_false, if_true, secondKindTerm, firstKindTerm] at ih ⊢
     omega
 
-private lemma chain_grows (b : Bool) {p : ℕ} (hp : 2 ≤ p) : StrictMono (chain b p) := by
+lemma chain_grows (b : Bool) {p : ℕ} (hp : 2 ≤ p) : StrictMono (chain b p) := by
   apply strictMono_nat_of_lt_succ
   intro i
   have h := chain_ge_two b hp i
   cases b <;> simp only [chain, Bool.false_eq_true, if_false, if_true, secondKindTerm, firstKindTerm] at h ⊢ <;> omega
 
-private lemma chain_shift (b : Bool) (x p : ℕ) (hp : 2 ≤ p) (i : ℕ) :
+lemma chain_shift (b : Bool) (x p : ℕ) (hp : 2 ≤ p) (i : ℕ) :
     chain b (x+p) i = 2^i*x + chain b p i := by
   induction i with
   | zero => cases b <;> simp [chain, firstKindTerm, secondKindTerm]
@@ -738,9 +759,9 @@ private lemma chain_shift (b : Bool) (x p : ℕ) (hp : 2 ≤ p) (i : ℕ) :
     · rw [secondKindTerm, secondKindTerm, ih, he]; omega
     · rw [firstKindTerm, firstKindTerm, ih, he]; omega
 
-private def fixedResidue (b : Bool) (q : ℕ) : ZMod q := if b then -1 else 1
+def fixedResidue (b : Bool) (q : ℕ) : ZMod q := if b then -1 else 1
 
-private lemma chain_fixed (b : Bool) (q p : ℕ) (hp : 2 ≤ p)
+lemma chain_fixed (b : Bool) (q p : ℕ) (hp : 2 ≤ p)
     (h : (p : ZMod q) = fixedResidue b q) (i : ℕ) :
     (chain b p i : ZMod q) = fixedResidue b q := by
   induction i with
@@ -754,7 +775,7 @@ private lemma chain_fixed (b : Bool) (q p : ℕ) (hp : 2 ≤ p)
 
 /-- A prime at position k can be prescribed as a common divisor of the successor
 on one admissible progression of seeds. Only this single linear form uses Dirichlet. -/
-private lemma prime_at_length (b : Bool) {k : ℕ} (hk : 0 < k) :
+lemma prime_at_length (b : Bool) {k : ℕ} (hk : 0 < k) :
     ∃ p : ℕ, 2 ≤ p ∧ (chain b p k).Prime := by
   have ho : Odd (chain b 2 k) := by
     obtain ⟨i,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hk.ne'
@@ -769,6 +790,8 @@ private lemma prime_at_length (b : Bool) {k : ℕ} (hk : 0 < k) :
     (pow_ne_zero k (by decide : 2 ≠ 0)) (ho.coprime_two_right.pow_right k)
   obtain ⟨t,ht⟩ := (Nat.modEq_iff_exists_eq_add hq.le).mp hclass.symm
   exact ⟨t+2, by omega, (by rw [chain_shift b _ _ (by decide), Nat.add_comm, ← ht]; exact hprime)⟩
+
+end BrunBlocks
 
 /-- For each fixed positive length, the first k terms can simultaneously avoid every prime
 up to an arbitrary cutoff and have boundedly many prime factors, counted with multiplicity.
