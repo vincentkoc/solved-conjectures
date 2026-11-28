@@ -60,13 +60,19 @@ def bracketForm (Q : K →ₗ[F] F) (c : K) : LinearMap.BilinForm F K :=
       unfold bracket;ring_nf;reduce_mod_char!)
     (fun r x y => by rcases (show ∀ i:F,i=0 ∨ i=1 from by decide) r with rfl|rfl <;> simp [bracket])
 
+omit [Fintype K] in
+/-- Frobenius invariance expresses a bracket evaluation as a scalar trace against a square. -/
+theorem bracketForm_apply_squared (Q : K →ₗ[F] F) (sq : ∀ z, Q (z^2) = Q z) (c x y : K) :
+    bracketForm Q c x y = Q ((c^2*x^4+c*x)*y^2) := by
+  change Q (c*bracket x y)=_
+  rw [show c*bracket x y=(c*x^2*y)+(c*x*y^2) by unfold bracket;ring,map_add,←sq (c*x^2*y),←map_add]
+  congr 1;ring
+
+
 /-- The polar radical is the kernel of an explicit linearized quartic. -/
 theorem radical (Q : K →ₗ[F] F) (nq : Q≠0) (sq : ∀ z,Q (z^2)=Q z)
     (c x : K) : x∈(bracketForm Q c).ker ↔ c^2*x^4+c*x=0 := by
-  have eval (y : K) : bracketForm Q c x y=Q ((c^2*x^4+c*x)*y^2) := by
-    change Q (c*bracket x y)=_
-    rw [show c*bracket x y=(c*x^2*y)+(c*x*y^2) by unfold bracket;ring,map_add,←sq (c*x^2*y),←map_add]
-    congr 1;ring
+  have eval := bracketForm_apply_squared Q sq c x
   constructor
   · intro hx
     apply detect Q nq
@@ -154,6 +160,7 @@ theorem half_bound {H : Type*} [AddCommGroup H] [Module F H] (L : K →ₗ[F] H)
 end Green51GoldForms
 #print axioms Green51GoldForms.trace_functional
 #print axioms Green51GoldForms.represent
+#print axioms Green51GoldForms.bracketForm_apply_squared
 #print axioms Green51GoldForms.radical
 #print axioms Green51GoldForms.radical_bound
 #print axioms Green51GoldForms.isotropic_bound
