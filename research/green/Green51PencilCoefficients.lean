@@ -46,26 +46,22 @@ private theorem sigma_four (z : K) : sigma.toRingHom z = z^4 := by
   rfl
 
 omit [CharP K 2] in
-private theorem companion_identity {k : ℕ} (degK : Module.finrank F K = 2*k+1) (b : K) :
+private theorem companion_identity {k : ℕ} (b : K) (cycle : orbit b k=b) :
     (X-C (b^2))*(companion k b).map sigma.toRingHom = (X-C b)*companion k b := by
   let P:=companion k b
-  have last : orbit b k=b := by
-    have cardK := Module.card_eq_pow_finrank (K:=F) (V:=K)
-    rw [ZMod.card,degK] at cardK
-    rw [orbit_expr,←cardK,pow_card]
   have eq := slide k (orbit b) 0
   simp only [zero_add,orbit, pow_zero,AlgEquiv.one_apply] at eq
   have moved := map_window (sigma (K:=K)) (b^2) k 1
   simp only [pow_one] at moved
   change P.map sigma.toRingHom = window k (orbit b) 1 at moved
   change (X-C (b^2))*window k (orbit b) 1 = (X-C (orbit b k))*P at eq
-  rw [←moved,last] at eq
+  rw [←moved,cycle] at eq
   exact eq
 
-theorem term_step {k : ℕ} (degK : Module.finrank F K=2*k+1) (b : K) (i : ℕ) (hi : i<k) :
+theorem term_step_of_period {k : ℕ} (b : K) (cycle : orbit b k=b) (i : ℕ) (hi : i<k) :
     (term k b (i+1))^4 + term k b (i+1) = b^2*(term k b i)^4+b*term k b i := by
   let P := companion k b
-  have eq := companion_identity degK b
+  have eq := companion_identity b cycle
   have cf:=congrArg (fun S : K[X] => S.coeff (k-(i+1)+1)) eq
   simp only [coeff_X_sub_C_mul,coeff_map] at cf
   simp only [sigma_four,show k-(i+1)+1=k-i by omega] at cf
@@ -73,12 +69,27 @@ theorem term_step {k : ℕ} (degK : Module.finrank F K=2*k+1) (b : K) (i : ℕ) 
   dsimp only [P]
   linear_combination (norm := (ring_nf;reduce_mod_char!)) cf
 
-theorem term_end {k : ℕ} (degree : Module.finrank F K=2*k+1) (b : K) :
+theorem term_end_of_period {k : ℕ} (b : K) (cycle : orbit b k=b) :
     b^2*(term k b k)^4+b*(term k b k)=0 := by
-  have eq:=congrArg (fun P : K[X] => P.coeff 0) (companion_identity degree b)
+  have eq:=congrArg (fun P : K[X] => P.coeff 0) (companion_identity b cycle)
   simp only [sub_mul,coeff_sub,coeff_X_mul_zero,coeff_C_mul,coeff_map,sigma_four] at eq
   simp only [term,Nat.sub_self]
   linear_combination (norm := (ring_nf; reduce_mod_char!)) -eq
+
+
+omit [CharP K 2] in
+theorem orbit_period {k : ℕ} (degree : Module.finrank F K=2*k+1) (b : K) : orbit b k=b := by
+  have cardK := Module.card_eq_pow_finrank (K:=F) (V:=K)
+  rw [ZMod.card,degree] at cardK
+  rw [orbit_expr,←cardK,FiniteField.pow_card]
+
+theorem term_step {k : ℕ} (degK : Module.finrank F K=2*k+1) (b : K) (i : ℕ) (hi : i<k) :
+    (term k b (i+1))^4 + term k b (i+1) = b^2*(term k b i)^4+b*term k b i :=
+  term_step_of_period b (orbit_period degK b) i hi
+
+theorem term_end {k : ℕ} (degree : Module.finrank F K=2*k+1) (b : K) :
+    b^2*(term k b k)^4+b*(term k b k)=0 :=
+  term_end_of_period b (orbit_period degree b)
 
 /-- If the coefficient ratio generates the field, the shifted factors used by
 the pencil are all distinct. -/
@@ -135,3 +146,7 @@ end Green51PencilWindows
 #print axioms Green51PencilWindows.orbit_distinct
 #print axioms Green51PencilWindows.term_independent
 #print axioms Green51PencilWindows.term_map
+
+#print axioms Green51PencilWindows.orbit_period
+#print axioms Green51PencilWindows.term_step_of_period
+#print axioms Green51PencilWindows.term_end_of_period
