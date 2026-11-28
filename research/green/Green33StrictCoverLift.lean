@@ -33,6 +33,35 @@ theorem pair_lifts (s i d h q l x : ℤ) (hs : 0 < s) (hh : 0 < h) (hhs : h ≤ 
   · refine ⟨a + q - v, v, by omega, by omega, by omega, by omega, e - i, ?_⟩
     linear_combination hx + q * hb
 
+/-- Any two distinct slopes with gap dividing s cover the square modulus. Both
+coefficients can be taken in the same short interval. -/
+theorem progression_pair {s i j Q l : ℕ} [NeZero Q] (hs : 0 < s) (hij : i < j)
+    (hgap : j - i ∣ s) (hQ : s * l + 1 = Q) (x : ZMod (Q ^ 2)) :
+    ∃ t < s + Q, ∃ u < s + Q,
+      ((s + i * Q : ℕ) : ZMod (Q ^ 2)) * (t : ZMod (Q ^ 2)) +
+        ((s + j * Q : ℕ) : ZMod (Q ^ 2)) * (u : ZMod (Q ^ 2)) = x := by
+  obtain ⟨h, hdh⟩ := hgap
+  have hd : 0 < j - i := Nat.sub_pos_of_lt hij
+  have hh : 0 < h := by by_contra! hn; simp [Nat.eq_zero_of_le_zero hn] at hdh; omega
+  have hhs : h ≤ s := hdh ▸ Nat.le_mul_of_pos_left h hd
+  obtain ⟨t, u, ht, htq, hu, huq, e, he⟩ := pair_lifts s i (j - i : ℕ) h Q l x.val
+    (by exact_mod_cast hs) (by exact_mod_cast hh) (by exact_mod_cast hhs) (by exact_mod_cast hdh.symm)
+    (by exact_mod_cast NeZero.pos Q) (by exact_mod_cast hQ)
+  have hzero : ((Q : ZMod (Q ^ 2)) ^ 2) = 0 :=
+    (Nat.cast_pow Q 2).symm.trans (ZMod.natCast_self _)
+  have hij' : (i : ℤ) + ((j - i : ℕ) : ℤ) = j := by exact_mod_cast (Nat.add_sub_of_le hij.le)
+  rw [hij'] at he
+  have hcast := congrArg (fun k : ℤ => (k : ZMod (Q ^ 2))) he
+  simp only [Int.cast_natCast, Int.cast_add, Int.cast_mul, Int.cast_pow,
+    ZMod.natCast_zmod_val, hzero, zero_mul, add_zero] at hcast
+  refine ⟨t.toNat, by omega, u.toNat, by omega, ?_⟩
+  push_cast
+  rw [show ((t.toNat : ℕ) : ZMod (Q ^ 2)) = (t : ZMod (Q ^ 2)) by
+        rw [← Int.cast_natCast, Int.toNat_of_nonneg ht],
+      show ((u.toNat : ℕ) : ZMod (Q ^ 2)) = (u : ZMod (Q ^ 2)) by
+        rw [← Int.cast_natCast, Int.toNat_of_nonneg hu]]
+  exact hcast.symm
+
 private def label : Fin 12 → ZMod 56 := ![0, 1, 12, 15, 22, 29, 32, 43, 44, 48, 50, 52]
 
 set_option maxRecDepth 10000 in
@@ -64,39 +93,14 @@ private lemma arms_cover (Q n : ℕ) [NeZero Q] (hQ : s * (n + 1) + 1 = Q) :
   apply eq_univ_of_forall
   intro g
   apply Finset.mem_add.mpr
-  let x := g.1
-  let z := g.2
-  obtain ⟨i, j, hij, hz⟩ := label_cover z
-  let d := j.val - i.val
-  have hj : i.val + d = j.val := by dsimp [d]; have := hij.le; omega
-  obtain ⟨hh, hhs, hdh⟩ := gaps i j hij
-  obtain ⟨t, u, ht, htq, hu, huq, e, he⟩ := pair_lifts s i.val d (s / d : ℕ) Q
-    (n + 1 : ℕ) x.val (by decide) (by exact_mod_cast hh) (by exact_mod_cast hhs)
-    (by exact_mod_cast hdh) (by exact_mod_cast NeZero.pos Q)
-    (by exact_mod_cast hQ)
-  let a : Fin (s + Q) := ⟨t.toNat, by omega⟩
-  let b : Fin (s + Q) := ⟨u.toNat, by omega⟩
+  obtain ⟨i, j, hij, hz⟩ := label_cover g.2
+  obtain ⟨_, _, hdh⟩ := gaps i j hij
+  obtain ⟨t, ht, u, hu, hsum⟩ := progression_pair (by decide : 0 < s) hij
+    ⟨_, hdh.symm⟩ hQ g.1
   have hmem (p : Fin 12 × Fin (s + Q)) : arm Q p ∈ arms Q := by
     rw [arms]; exact mem_image_of_mem _ (mem_univ _)
-  refine ⟨arm Q (i, a), hmem (i, a), arm Q (j, b), hmem (j, b), ?_⟩
-  apply Prod.ext
-  case snd => exact hz
-  have hzero : ((Q : ZMod (Q ^ 2)) ^ 2) = 0 := by
-    exact (Nat.cast_pow Q 2).symm.trans (ZMod.natCast_self _)
-  have hij' : (i.val : ℤ) + d = j.val := by exact_mod_cast hj
-  rw [hij'] at he
-  have hcast' := congrArg (fun k : ℤ => (k : ZMod (Q ^ 2))) he
-  simp only [Int.cast_natCast, Int.cast_add, Int.cast_mul, Int.cast_pow,
-    ZMod.natCast_zmod_val, hzero, zero_mul, add_zero] at hcast'
-  change (weight Q i : ZMod (Q ^ 2)) * (a.val : ZMod (Q ^ 2)) +
-    (weight Q j : ZMod (Q ^ 2)) * (b.val : ZMod (Q ^ 2)) = x
-  rw [show (a.val : ZMod (Q ^ 2)) = (t : ZMod (Q ^ 2)) by
-        change ((t.toNat : ℕ) : ZMod (Q ^ 2)) = (t : ZMod (Q ^ 2))
-        rw [← Int.cast_natCast, Int.toNat_of_nonneg ht],
-      show (b.val : ZMod (Q ^ 2)) = (u : ZMod (Q ^ 2)) by
-        change ((u.toNat : ℕ) : ZMod (Q ^ 2)) = (u : ZMod (Q ^ 2))
-        rw [← Int.cast_natCast, Int.toNat_of_nonneg hu]]
-  simpa only [weight, Nat.cast_add, Nat.cast_mul] using hcast'.symm
+  refine ⟨_, hmem (i, ⟨t, ht⟩), _, hmem (j, ⟨u, hu⟩), ?_⟩
+  exact Prod.ext hsum hz
 
 private lemma arm_inj (Q n : ℕ) (hQ : s * (n + 1) + 1 = Q) : Function.Injective (arm Q) := by
   rintro ⟨i, a⟩ ⟨j, b⟩ he
@@ -191,6 +195,7 @@ theorem frequently_cyclic_basis (ε : ℝ) (hε : 0 < ε) :
   nlinarith [Nat.le_self_pow (by decide : 2 ≠ 0) (q n)]
 
 #print axioms pair_lifts
+#print axioms progression_pair
 #print axioms basis_add_basis
 #print axioms basis_card
 #print axioms basis_ratio_limit

@@ -26,4 +26,4 @@ Both coefficients are in `[0,Q+s)`. In the first case, `t+u = a` and `ia+du = b�
 
 The squared constant `18/7` is smaller than `8/3` from the Bevan–Erskine–Lewis family by `2/21`. The two constants describe explicit infinite families. Optimality of the new family and the original Green question remain open. [Bevan–Erskine–Lewis, theorem 10(a)](https://arxiv.org/pdf/1506.04962#page=9) · [Notebook formalization](BEL-CONSTRUCTION.md)
 
-The proof imports Mathlib on the notebook’s pinned toolchain. It includes axiom reports for the two-progression lemma, sumset coverage, cardinality, ratio limit and the frequency theorem. Codex assisted with the proof. [Replay instructions](../README.md#replay)
+The proof imports Mathlib on the notebook’s pinned toolchain. It includes axiom reports for the integer lifting identity, its modular two-progression form, sumset coverage, cardinality, ratio limit and the frequency theorem. Codex assisted with the proof. [Replay instructions](../README.md#replay)
