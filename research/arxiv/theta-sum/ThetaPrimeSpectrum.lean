@@ -207,6 +207,29 @@ theorem of_quadratic_excess_formula (hAP : ProgressionMangoldt) (hq : q%4=3)
       simp only [abs_mul,abs_neg,abs_of_pos hH,abs_one,mul_one] <;>
       apply le_of_eq <;> field_simp [hsq.ne',Real.pi_ne_zero] at hD ⊢ <;> norm_num at hD ⊢ <;> nlinarith
 
+/-- Pairwise orthogonality of distinct odd prime Legendre characters under the
+ordinary prime mean, with unit diagonal. -/
+theorem prime_character_pair (hAP : ProgressionMangoldt) (hq : q≠2) (r : ℕ) [Fact r.Prime] :
+    Tendsto (primeMean (fun p => (symbol q p:ℝ)*(symbol r p:ℝ))) atTop (𝓝 (if q=r then 1 else 0)) := by
+  by_cases he : q=r
+  · subst r
+    rw [if_pos rfl]
+    have ht := periodic_prime_mean hAP (product_onMod (dvd_refl q) (dvd_refl q) (onMod q) (onMod q))
+    have hv (u : (ZMod q)ˣ) : w q (u:ZMod q).val * w q (u:ZMod q).val=1 := by
+      have hn := (Fact.out : q.Prime).coprime_iff_not_dvd.mp (ZMod.val_coe_unit_coprime u).symm
+      rcases symbol_unit q hn with h|h <;> norm_num [w,h]
+    have hφ := (Nat.totient_pos.mpr (Fact.out : q.Prime).pos).ne'
+    simpa only [unitMean,hv,sum_const,card_univ,ZMod.card_units_eq_totient,nsmul_eq_mul,mul_one,
+      div_self (by exact_mod_cast hφ : (q.totient:ℝ)≠0)] using ht
+  · rw [if_neg he]
+    have hc := (Fact.out : q.Prime).coprime_iff_not_dvd.mpr (fun hd =>
+      he ((Nat.prime_dvd_prime_iff_eq (Fact.out : q.Prime) (Fact.out : r.Prime)).mp hd))
+    have ht := periodic_prime_mean hAP (product_onMod (Nat.dvd_mul_right q r) (Nat.dvd_mul_left r q)
+      (onMod q) (onMod r))
+    rwa [unitMean_mul hc (onMod q) (onMod r),centered q hq,zero_mul] at ht
+
+#print axioms prime_character_pair
+
 /-- A correlation at a conductor coprime to the period gives a lower bound for the
 ordinary prime mean of the absolute approximation error. -/
 theorem periodic_error_of_correlation (hAP : ProgressionMangoldt) {m : ℕ} [NeZero m]

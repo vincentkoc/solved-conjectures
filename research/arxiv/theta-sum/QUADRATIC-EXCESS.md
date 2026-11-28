@@ -25,7 +25,7 @@ For $q\equiv3\bmod4$, write $\chi=(\frac{\cdot}{q})$, $H_q=\sum_{1\le j\le(q-1)/
 $$
              H_q=(2-\chi(2))\sqrt q\, L_q/\pi.
 $$
-In particular $H_q>0$. The conductor parity factor is $-2\chi(2)H_q$, which gives the two signed classes by the supplementary law at 2. The classical formula is already recorded in the literature. [Göral, introduction after equation (1.3)](https://imar.ro/journals/Mathematical_Reports/Pdfs/2022/4/7.pdf) · [Fourier argument and doubling](ThetaQuadraticExcess.lean) · [Ordered character harmonic limit](ThetaCharacterHarmonicLimit.lean)
+In particular $H_q>0$. The conductor parity factor is $-2\chi(2)H_q$, which gives the two signed classes by the supplementary law at 2. The classical formula is already recorded in the literature. The [all-conductor Euler products](QUADRATIC-EULER-PRODUCT.md) subsequently evaluate the full signed coefficient and isolate the uniformly convergent quadratic component. [Göral, introduction after equation (1.3)](https://imar.ro/journals/Mathematical_Reports/Pdfs/2022/4/7.pdf) · [Fourier argument and doubling](ThetaQuadraticExcess.lean) · [Ordered character harmonic limit](ThetaCharacterHarmonicLimit.lean)
 
 For the error bound, the squared Gauss identity already gives $|\operatorname{Im}\tau_q|=\sqrt q$. The positive conductor row in the prime correlation then yields
 $$
