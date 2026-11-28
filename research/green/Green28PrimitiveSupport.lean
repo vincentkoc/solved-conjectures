@@ -236,13 +236,14 @@ private theorem pure_of_width_zero {P : PMF ℤ} (fin : P.support.Finite) (hw : 
   · rw [(P.apply_eq_zero_iff z).mpr (by simpa [sing] using he),PMF.pure_apply]
     simp [he]
 
-/-- A real factor obstruction on the shifted mask forces a constant summand. -/
-theorem pure_factor_of_mask {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
-    (sum : indepSum P Q=PMF.uniformOfFinset S ne)
-    (obstruction : (outputMask S ne).Monic → ∀ {f g : ℝ[X]}, f.Monic → g.Monic →
-      f.coeff 0=1 → f*g=(outputMask S ne).map (Int.castRingHom ℝ) →
-      f.natDegree=0 ∨ g.natDegree=0) :
-    (∃ x, P=PMF.pure x) ∨ (∃ y, Q=PMF.pure y) := by
+/-- The normalized marginal polynomials multiply to the shifted mask
+of the actual output law. -/
+theorem mask_factorization {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
+    (sum : indepSum P Q=PMF.uniformOfFinset S ne) :
+    ∃ (f g : ℝ[X]) (a b : ℤ) (s t : ℝ), Models P f a s ∧ Models Q g b t ∧
+      f.Monic ∧ g.Monic ∧ f.natDegree=Green28AlgebraicWidth.width P ∧
+      g.natDegree=Green28AlgebraicWidth.width Q ∧ f.coeff 0=1 ∧ g.coeff 0=1 ∧
+      f*g=(outputMask S ne).map (Int.castRingHom ℝ) := by
   have flat : IsUniformOnSupport (indepSum P Q) := ⟨S,ne,sum⟩
   obtain ⟨pf,qf⟩ := finite_of_uniform_sum flat
   obtain ⟨f,a,s,fp,fm,fw,fa⟩ := Green28AlgebraicWidth.chart P pf
@@ -270,6 +271,18 @@ theorem pure_factor_of_mask {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
     ext j
     simp only [coeff_map,outputMask_coeff,least,←occ j]
     rcases bin j with h|h <;> simp [h]
+  exact ⟨f,g,a,b,s,t,fp,gp,fm,gm,fw,gw,fc,gc,product⟩
+
+/-- A real factor obstruction on the shifted mask forces a constant summand. -/
+theorem pure_factor_of_mask {P Q : PMF ℤ} {S : Finset ℤ} (ne : S.Nonempty)
+    (sum : indepSum P Q=PMF.uniformOfFinset S ne)
+    (obstruction : (outputMask S ne).Monic → ∀ {f g : ℝ[X]}, f.Monic → g.Monic →
+      f.coeff 0=1 → f*g=(outputMask S ne).map (Int.castRingHom ℝ) →
+      f.natDegree=0 ∨ g.natDegree=0) :
+    (∃ x, P=PMF.pure x) ∨ (∃ y, Q=PMF.pure y) := by
+  have flat : IsUniformOnSupport (indepSum P Q) := ⟨S,ne,sum⟩
+  obtain ⟨pf,qf⟩ := finite_of_uniform_sum flat
+  obtain ⟨f,g,_,_,_,_,_,_,fm,gm,fw,gw,fc,_,product⟩ := mask_factorization ne sum
   have mon : (outputMask S ne).Monic := monic_of_injective Int.cast_injective (product ▸ fm.mul gm)
   rcases obstruction mon fm gm fc product with h|h
   · exact Or.inl (pure_of_width_zero pf (fw ▸ h))
