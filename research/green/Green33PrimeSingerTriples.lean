@@ -23,7 +23,7 @@ private theorem degree_three {F K : Type*} [Field F] [Field K] [Algebra F K]
 
 private noncomputable def low {F : Type*} [Field F] (a : Fin 3→F) : F[X] := by classical exact ofFn 3 a
 
-private theorem span_quadratics {F K : Type*} [Field F] [Field K] [Algebra F K]
+theorem span_quadratics {F K : Type*} [Field F] [Field K] [Algebra F K]
     [Fintype F] [Fintype K] (θ : K) (card : Fintype.card K=(Fintype.card F)^3)
     (degree : (minpoly F θ).natDegree=3) (z : K) :
     ∃ a b c : F, algebraMap F K a*θ^2+algebraMap F K b*θ+algebraMap F K c=z := by
@@ -86,9 +86,9 @@ private theorem paths_three {G F : Type*} [AddCommGroup G] [Fintype G] [Decidabl
          obtain ⟨x,_,rfl⟩ := mem_map.mp hd
          exact inside x) (fun d _ _ => path_nonnegative ..)
 
-private theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fintype F] [Fintype K]
+theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fintype F] [Fintype K]
     (θ : K) (deg : (minpoly F θ).natDegree=3) :
-    ∃ i j k : F, ∃ s t : K, s≠t ∧ θ+s+t= -algebraMap F K i ∧
+    ∃ i j k : F, ∃ s t : K, s≠t ∧ θ≠s ∧ t≠θ ∧ θ+s+t= -algebraMap F K i ∧
       θ*s+θ*t+s*t=algebraMap F K j ∧ θ*s*t= -algebraMap F K k ∧
       (∀ x : F, x^3+i*x^2+j*x+k≠0) ∧
       θ^3+algebraMap F K i*θ^2+algebraMap F K j*θ+algebraMap F K k=0 := by
@@ -112,6 +112,9 @@ private theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fin
   obtain ⟨s,t,es⟩ := Multiset.card_eq_two.mp erase
   have rr : M.roots=θ ::ₘ s ::ₘ {t} := (Multiset.cons_erase mem).symm.trans (by rw [es];rfl)
   have st : s≠t := by have n := nodup_roots sep;rw [rr] at n;simpa using (Multiset.nodup_cons.mp (Multiset.nodup_cons.mp n).2).1
+  have nt : θ∉s ::ₘ {t} := (Multiset.nodup_cons.mp (rr ▸ nodup_roots sep)).1
+  have rs : θ≠s := fun e => nt (by simp [e])
+  have tr : t≠θ := fun e => nt (by simp [e])
   have fact : M=(X-C θ)*(X-C s)*(X-C t) := by
     rw [split.eq_prod_roots_of_monic nm,rr];simp;ring
   have target : φ (m.coeff 0)= -θ*s*t ∧ φ (m.coeff 1)=θ*s+θ*t+s*t ∧
@@ -135,7 +138,7 @@ private theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fin
       simp only [coeff_add,coeff_C_mul,coeff_X_pow,coeff_C,coeff_X] at hh
       norm_num at hh
       linear_combination hh
-  refine ⟨m.coeff 2,m.coeff 1,m.coeff 0,s,t,st,by rw [target.2.2];simp,target.2.1.symm,
+  refine ⟨m.coeff 2,m.coeff 1,m.coeff 0,s,t,st,rs,tr,by rw [target.2.2];simp,target.2.1.symm,
     by rw [target.1];ring,?_,?_⟩
   · intro x zero
     have rx : m.IsRoot x := by change m.eval x=0;conv_lhs => rw [shape];simp [zero]
@@ -147,13 +150,24 @@ private theorem cubic_poles {F K : Type*} [Field F] [Field K] [Algebra F K] [Fin
     conv_lhs at eq => rw [shape]
     simpa [φ] using eq
 
-/-- Uniform lower bound for ordered triple sums on a cubic Singer line over a
-prime field. The proof counts only finite parameters in a projective chart. -/
-theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
+
+/-- An affine parametrization of a projective Singer line, with its cubic generator. -/
+structure LineChart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Algebra (ZMod p) K]
+    [AddCommGroup G] (D : Finset G) (S : SingerMap (ZMod p) K D) where
+  base : Kˣ
+  theta : K
+  degree : (minpoly (ZMod p) theta).natDegree=3
+  parameter : ZMod p→Kˣ
+  coordinates : ∀ x, (parameter x:K)=(base:K)*(theta-algebraMap (ZMod p) K x)
+  embedding : ZMod p ↪ G
+  tagged : ∀ x, embedding x=S.tag (parameter x)
+  inside : ∀ x, embedding x∈D
+
+/-- Pick two projectively distinct points and use their ratio as affine coordinate. -/
+theorem line_chart {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
     [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
     (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
-    (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) (center : G) :
-    (p:ℝ)≤paths D 3 center+80*((p.sqrt:ℝ)+1)+8 := by
+    (card : Fintype.card K=(Fintype.card (ZMod p))^3) : Nonempty (LineChart D S) := by
   classical
   let φ := algebraMap (ZMod p) K
   have rank : Module.finrank (ZMod p) K=3 := by
@@ -195,10 +209,34 @@ theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
     change S.form ((U:K)*(θ-φ x))=0
     rw [show (U:K)*(θ-φ x)=(V:K)-x • (U:K) by rw [Algebra.smul_def,←vu];ring,
       map_sub,map_smul,ud,vd,smul_zero,sub_zero]
+  exact ⟨⟨U,θ,degree_three rank ns,line,fun _ => rfl,e,fun _ => rfl,inside⟩⟩
+
+#print axioms span_quadratics
+#print axioms cubic_poles
+#print axioms line_chart
+
+/-- Uniform lower bound for ordered triple sums on a cubic Singer line over a
+prime field. The proof counts only finite parameters in a projective chart. -/
+theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K]
+    [Algebra (ZMod p) K] [AddCommGroup G] [DecidableEq G] [Fintype G]
+    (D : Finset G) (S : SingerMap (ZMod p) K D) (twoPts : 1<D.card)
+    (card : Fintype.card K=(Fintype.card (ZMod p))^3) (big : 400≤p) (center : G) :
+    (p:ℝ)≤paths D 3 center+80*((p.sqrt:ℝ)+1)+8 := by
+  classical
+  let φ := algebraMap (ZMod p) K
+  obtain ⟨chart⟩ := line_chart D S twoPts card
+  let U:=chart.base
+  let θ:=chart.theta
+  let line:=chart.parameter
+  let e:=chart.embedding
+  have inside:=chart.inside
+  have rank : Module.finrank (ZMod p) K=3 := by
+    have total := Module.card_eq_pow_finrank (K:=ZMod p) (V:=K)
+    exact Nat.pow_right_injective (Fintype.one_lt_card (α:=ZMod p)) (total.symm.trans card)
   obtain ⟨W,wc⟩ := S.surj center
-  have degree := degree_three rank ns
+  have degree := chart.degree
   obtain ⟨a,b,c,coeff⟩ := span_quadratics θ card degree ((W:K)/(U:K)^3)
-  obtain ⟨i,j,k,s,t,st,one,two,three,irr,root⟩ := cubic_poles θ degree
+  obtain ⟨i,j,k,s,t,st,_,_,one,two,three,irr,root⟩ := cubic_poles θ degree
   let P : Pencil (ZMod p) := ⟨i,j,k,a,b,c⟩
   have value : (P.map φ).quad θ=(W:K)/(U:K)^3 := coeff
   have nz : (P.map φ).quad θ≠0 := value.trans_ne (div_ne_zero W.ne_zero (pow_ne_zero 3 U.ne_zero))
@@ -210,12 +248,18 @@ theorem triple_lower {p : ℕ} [Fact p.Prime] {K G : Type*} [Field K] [Fintype K
       apply (S.same _ _).mpr
       refine ⟨-(P.cubic x)/(P.quad x),?_⟩
       rw [Algebra.smul_def]
+      change (chart.parameter x:K)*(chart.parameter y:K)*(chart.parameter z:K)=φ _*(W:K)
+      rw [chart.coordinates,chart.coordinates,chart.coordinates]
       change ((U:K)*(θ-φ x))*((U:K)*(θ-φ y))*((U:K)*(θ-φ z))=φ _*(W:K)
       have rep : (P.map φ).quad θ*(U:K)^3=(W:K) := (eq_div_iff (pow_ne_zero 3 U.ne_zero)).mp value
       calc _ = ((θ-φ x)*(θ-φ y)*(θ-φ z))*(U:K)^3 := by ring
            _ = _ := by rw [prod,mul_assoc,rep]
     rw [S.mul,S.mul,wc] at group
-    have eq : center-e x-e y=e z := by change e x+e y+e z=center at group;rw [←group];abel
+    have eq : center-e x-e y=e z := by
+      change S.tag (chart.parameter x)+S.tag (chart.parameter y)+S.tag (chart.parameter z)=center at group
+      rw [←chart.tagged,←chart.tagged,←chart.tagged] at group
+      change e x+e y+e z=center at group
+      rw [←group];abel
     exact eq ▸ inside z
   have lower := paths_three D center e inside (fiber P) label
   have realCount : (p:ℝ)≤(∑ x : ZMod p,((fiber P x).card:ℝ))+80*((p.sqrt:ℝ)+1)+8 := by exact_mod_cast count
