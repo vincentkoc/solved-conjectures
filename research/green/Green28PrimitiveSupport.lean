@@ -10,7 +10,7 @@ namespace Green28PrimitiveSupport
 open Polynomial Finset
 
 /-- A monic divisor of a split product selects a subfamily of its linear factors. -/
-theorem divisor_subproduct {K : Type*} [Field K] (a : ℕ → K) (S : Finset ℕ)
+theorem divisor_subproduct {ι K : Type*} [Field K] (a : ι → K) (S : Finset ι)
     {f g : K[X]} (fm : f.Monic) (gm : g.Monic) (eq : f*g=∏ i ∈ S, (X-C (a i))) :
     ∃ U⊆S, f=∏ i ∈ U, (X-C (a i)) := by
   classical
