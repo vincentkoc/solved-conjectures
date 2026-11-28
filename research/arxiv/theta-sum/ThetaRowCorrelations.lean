@@ -16,7 +16,8 @@ private theorem wave_eq {n d : ℕ} (h : n.Coprime d) (w : ℕ) :
   · rw [wave,primitiveTerm,if_pos ⟨h,H⟩,if_pos H]
   · rw [wave,primitiveTerm,if_neg (fun hh => H hh.2),if_neg H,Int.cast_zero]
 
-private theorem sign_neg_pow (n d w : ℕ) :
+/-- The reciprocal sign equals the parity sign of the reduced representative. -/
+theorem sign_neg_pow (n d w : ℕ) :
     reciprocalSign n d w = -(-1:ℤ)^(((w:ZMod d)*(n:ZMod d)⁻¹).val) := by
   unfold reciprocalSign
   rcases Nat.even_or_odd (((w:ZMod d)*(n:ZMod d)⁻¹).val) with he|ho
@@ -347,6 +348,7 @@ theorem window_split {T Y p : ℕ} (hTY : T≤Y) (K : ℕ → ℕ) (hK : K 1=0)
 
 end Arxiv.«2501.03234».ThetaRowCorrelations
 #print axioms Arxiv.«2501.03234».ThetaRowCorrelations.window_split
+#print axioms Arxiv.«2501.03234».ThetaRowCorrelations.sign_neg_pow
 #print axioms Arxiv.«2501.03234».ThetaRowCorrelations.weighted_pair
 #print axioms Arxiv.«2501.03234».ThetaRowCorrelations.low_complete
 #print axioms Arxiv.«2501.03234».ThetaRowCorrelations.kernel_sum
