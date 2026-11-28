@@ -67,7 +67,7 @@ private lemma outer_root (f : ℤ[X]) (hd : 0 < f.natDegree)
 
 /-- A prime leading coefficient precludes a factorization if all complex
 roots are strictly inside the unit disk and the constant term is a unit. -/
-private lemma irreducible_of_prime_leading_inside (f : ℤ[X]) (hd : 0 < f.natDegree)
+lemma irreducible_of_prime_leading_inside (f : ℤ[X]) (hd : 0 < f.natDegree)
     (hu : IsUnit (f.coeff 0)) (hp : Irreducible f.leadingCoeff)
     (hroot : ∀ z : ℂ, (f.map (Int.castRingHom ℂ)).IsRoot z → ‖z‖ < 1) :
     Irreducible (f.map (Int.castRingHom ℚ)) := by
@@ -98,7 +98,7 @@ private lemma irreducible_of_prime_leading_inside (f : ℤ[X]) (hd : 0 < f.natDe
 
 /-- If every coefficient below the leading one is nonpositive, evaluation at
 one already bounds the contributions of all lower powers outside the disk. -/
-private lemma inside_of_nonpositive_coeffs (g : ℝ[X]) (hm : 0 < g.leadingCoeff)
+lemma inside_of_nonpositive_coeffs (g : ℝ[X]) (hm : 0 < g.leadingCoeff)
     (hcoeff : ∀ i < g.natDegree, g.coeff i ≤ 0) (hpos : 0 < g.eval 1)
     (z : ℂ) (hz : (g.map (algebraMap ℝ ℂ)).IsRoot z) : ‖z‖ < 1 := by
   classical
@@ -164,28 +164,22 @@ private lemma one_outer_factor (f : ℝ[X]) (hm : f.Monic) (hd : 1 < f.natDegree
   · rw [hq,eval_mul,eval_sub,eval_X,eval_C] at hval
     nlinarith [hr.1]
 
-private lemma irreducible_of_one_outer_factor (f : ℤ[X]) (hm : f.Monic) (hd : 1 < f.natDegree)
-    (hc : ∀ i, i+1 < f.natDegree → 0 ≤ f.coeff i) (hconst : f.coeff 0 ≠ 0)
-    (hval : f.eval 1 < 0) : Irreducible (f.map (Int.castRingHom ℚ)) := by
+/-- A monic integral polynomial is irreducible over the rationals if its
+nonzero constant term forces each nonconstant integral factor to have an
+outer root, and a single real linear factor accounts for every such root. -/
+lemma irreducible_of_real_linear_factor (f : ℤ[X]) (hm : f.Monic) (hd : 0 < f.natDegree)
+    (hconst : f.coeff 0 ≠ 0) (r : ℝ) (q : ℝ[X])
+    (hq : f.map (Int.castRingHom ℝ) = (X-C r)*q)
+    (hinside : ∀ z : ℂ, (q.map (algebraMap ℝ ℂ)).IsRoot z → ‖z‖ < 1) :
+    Irreducible (f.map (Int.castRingHom ℚ)) := by
   classical
-  let F := f.map (Int.castRingHom ℝ)
-  have hdeg : F.natDegree = f.natDegree := natDegree_map_eq_of_injective Int.cast_injective _
-  have hc' (i : ℕ) (hi : i+1 < F.natDegree) : 0 ≤ F.coeff i := by
-    rw [hdeg] at hi
-    simpa [F] using (show (0 : ℝ) ≤ (f.coeff i : ℝ) by exact_mod_cast hc i hi)
-  have hv : F.eval 1 < 0 := by
-    change (f.map (Int.castRingHom ℝ)).eval 1 < 0
-    rw [←map_one (Int.castRingHom ℝ),eval_map_apply]
-    change ((f.eval 1 : ℤ) : ℝ) < 0
-    exact_mod_cast hval
-  obtain ⟨r,q,_,hq,hinside⟩ := one_outer_factor F (hm.map _) (by omega) hc' hv
   let c := Int.castRingHom ℂ
   let R := algebraMap ℝ ℂ
   have hq' : f.map c = (X-C (r:ℂ)) * q.map R := by
     have h := congrArg (Polynomial.map R) hq
     have he : R.comp (Int.castRingHom ℝ) = c := Subsingleton.elim _ _
     change f.map c = (X-C (R r)) * q.map R
-    simpa only [F,Polynomial.map_map,he,Polynomial.map_mul,Polynomial.map_sub,map_X,map_C] using h
+    simpa only [Polynomial.map_map,he,Polynomial.map_mul,Polynomial.map_sub,map_X,map_C] using h
   apply (IsPrimitive.Int.irreducible_iff_irreducible_map_cast hm.isPrimitive).mp
   refine ⟨fun h => by have := natDegree_eq_zero_of_isUnit h; omega, ?_⟩
   intro a b hab
@@ -215,9 +209,26 @@ private lemma irreducible_of_one_outer_factor (f : ℤ[X]) (hm : f.Monic) (hd : 
     rw [←mul_left_cancel₀ (X_sub_C_ne_zero _) hprod]
     exact dvd_mul_right _ _
 
+private lemma irreducible_of_one_outer_factor (f : ℤ[X]) (hm : f.Monic) (hd : 1 < f.natDegree)
+    (hc : ∀ i, i+1 < f.natDegree → 0 ≤ f.coeff i) (hconst : f.coeff 0 ≠ 0)
+    (hval : f.eval 1 < 0) : Irreducible (f.map (Int.castRingHom ℚ)) := by
+  classical
+  let F := f.map (Int.castRingHom ℝ)
+  have hdeg : F.natDegree = f.natDegree := natDegree_map_eq_of_injective Int.cast_injective _
+  have hc' (i : ℕ) (hi : i+1 < F.natDegree) : 0 ≤ F.coeff i := by
+    rw [hdeg] at hi
+    simpa [F] using (show (0 : ℝ) ≤ (f.coeff i : ℝ) by exact_mod_cast hc i hi)
+  have hv : F.eval 1 < 0 := by
+    change (f.map (Int.castRingHom ℝ)).eval 1 < 0
+    rw [←map_one (Int.castRingHom ℝ),eval_map_apply]
+    change ((f.eval 1 : ℤ) : ℝ) < 0
+    exact_mod_cast hval
+  obtain ⟨r,q,_,hq,hinside⟩ := one_outer_factor F (hm.map _) (by omega) hc' hv
+  exact irreducible_of_real_linear_factor f hm (by omega) hconst r q hq hinside
+
 private noncomputable abbrev quadraticSeed (a b c : ℤ) : ℤ[X] := C a * X^2 + C b * X + C c
 
-private lemma term_shape (b : Bool) (f : ℤ[X]) (hd : 0 < f.natDegree) (i : ℕ) :
+lemma polynomialTerm_shape (b : Bool) (f : ℤ[X]) (hd : 0 < f.natDegree) (i : ℕ) :
     (polynomialTerm b f i).natDegree = f.natDegree+i ∧
       (polynomialTerm b f i).leadingCoeff = f.leadingCoeff := by
   induction i with
@@ -238,7 +249,7 @@ private lemma term_shape (b : Bool) (f : ℤ[X]) (hd : 0 < f.natDegree) (i : ℕ
     · rw [add_comm,leadingCoeff_add_of_degree_lt hl,leadingCoeff_mul,leadingCoeff_X,one_mul]
       exact ih.2
 
-private lemma term_eval_one (b : Bool) (f : ℤ[X]) (i : ℕ) :
+lemma polynomialTerm_eval_one (b : Bool) (f : ℤ[X]) (i : ℕ) :
     (polynomialTerm b f i).eval 1 = f.eval 1 + (i : ℤ)*(if b then 1 else -1) := by
   induction i with
   | zero => simp [polynomialTerm]
@@ -292,8 +303,8 @@ private lemma first_quadratic_length (k c : ℕ) (hk : 0 < k) (hc : 0 < c) :
   have hd : f.natDegree = 2 := natDegree_quadratic one_ne_zero
   have hl : f.leadingCoeff = 1 := leadingCoeff_quadratic one_ne_zero
   have he (i : ℕ) : (polynomialTerm true f i).eval 1 = (i:ℤ)-k := by
-    rw [term_eval_one]; simp [f,quadraticSeed]; ring
-  have hs (i : ℕ) := term_shape true f (by omega) i
+    rw [polynomialTerm_eval_one]; simp [f,quadraticSeed]; ring
+  have hs (i : ℕ) := polynomialTerm_shape true f (by omega) i
   refine ⟨hk,by change 0 < f.leadingCoeff; omega,?_,?_⟩
   · intro i hi
     let g := polynomialTerm true f i
@@ -318,8 +329,8 @@ private lemma second_quadratic_length (k p : ℕ) (hk : 0 < k) (hp : p.Prime) (h
   have hd : f.natDegree = 2 := natDegree_quadratic hp0
   have hl : f.leadingCoeff = p := leadingCoeff_quadratic hp0
   have he (i : ℕ) : (polynomialTerm false f i).eval 1 = (k:ℤ)-i := by
-    rw [term_eval_one]; simp [f,quadraticSeed]; ring
-  have hs (i : ℕ) := term_shape false f (by omega) i
+    rw [polynomialTerm_eval_one]; simp [f,quadraticSeed]; ring
+  have hs (i : ℕ) := polynomialTerm_shape false f (by omega) i
   refine ⟨hk,by change 0 < f.leadingCoeff; omega,?_,?_⟩
   · intro i hi
     let g := polynomialTerm false f i
@@ -393,6 +404,11 @@ theorem infinitely_many_quadratic_polynomial_chains (b : Bool) (k : ℕ) (hk : 0
     rw [he] at h
     omega
 
+#print axioms irreducible_of_prime_leading_inside
+#print axioms inside_of_nonpositive_coeffs
+#print axioms irreducible_of_real_linear_factor
+#print axioms polynomialTerm_shape
+#print axioms polynomialTerm_eval_one
 #print axioms infinitely_many_quadratic_polynomial_chains
 
 /-- Evaluation at two recovers the pinned integer recurrences for positive

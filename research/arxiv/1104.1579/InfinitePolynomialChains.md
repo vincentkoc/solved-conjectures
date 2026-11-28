@@ -1,0 +1,18 @@
+# Infinite polynomial Cunningham chains
+
+For each sign there are infinitely many degree-one polynomials `f ∈ ℤ[X]` with positive leading coefficient for which **every** iterate of `g ↦ Xg ± 1` is irreducible over ℚ. The same seed works for all indices. This is Jones’s Corollary 1.6. The proof uses the explicit linear families in his concluding remarks. [Lean proof](CunninghamPolynomialInfinite.lean) · [Jones, Corollary 1.6 and §4](https://arxiv.org/pdf/1104.1579) · [Finite exact lengths](PolynomialLengths.md)
+
+| Kind | Seed | Condition |
+| --- | --- | --- |
+| First, `Xg+1` | `pX+1` | Every positive prime `p` gives an infinite chain. |
+| Second, `Xg−1` | `X−c`, for `c ∈ ℤ` | The chain is infinite exactly when `c ≥ 1`. |
+
+For the first kind, suppose a root `z` of the iterate at index `i` satisfies `|z| ≥ 1`. Set `w = 1/z`. Multiplying the defining polynomial by `X−1` gives `p = (p−1)w + w^(i+2)`. Both powers of `w` on the right have real part at most 1. Since `p−1 > 0`, equality forces `Re(w) = 1`, hence `w = z = 1`. The iterate takes the positive value `p+1+i` there. Thus all roots lie inside the unit circle. In any integral factorization one factor has unit leading coefficient, and the product of its roots forces that factor to be constant. Gauss’s lemma gives rational irreducibility.
+
+For the second kind the iterate at index `i` has degree `i+1`, subleading coefficient `−c`, and all lower coefficients equal to −1. When `c ≥ 1`, Brauer’s criterion gives irreducibility. For `c ≤ 0`, evaluation at 1 gives `1−c−i`. At index `i = 1−c` the polynomial has degree at least two and the factor `X−1`. This rules out an infinite chain for every remaining monic linear seed. [Brauer, 1951](https://doi.org/10.1002/mana.3210040123)
+
+The file proves Brauer’s coefficient criterion for every monic integral polynomial of degree at least two with negative, nonincreasing coefficients below its leading term, read from the constant term upward. Its value at 1 is negative. Dividing by a real linear factor with root greater than 1 leaves a quotient `q` with positive, strictly increasing coefficients. Choose `t < 1` sufficiently close to 1 that every lower coefficient of `(X−t)q` is nonpositive. Its value at 1 is positive, so the leading coefficient strictly exceeds the sum of the absolute values of the lower coefficients. All roots of `q` are inside the unit circle. Any nonconstant monic integral factor would require a root on or outside the circle because its constant term is a nonzero integer.
+
+The pinned DeepMind declarations test integer primality under `n ↦ 2n ± 1`. Their infinitude at each fixed length `k ≥ 2` remains open. Both merged DeepMind PRs address integer chains. Searches of DeepMind and Open Math Agents issues and pull requests and Left to Solve’s solved records found no matching polynomial formalization. [Pinned predicates](https://github.com/google-deepmind/formal-conjectures/blob/f606af160664c5a10952e9a957b100a1cd45bbeb/FormalConjectures/Arxiv/1104.1579/CunninghamChain.lean) · [DeepMind issue](https://github.com/google-deepmind/formal-conjectures/issues/4755) · [Canonical declaration PR](https://github.com/google-deepmind/formal-conjectures/pull/4765) · [Additional chain PR](https://github.com/google-deepmind/formal-conjectures/pull/4770) · [Left to Solve](https://lefttosolve.com/api/solved)
+
+The declarations `prime_linear_firstKind_infinite`, `brauer_irreducible_of_coeff`, `monic_linear_secondKind_infinite_iff`, and `infinitely_many_linear_infinite_polynomial_chains` belong to `CunninghamChain`. Each uses only `propext`, `Classical.choice`, and `Quot.sound`. Codex assisted with the formalization. [Notebook replay](../../README.md#replay)
