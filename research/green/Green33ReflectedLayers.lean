@@ -257,6 +257,24 @@ private lemma sum_fiber (A : Finset G) (w : G → ℝ) :
   simp only [Green33Multiplicity.reps,card_eq_sum_ones,Nat.cast_sum,sum_mul,sum_filter]
   rw [sum_comm]; simp [sum_product]
 
+/-- The Sidon representation profile integrated against an arbitrary test function.
+Every sum has weight two before the repeated-summand correction. -/
+theorem sidon_sum_weight {A : Finset G} (sid : IsSidon (A : Set G)) (w : G→ℝ) :
+    2*(∑ x∈A+A,w x)=(∑ a∈A,∑ b∈A,w (a+b))+∑ a∈A,w (a+a) := by
+  have mass:=sum_fiber A w
+  simp_rw [pair_profile sid,sub_mul,mul_assoc] at mass
+  have weighted (S : Finset G) : (∑ x,mark S x*w x)=∑ x∈S,w x := by
+    classical
+    simp [mark,ite_mul]
+  rw [sum_sub_distrib,←mul_sum,weighted,weighted] at mass
+  have unique : Set.InjOn (fun a : G => a+a) (A : Set G) := by
+    intro a ha b hb eq
+    rcases sid a ha b hb a ha b hb eq with h|h <;> exact h.1
+  rw [diagonals,sum_image unique] at mass
+  linarith
+
+#print axioms sidon_sum_weight
+
 private lemma two_walks (A : Finset G) (f : G → ℝ) (x : G) :
     walk A (walk A f) x = ∑ y, (Green33Multiplicity.reps A y : ℝ)*f (x-y) := by
   rw [sum_fiber]
@@ -808,7 +826,8 @@ theorem prime_hole_fraction (p : ℕ → ℕ) [h : ∀ i, Fact (p i).Prime]
       dist (holes i/(2*m i)) (1/8)) atTop (𝓝 0) by simpa only [Real.dist_eq] using hconv)
   simpa only [Nat.cast_mul,Nat.cast_ofNat] using ht'
 
-private lemma extension_cost {A B : Finset G} (hAB : A ⊆ B) (hb : B+B=univ) :
+/-- Each newly represented group element requires a new unordered pair. -/
+theorem extension_cost {A B : Finset G} (hAB : A ⊆ B) (hb : B+B=univ) :
     2*((Fintype.card G : ℝ)-(A+A).card)+(A.card : ℝ)^2+A.card ≤ (B.card : ℝ)^2+B.card := by
   classical
   let s : Sym2 G → G := Sym2.lift ⟨(·+·),add_comm⟩
@@ -837,6 +856,8 @@ private lemma extension_cost {A B : Finset G} (hAB : A ⊆ B) (hb : B+B=univ) :
   have hh' : (Fintype.card G : ℝ)+A.sym2.card ≤ (A+A).card+B.sym2.card := by exact_mod_cast hh
   simp only [card_sym2,Nat.cast_choose_two,Nat.cast_add_one] at hh'
   linarith
+
+#print axioms extension_cost
 
 /-- Any cyclic two-basis containing a reflected prime graph has eventual
 normalized size above every constant below 3/2. -/
