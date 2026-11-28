@@ -5,7 +5,7 @@ namespace Arxiv.«2501.03234».ThetaSievedWindows
 
 open Finset ThetaPeriodMeans ThetaPrimeSieve ThetaRowCorrelations
 
-private lemma normalizer_bound {N : ℕ} (hN : 2≤N) :
+theorem normalizer_bound {N : ℕ} (hN : 2≤N) :
     (normalizer N)⁻¹ ≤ (∑' i : ℕ, ((i:ℝ)^2)⁻¹)/Real.log N := by
   have hp : (1:ℝ)<N := by exact_mod_cast hN
   have hlog := Real.log_pos hp

@@ -40,45 +40,33 @@ private lemma high_split {T N Y p : ℕ} (hTN : T≤N) (hNY : N≤Y)
     · simp [above,hd,lt_of_not_ge hd]
   rw [hfun,hlow] at hs; linear_combination hs
 
-private lemma band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}, 2≤N → 1≤T → T≤N →
-    ∀ s : Finset ℕ, (∀ p∈s,p.Prime ∧ N^56≤p ∧ p≤N^64 ∧ A*(1+Real.log T)^2≤err p) →
-      (s.card:ℝ)*(Real.log N*weight T)≤B*(N:ℝ)^64 := by
-  obtain ⟨C,hC,h⟩ := ThetaPrimeMeanSquare.scale_window_control
-  obtain ⟨D,hD,hsmall⟩ := small_rows_bound
+/-- The discarded row variance over primes already includes the prime-density
+logarithm, uniformly in the retained cutoff T and numerator window L. -/
+theorem high_variance : ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}, 2≤N → 1≤T → T≤N →
+    ∀ (L : ℕ → ℕ), L 1=0 → ∀ s : Finset ℕ,
+      (∀ p∈s,p.Prime ∧ N^56≤p ∧ p≤N^64) →
+      (∑ p∈s,‖windowExtension (above T L) (2*N^52) p‖^2)*
+        (Real.log N*(T:ℝ)^(1/128:ℝ))≤B*(N:ℝ)^64 := by
   obtain ⟨W,hW,hhigh⟩ := cut_variance
   obtain ⟨U,hU,hsieve⟩ := ThetaSievedWindows.tail_prime_band
   let Z := ∑' g : ℕ,((g:ℝ)^2)⁻¹
   have hZ : 0≤Z := tsum_nonneg (fun _ => by positivity)
-  let c := 8/Real.pi^2
-  have hc : 0<c := by dsimp [c]; positivity
-  refine ⟨C+c*(D+1),by positivity,2*(128*W+U*Z^2),by positivity,?_⟩
-  intro N T hN hT hTN s hs
-  obtain ⟨L,hL,ctrl⟩ := h N hN
+  refine ⟨2*(128*W+U*Z^2),by positivity,?_⟩
+  intro N T hN hT hTN L hL s hs
   let Y := 2*N^52
   have hNY : N≤Y := by dsimp [Y]; have := Nat.le_self_pow (by decide : 52≠0) N; omega
   let F := windowExtension (above N L) Y
   let M := low N L (fun d => if T<d then commonWeight Y d else 0)
-  have hpoint (p) (hp : p∈s) : 1≤2*(‖F p‖^2+(M p)^2) := by
-    obtain ⟨hpr,hlo,hhi,hbad⟩ := hs p hp
+  have hpoint (p) (hp : p∈s) :
+      ‖windowExtension (above T L) Y p‖^2≤2*(‖F p‖^2+(M p)^2) := by
+    obtain ⟨hpr,hlo,hhi⟩ := hs p hp
     have hy := cutoff_inside hN hlo
     have hcop (d : ℕ) (hd : d∈Icc 1 Y) : p.Coprime d := hpr.coprime_iff_not_dvd.mpr
       (fun hh => ((mem_Icc.mp hd).2.trans_lt hy).not_ge (Nat.le_of_dvd (mem_Icc.mp hd).1 hh))
-    have hsplit := high_split hTN hNY L hL hcop
-    have hn : ‖windowExtension L Y p‖≤D*(1+Real.log T)^2+(‖F p‖+|M p|) := by
-      have hh := norm_add_le (windowExtension L Y p-windowExtension (above T L) Y p)
-        (windowExtension (above T L) Y p)
-      rw [sub_add_cancel] at hh
-      apply hh.trans (add_le_add (hsmall hT L hL hcop) ?_)
-      rw [hsplit]; simpa [F,M,Complex.norm_real,Real.norm_eq_abs] using
-        (norm_add_le (F p) ((M p:ℝ):ℂ))
-    have hu := ctrl p hpr hlo hhi
-    change err p≤C+c*‖windowExtension L Y p‖ at hu
-    have hV : 1≤(1+Real.log T)^2 := one_le_pow₀ (by linarith [Real.log_nonneg (show 1≤(T:ℝ) by exact_mod_cast hT)])
-    have hb : 1≤‖F p‖+|M p| := by
-      by_contra! he
-      nlinarith only [hu,hbad,mul_le_mul_of_nonneg_left hn hc.le,mul_lt_mul_of_pos_left he hc,
-        mul_le_mul_of_nonneg_left hV hC.le,mul_le_mul_of_nonneg_left hV hc.le]
-    nlinarith only [pow_le_pow_left₀ zero_le_one hb 2,sq_nonneg (‖F p‖-|M p|),sq_abs (M p)]
+    have hnorm : ‖windowExtension (above T L) Y p‖≤‖F p‖+|M p| := by
+      rw [high_split hTN hNY L hL hcop]
+      simpa only [F,M,Complex.norm_real,Real.norm_eq_abs] using norm_add_le (F p) ((M p:ℝ):ℂ)
+    nlinarith only [pow_le_pow_left₀ (norm_nonneg _) hnorm 2,sq_nonneg (‖F p‖-|M p|),sq_abs (M p)]
   have hsum := sum_le_sum hpoint
   simp only [sum_const,nsmul_eq_mul,mul_one,←mul_sum,sum_add_distrib] at hsum
   let x := (N:ℝ)^64
@@ -87,7 +75,7 @@ private lemma band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}
   have hw := weight_pos hT
   have hn := weight_pos (show 1≤N by omega)
   have hh : (∑ p∈s,‖F p‖^2)*(Real.log N*weight T)≤128*W*x := by
-    have hsub : s⊆range (N^64+1) := fun p hp => mem_range.mpr (Nat.lt_succ_of_le (hs p hp).2.2.1)
+    have hsub : s⊆range (N^64+1) := fun p hp => mem_range.mpr (Nat.lt_succ_of_le (hs p hp).2.2)
     have H : (∑ p∈s,‖F p‖^2)≤W*x/(weight N*weight N) := by
       rw [weight_sq]; exact (sum_le_sum_of_subset_of_nonneg hsub (by intros; positivity)).trans
         (hhigh (show 1≤N by omega) (above N L) (fun d hd => if_pos hd) N (by omega))
@@ -100,7 +88,7 @@ private lemma band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}
   have hm : (∑ p∈s,(M p)^2)*(Real.log N*weight T)≤U*Z^2*x := by
     have H := hsieve N T hN hT L (commonWeight Y) Z hZ
       (fun d _ => by rw [abs_of_nonneg (commonWeight_bounds _ d).1]; exact (commonWeight_bounds _ d).2) s (by
-        intro p hp; obtain ⟨hpr,hlo,hhi,_⟩ := hs p hp
+        intro p hp; obtain ⟨hpr,hlo,hhi⟩ := hs p hp
         have := cutoff_inside hN hlo; exact ⟨hpr,hNY.trans_lt this,hhi⟩)
     change (∑ p∈s,(M p)^2)≤U*(Z/denominatorWeight T)^2*x/Real.log N at H
     have hd : 0<denominatorWeight T := Real.rpow_pos_of_pos (by exact_mod_cast hT) _
@@ -108,7 +96,42 @@ private lemma band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}
     have H' := (le_div_iff₀ (sq_pos_of_pos hd)).mp ((le_div_iff₀ hl).mp H)
     have hnon : 0≤(∑ p∈s,(M p)^2)*Real.log N := mul_nonneg (sum_nonneg (fun _ _ => sq_nonneg _)) hl.le
     rw [←mul_assoc]; exact (mul_le_mul_of_nonneg_left (weight_le_sieve hT) hnon).trans H'
+  change (∑ p∈s,‖windowExtension (above T L) Y p‖^2)*(Real.log N*weight T)≤2*(128*W+U*Z^2)*x
   nlinarith only [mul_le_mul_of_nonneg_right hsum (mul_nonneg hl.le hw.le),hh,hm]
+
+private lemma band : ∃ A : ℝ, 0<A ∧ ∃ B : ℝ, 0≤B ∧ ∀ {N T : ℕ}, 2≤N → 1≤T → T≤N →
+    ∀ s : Finset ℕ, (∀ p∈s,p.Prime ∧ N^56≤p ∧ p≤N^64 ∧ A*(1+Real.log T)^2≤err p) →
+      (s.card:ℝ)*(Real.log N*weight T)≤B*(N:ℝ)^64 := by
+  obtain ⟨C,hC,h⟩ := ThetaPrimeMeanSquare.scale_window_control
+  obtain ⟨D,hD,hsmall⟩ := small_rows_bound
+  obtain ⟨B,hB,hv⟩ := high_variance
+  let c := 8/Real.pi^2
+  have hc : 0<c := by dsimp [c]; positivity
+  refine ⟨C+c*(D+1),by positivity,B,hB,?_⟩
+  intro N T hN hT hTN s hs
+  obtain ⟨L,hL,ctrl⟩ := h N hN
+  let Y := 2*N^52
+  have hpoint (p) (hp : p∈s) : 1≤‖windowExtension (above T L) Y p‖^2 := by
+    obtain ⟨hpr,hlo,hhi,hbad⟩ := hs p hp
+    have hy := cutoff_inside hN hlo
+    have hcop (d : ℕ) (hd : d∈Icc 1 Y) : p.Coprime d := hpr.coprime_iff_not_dvd.mpr
+      (fun hh => ((mem_Icc.mp hd).2.trans_lt hy).not_ge (Nat.le_of_dvd (mem_Icc.mp hd).1 hh))
+    have hn : ‖windowExtension L Y p‖≤D*(1+Real.log T)^2+‖windowExtension (above T L) Y p‖ := by
+      have hh := norm_add_le (windowExtension L Y p-windowExtension (above T L) Y p)
+        (windowExtension (above T L) Y p)
+      rw [sub_add_cancel] at hh
+      exact hh.trans (add_le_add_left (hsmall hT L hL hcop) _)
+    have hu := ctrl p hpr hlo hhi
+    change err p≤C+c*‖windowExtension L Y p‖ at hu
+    have hV : 1≤(1+Real.log T)^2 := one_le_pow₀ (by linarith [Real.log_nonneg (show 1≤(T:ℝ) by exact_mod_cast hT)])
+    apply one_le_pow₀
+    by_contra! he
+    nlinarith only [hu,hbad,mul_le_mul_of_nonneg_left hn hc.le,mul_lt_mul_of_pos_left he hc,
+      mul_le_mul_of_nonneg_left hV hC.le,mul_le_mul_of_nonneg_left hV hc.le]
+  have hh := sum_le_sum hpoint
+  simp only [sum_const,nsmul_eq_mul,mul_one] at hh
+  apply (mul_le_mul_of_nonneg_right hh (mul_nonneg (Real.log_nonneg (by exact_mod_cast (show 1≤N by omega))) (weight_pos hT).le)).trans
+  exact hv hN hT hTN L hL s (fun p hp => ⟨(hs p hp).1,(hs p hp).2.1,(hs p hp).2.2.1⟩)
 
 private lemma entry {P : ℕ → Prop} {X p : ℕ} : p∈primeSet P X ↔ p≤X ∧ p.Prime ∧ P p := by
   classical simp only [primeSet,mem_filter,Nat.mem_primesLE,and_assoc]
@@ -296,3 +319,5 @@ theorem prime_normalized_tail : ∃ C a : ℝ, 0<C ∧ 0<a ∧ ∀ X : ℕ, 2≤
 
 end Arxiv.«2501.03234».ThetaSievedConcentration
 #print axioms Arxiv.«2501.03234».ThetaSievedConcentration.prime_normalized_tail
+
+#print axioms Arxiv.«2501.03234».ThetaSievedConcentration.high_variance

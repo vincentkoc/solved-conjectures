@@ -133,7 +133,7 @@ on primes exceeding the sieve level. -/
 noncomputable def weight (R n : ℕ) : ℝ :=
   ((∑ r ∈ moduli R, ramanujan r n/(r.totient:ℝ))/normalizer R)^2
 
-private theorem one_le_normalizer {R : ℕ} (hR : 1≤R) : 1≤normalizer R := by
+theorem one_le_normalizer {R : ℕ} (hR : 1≤R) : 1≤normalizer R := by
   have h : 1∈moduli R := mem_filter.mpr ⟨mem_Icc.mpr ⟨le_rfl,hR⟩,squarefree_one⟩
   simpa [normalizer] using (single_le_sum (f:=fun r : ℕ => (r.totient:ℝ)⁻¹) (fun i _ => by positivity) h)
 
