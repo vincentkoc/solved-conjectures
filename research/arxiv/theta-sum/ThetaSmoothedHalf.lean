@@ -15,7 +15,7 @@ def hits (x : ℕ → ZMod p) (n K : ℕ) : ℕ :=
 def pairs (x : ℕ → ZMod p) (n K L : ℕ) : ℕ :=
   ∑ i ∈ range n, ∑ j ∈ range L, if (x i + (j : ZMod p)).val < K then 1 else 0
 
-private lemma pairs_fourier (x : ℕ → ZMod p) (n K L : ℕ) (hK : K ≤ p) :
+lemma pairs_fourier (x : ℕ → ZMod p) (n K L : ℕ) (hK : K ≤ p) :
     (p : ℂ) * pairs x n K L =
       ∑ t : ZMod p, series K (-t) * series L t * expSum x n t := by
   classical
@@ -81,7 +81,7 @@ private lemma pair_error (x : ℕ → ZMod p) {n K L H : ℕ} (hK : K ≤ p)
       exact mul_le_mul_of_nonneg_right (profile_mass hp hH hHm) hE
 
 omit [NeZero p] in
-private lemma shift_hits (x : ℕ → ZMod p) (n m L : ℕ) :
+lemma shift_hits (x : ℕ → ZMod p) (n m L : ℕ) :
     hits x n (m+1) * L ≤ pairs x n (m+L) L := by
   unfold hits pairs
   rw [sum_mul]

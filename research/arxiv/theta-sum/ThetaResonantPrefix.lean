@@ -8,7 +8,7 @@ open ThetaReciprocalPrefixes ThetaReciprocalCutoff
 noncomputable section
 variable {p : ℕ} [Fact p.Prime]
 
-private lemma long_sign {i : ℕ} (htile : (p:ℝ)/1024 < |tile p i|) :
+lemma long_sign {i : ℕ} (htile : (p:ℝ)/1024 < |tile p i|) :
     ∃ k<stop p i, ∃ a, 2^i ≤ a ∧ a ≤ stop p i ∧ ∃ n ≤ stop p i-a,
       (2:ℝ)^i/(4096*((i:ℝ)+1)) < |∑ j∈range n, sgn p (a+j) k| := by
   by_contra! h

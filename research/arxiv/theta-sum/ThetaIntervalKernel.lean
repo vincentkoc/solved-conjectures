@@ -48,7 +48,7 @@ lemma series_le_weight (m : ℕ) {t : ZMod p} (ht : t ≠ 0) : ‖series m t‖ 
   rw [geom, ← norm_mul, geom_sum_mul]
   exact (norm_sub_le _ _).trans (by norm_num [norm_pow, Circle.norm_coe])
 
-private lemma inv_square_sum {H m : ℕ} (hH : 0 < H) (hm : H ≤ m) :
+lemma inv_square_sum {H m : ℕ} (hH : 0 < H) (hm : H ≤ m) :
     ∑ n ∈ Ico (H+1) (m+1), (n : ℝ)⁻¹ ^ 2 ≤ (H : ℝ)⁻¹ := by
   calc
     _ ≤ ∑ n ∈ Ico (H+1) (m+1), (((n-1 : ℕ) : ℝ)⁻¹ - (n : ℝ)⁻¹) := by
