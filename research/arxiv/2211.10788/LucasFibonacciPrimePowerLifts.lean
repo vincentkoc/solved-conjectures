@@ -135,25 +135,23 @@ private lemma cast_quot_ne_zero_iff {p m a : ℕ} (hm : 0 < m) (ha : m ∣ a) :
   conv_rhs => rw [← Nat.div_mul_cancel ha]
   rw [Nat.mul_dvd_mul_iff_right hm]
 
-/-- If the Fibonacci step gains the extra prime factor, every term or no term
-lifts according to the initial value. Otherwise exactly one residue class of
-steps lifts. The modulus may already be divisible by a higher power of p. -/
-theorem prime_mul_lifts_on_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
-    (hpm : p ∣ m) (hs : m ∣ lucasFibonacciSum s) (hf : m ∣ Nat.fib j) :
+private theorem recurrence_lifts_on_class (v : ℕ → ℕ)
+    (step : ∀ n, v (n+2) = v (n+1)+v n) (cop : ∀ n, (v n).Coprime (v (n+1))) {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
+    (hpm : p ∣ m) (hs : m ∣ v s) (hf : m ∣ Nat.fib j) :
     (if p * m ∣ Nat.fib j then
-      ∀ t : ℕ, p * m ∣ lucasFibonacciSum (s + j * t) ↔ p * m ∣ lucasFibonacciSum s
+      ∀ t : ℕ, p * m ∣ v (s + j * t) ↔ p * m ∣ v s
      else
-      ∃! z : ZMod p, ∀ t : ℕ, p * m ∣ lucasFibonacciSum (s + j * t) ↔ (t : ZMod p) = z) := by
+      ∃! z : ZMod p, ∀ t : ℕ, p * m ∣ v (s + j * t) ↔ (t : ZMod p) = z) := by
   let a : ZMod p := fibonacciStepConstant j
-  let x : ZMod p := ((lucasFibonacciSum s / m : ℕ) : ZMod p)
+  let x : ZMod p := ((v s / m : ℕ) : ZMod p)
   let b : ZMod p := ((Nat.fib j / m : ℕ) : ZMod p)
-  let y : ZMod p := lucasFibonacciSum (s + 1)
+  let y : ZMod p := v (s + 1)
   have ha : a ≠ 0 := (ZMod.natCast_eq_zero_iff ..).not.mpr (fun hd =>
     (Fact.out : p.Prime).not_dvd_one ((step_coprime j).gcd_eq_one ▸ Nat.dvd_gcd (hpm.trans hf) hd))
   have hy : y ≠ 0 := (ZMod.natCast_eq_zero_iff ..).not.mpr (fun hd =>
-    (Fact.out : p.Prime).not_dvd_one ((consecutive_coprime s).gcd_eq_one ▸ Nat.dvd_gcd (hpm.trans hs) hd))
-  have htest (t : ℕ) : p * m ∣ lucasFibonacciSum (s + j * t) ↔ a * x + t * b * y = 0 :=
-    prime_mul_dvd_lucasFibonacciSum_iff hm hpm hs hf t
+    (Fact.out : p.Prime).not_dvd_one ((cop s).gcd_eq_one ▸ Nat.dvd_gcd (hpm.trans hs) hd))
+  have htest (t : ℕ) : p * m ∣ v (s + j * t) ↔ a * x + t * b * y = 0 :=
+    affine_lift v step hm hpm hs hf t
   split_ifs with hstep
   · have hb : b = 0 := by
       by_contra hn
@@ -164,13 +162,24 @@ theorem prime_mul_lifts_on_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
     exact not_iff_not.mp (cast_quot_ne_zero_iff hm hs)
   · have hb : b ≠ 0 := (cast_quot_ne_zero_iff hm hf).mpr hstep
     let z := -(a * x) / (b * y)
-    have hz (t : ℕ) : p * m ∣ lucasFibonacciSum (s + j * t) ↔ (t : ZMod p) = z := by
+    have hz (t : ℕ) : p * m ∣ v (s + j * t) ↔ (t : ZMod p) = z := by
       rw [htest, eq_div_iff (mul_ne_zero hb hy)]
       constructor <;> intro h <;> linear_combination h
     refine ⟨z, hz, ?_⟩
     intro w hw
     obtain he := (hz w.val).mp ((hw w.val).mpr (ZMod.natCast_zmod_val w))
     simpa using he
+
+/-- If the Fibonacci step gains the extra prime factor, every term or no term
+lifts according to the initial value. Otherwise exactly one residue class of
+steps lifts. The modulus may already be divisible by a higher power of p. -/
+theorem prime_mul_lifts_on_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
+    (hpm : p ∣ m) (hs : m ∣ lucasFibonacciSum s) (hf : m ∣ Nat.fib j) :
+    (if p * m ∣ Nat.fib j then
+      ∀ t : ℕ, p * m ∣ lucasFibonacciSum (s + j * t) ↔ p * m ∣ lucasFibonacciSum s
+     else
+      ∃! z : ZMod p, ∀ t : ℕ, p * m ∣ lucasFibonacciSum (s + j * t) ↔ (t : ZMod p) = z) :=
+  recurrence_lifts_on_class _ lucas_fibonacci_sum_recurrence consecutive_coprime hm hpm hs hf
 
 private lemma rank_spec (m d : ℕ) [NeZero m] :
     0 < fibonacciStepRank m d ∧ m ∣ Nat.fib (d * fibonacciStepRank m d) := by
@@ -263,16 +272,17 @@ private lemma sharp_step_tower {p m j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : 
     have hs := sharp_step_succ hpos (hp2.trans (dvd_mul_left m (p ^ b))) ih.1 ih.2
     simpa only [pow_succ' p b, Nat.mul_assoc, Nat.mul_right_comm j (p ^ b) p] using hs
 
-private lemma tower_of_hit {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p * p ∣ m)
-    (hs : m ∣ lucasFibonacciSum s) (hf : m ∣ Nat.fib j) (hsharp : ¬p * m ∣ Nat.fib j)
-    (b : ℕ) : ∃ t < p ^ b, p ^ b * m ∣ lucasFibonacciSum (s + j * t) := by
+private theorem recurrence_tower (v : ℕ → ℕ)
+    (step : ∀ n, v (n+2) = v (n+1)+v n) (cop : ∀ n, (v n).Coprime (v (n+1))) {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p * p ∣ m)
+    (hs : m ∣ v s) (hf : m ∣ Nat.fib j) (hsharp : ¬p * m ∣ Nat.fib j)
+    (b : ℕ) : ∃ t < p ^ b, p ^ b * m ∣ v (s + j * t) := by
   induction b with
   | zero => exact ⟨0, by simp, by simpa using hs⟩
   | succ b ih =>
     obtain ⟨t,ht,hit⟩ := ih
     obtain ⟨hF,hn⟩ := sharp_step_tower hm hp2 hf hsharp b
     have hpm : p ∣ p ^ b * m := ((dvd_mul_right p p).trans hp2).trans (dvd_mul_left ..)
-    have hl := prime_mul_lifts_on_class (Nat.mul_pos (pow_pos (Fact.out : p.Prime).pos _) hm)
+    have hl := recurrence_lifts_on_class v step cop (Nat.mul_pos (pow_pos (Fact.out : p.Prime).pos _) hm)
       hpm hit hF
     rw [if_neg hn] at hl
     obtain ⟨z,hz,_⟩ := hl
@@ -284,6 +294,25 @@ private lemma tower_of_hit {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p 
       have hi : s + j * t + (j * p ^ b) * z.val = s + j * (t + p ^ b * z.val) := by ring
       rw [hi] at h
       simpa only [pow_succ', Nat.mul_assoc] using h
+
+private lemma tower_of_hit {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p * p ∣ m)
+    (hs : m ∣ lucasFibonacciSum s) (hf : m ∣ Nat.fib j) (hsharp : ¬p * m ∣ Nat.fib j)
+    (b : ℕ) : ∃ t < p ^ b, p ^ b * m ∣ lucasFibonacciSum (s + j * t) :=
+  recurrence_tower _ lucas_fibonacci_sum_recurrence consecutive_coprime hm hp2 hs hf hsharp b
+
+/-- A root of a Fibonacci recurrence with coprime neighbors lifts along
+a whole parameter class at every power of a sharp Fibonacci step. -/
+theorem fibonacci_recurrence_root_progression (v : ℕ → ℕ)
+    (step : ∀ n, v (n+2) = v (n+1)+v n) (cop : ∀ n, (v n).Coprime (v (n+1)))
+    {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m) (hp2 : p*p∣m)
+    (hs : m∣v s) (hf : m∣Nat.fib j) (sharp : ¬p*m∣Nat.fib j) (b : ℕ) :
+    ∃ c<p^b, ∀ t : ℕ, p^b*m∣v (s+j*(c+p^b*t)) := by
+  obtain ⟨c,bound,hit⟩ := recurrence_tower v step cop hm hp2 hs hf sharp b
+  have ret := (sharp_step_tower hm hp2 hf sharp b).1
+  refine ⟨c,bound,fun t => ?_⟩
+  rw [show s+j*(c+p^b*t)=s+j*c+(j*p^b)*t by ring,sequence_shift v step]
+  exact dvd_add (dvd_mul_of_dvd_right hit _) (dvd_mul_of_dvd_left
+    (ret.trans (Nat.fib_dvd _ _ (dvd_mul_right ..))) _)
 
 /-- A Fibonacci return step preserves divisibility of upper-diagonal terms in both directions. -/
 theorem lucasFibonacciSum_dvd_shift_iff {m s j : ℕ} (hf : m ∣ Nat.fib j) :
@@ -354,6 +383,27 @@ theorem eight_excluded_three_unbounded :
       tower_of_hit (p := 3) (m := 9) (s := 3) (j := 12) (by decide) (by decide)
         (by decide) (by decide) (by decide) b
 
+/-- The return rank along a sharp Fibonacci step increases by the factor
+p at every higher level. This depends only on the Fibonacci step. -/
+theorem sharp_step_rank {p m j : ℕ} [Fact p.Prime] [NeZero m]
+    (hp2 : p*p ∣ m) (hf : m ∣ Nat.fib j) (hsharp : ¬p*m ∣ Nat.fib j) (k : ℕ) :
+    fibonacciStepRank (p^k*m) j = p^k := by
+  have hp := (Fact.out : p.Prime).pos
+  have hm := NeZero.pos m
+  induction k with
+  | zero =>
+    have hle : fibonacciStepRank m j≤1 := rank_le (by decide) (by simpa using hf)
+    have hge := (rank_spec m j).1
+    simpa using (show fibonacciStepRank m j=1 by omega)
+  | succ k ih =>
+    let N := p^k*m
+    let : NeZero N := ⟨(Nat.mul_pos (pow_pos hp _) hm).ne'⟩
+    have hN : p ∣ N := ((dvd_mul_right p p).trans hp2).trans (dvd_mul_left _ _)
+    have hh := fibonacciStepRank_prime_mul (p:=p) hN j
+    change fibonacciStepRank N j=p^k at ih
+    rw [ih,if_neg (sharp_step_tower hm hp2 hf hsharp k).2] at hh
+    simpa only [N,pow_succ',Nat.mul_assoc] using hh
+
 /-- At a sharp Fibonacci step, each additional exponent cuts out exactly
 one residue class in the progression parameter. -/
 theorem sharp_prime_power_lift_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
@@ -362,20 +412,7 @@ theorem sharp_prime_power_lift_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
     ∃ c < p^b, ∀ t : ℕ, p^b*m ∣ lucasFibonacciSum (s+j*t) ↔ t ≡ c [MOD p^b] := by
   have hp := (Fact.out : p.Prime).pos
   let : NeZero m := ⟨hm.ne'⟩
-  have rank (k : ℕ) : fibonacciStepRank (p^k*m) j = p^k := by
-    induction k with
-    | zero =>
-      have hle : fibonacciStepRank m j≤1 := rank_le (by decide) (by simpa using hf)
-      have hge := (rank_spec m j).1
-      simpa using (show fibonacciStepRank m j=1 by omega)
-    | succ k ih =>
-      let N := p^k*m
-      let : NeZero N := ⟨(Nat.mul_pos (pow_pos hp _) hm).ne'⟩
-      have hN : p ∣ N := ((dvd_mul_right p p).trans hp2).trans (dvd_mul_left _ _)
-      have hh := fibonacciStepRank_prime_mul (p:=p) hN j
-      change fibonacciStepRank N j=p^k at ih
-      rw [ih,if_neg (sharp_step_tower hm hp2 hf hsharp k).2] at hh
-      simpa only [N,pow_succ',Nat.mul_assoc] using hh
+  have rank := sharp_step_rank hp2 hf hsharp
   let Q := p^b
   let N := Q*m
   let : NeZero N := ⟨(Nat.mul_pos (pow_pos hp _) hm).ne'⟩
@@ -398,6 +435,9 @@ theorem sharp_prime_power_lift_class {p m s j : ℕ} [Fact p.Prime] (hm : 0 < m)
     fun h => h.symm.trans Nat.add_modEq_right.symm⟩
 
 #print axioms lucasFibonacciSum_dvd_shift_iff
+#print axioms fibonacci_recurrence_root_progression
+#print axioms sharp_step_rank
+
 #print axioms sharp_prime_power_lift_class
 
 
