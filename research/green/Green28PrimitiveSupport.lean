@@ -124,22 +124,22 @@ private theorem orbit_factorization {K : Type*} [Field K] [CharP K 2] {H : ℤ[X
 
 private abbrev O := integralClosure ℤ ℝ
 
-private theorem with_residue {goal : Prop} (run : ∀ (K : Type) [Field K] [CharP K 2] [IsAlgClosed K],
+private theorem with_residue (p : ℕ) [prime : Fact p.Prime] {goal : Prop} (run : ∀ (K : Type) [Field K] [CharP K p] [IsAlgClosed K],
     (O →+* K) → goal) : goal := by
   classical
-  let P := RingHom.ker (Int.castRingHom (ZMod 2))
+  let P := RingHom.ker (Int.castRingHom (ZMod p))
   let _ : P.IsMaximal := RingHom.ker_isMaximal_of_surjective _ ZMod.intCast_surjective
   obtain ⟨J,jm,above⟩ := Ideal.exists_maximal_ideal_liesOver_of_isIntegral (S := O) P
   let _ := jm
   let R := O ⧸ J
   let _ : Field R := Ideal.Quotient.field J
-  have inP : (2:ℤ)∈P := by change ((2:ℤ):ZMod 2)=0; decide
-  have inJ : (2:O)∈J := by
+  have inP : (p:ℤ)∈P := by change ((p:ℤ):ZMod p)=0; simp
+  have inJ : (p:O)∈J := by
     rw [(Ideal.liesOver_iff J P).mp above] at inP
-    simpa only [Ideal.under,Ideal.mem_comap,map_ofNat] using inP
-  let _ : CharP R 2 := (CharP.charP_iff_prime_eq_zero Nat.prime_two).mpr (by
-    change (2 : O ⧸ J)=0
-    simpa only [map_ofNat] using (Ideal.Quotient.eq_zero_iff_mem (I := J)).mpr inJ)
+    simpa only [Ideal.under,Ideal.mem_comap,map_natCast] using inP
+  let _ : CharP R p := (CharP.charP_iff_prime_eq_zero prime.out).mpr (by
+    change (p : O ⧸ J)=0
+    simpa only [map_natCast] using (Ideal.Quotient.eq_zero_iff_mem (I := J)).mpr inJ)
   exact run (AlgebraicClosure R) ((algebraMap R _).comp (Ideal.Quotient.mk J))
 
 private theorem coefficients_in_O (H : ℤ[X]) (hm : H.Monic) (f : ℝ[X]) (fm : f.Monic)
@@ -149,11 +149,11 @@ private theorem coefficients_in_O (H : ℤ[X]) (hm : H.Monic) (f : ℝ[X]) (fm :
   exact isIntegral_coeff_of_dvd H f hm fm dvd i
 
 /-- Any restriction on the degrees of monic factors with constant term one
-that holds after reduction over algebraically closed fields of characteristic two
+that holds after reduction over algebraically closed fields of a fixed prime characteristic
 also holds for monic real factors of the integer polynomial. -/
-theorem degrees_of_binary_reduction (H : ℤ[X]) (hm : H.Monic) {f g : ℝ[X]}
+theorem degrees_of_prime_reduction (p : ℕ) [Fact p.Prime] (H : ℤ[X]) (hm : H.Monic) {f g : ℝ[X]}
     (fm : f.Monic) (gm : g.Monic) (f0 : f.coeff 0=1) (eq : f*g=H.map (Int.castRingHom ℝ))
-    (D : ℕ → ℕ → Prop) (test : ∀ (K : Type) [Field K] [CharP K 2] [IsAlgClosed K]
+    (D : ℕ → ℕ → Prop) (test : ∀ (K : Type) [Field K] [CharP K p] [IsAlgClosed K]
       (F G : K[X]), F.Monic → G.Monic → F.coeff 0=1 → F*G=H.map (Int.castRingHom K) →
       D F.natDegree G.natDegree) : D f.natDegree g.natDegree := by
   classical
@@ -167,13 +167,21 @@ theorem degrees_of_binary_reduction (H : ℤ[X]) (hm : H.Monic) {f g : ℝ[X]}
     apply Polynomial.map_injective T.subtype Subtype.val_injective
     rw [Polynomial.map_mul,Polynomial.map_map,RingHom.ext_int (T.subtype.comp _) (Int.castRingHom ℝ)]
     simpa only [F,G,map_toSubring] using eq
-  apply with_residue
+  apply with_residue p
   intro K fld cp closed φ
   have prodK : F.map φ*G.map φ=H.map (Int.castRingHom K) := by
     rw [←Polynomial.map_mul,product,Polynomial.map_map,RingHom.ext_int (φ.comp _) (Int.castRingHom K)]
   have zero : (F.map φ).coeff 0=1 := by rw [coeff_map,zF,map_one]
   have h := test K (F.map φ) (G.map φ) (mF.map φ) (mG.map φ) zero prodK
   simpa only [mF.natDegree_map,mG.natDegree_map,F,G,natDegree_toSubring] using h
+
+/-- Degree restrictions on monic normalized factors can be tested in characteristic two. -/
+theorem degrees_of_binary_reduction (H : ℤ[X]) (hm : H.Monic) {f g : ℝ[X]}
+    (fm : f.Monic) (gm : g.Monic) (f0 : f.coeff 0=1) (eq : f*g=H.map (Int.castRingHom ℝ))
+    (D : ℕ → ℕ → Prop) (test : ∀ (K : Type) [Field K] [CharP K 2] [IsAlgClosed K]
+      (F G : K[X]), F.Monic → G.Monic → F.coeff 0=1 → F*G=H.map (Int.castRingHom K) →
+      D F.natDegree G.natDegree) : D f.natDegree g.natDegree :=
+  degrees_of_prime_reduction 2 H hm fm gm f0 eq D test
 
 /-- A primitive binary reduction prevents two positive-degree monic real
 factors with constant terms one. The other coefficients may have either sign. -/
@@ -424,6 +432,7 @@ theorem exists_primitive_support (d : ℕ) (hd : 0<d) :
   simp
 
 #print axioms pure_of_width_zero
+#print axioms degrees_of_prime_reduction
 #print axioms degrees_of_binary_reduction
 #print axioms exists_orbit_support
 #print axioms orbit_obstruction
